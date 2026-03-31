@@ -1,4 +1,4 @@
-# 电子军师 (Digital Strategist)
+# 电子军师 (Electronic Strategist)
 
 <div align="center">
 
@@ -17,7 +17,7 @@ You're in the middle of pursuing someone and don't know what to say.
 They sent you a message and you can't quite read it.  
 You have something you want to say but aren't sure if you should.
 
-**电子军师 (Digital Strategist)** is a full-journey relationship assistant running inside Claude Code.
+**电子军师 (Electronic Strategist)** is a full-journey relationship assistant running inside Claude Code.
 
 From first conversation to long-term relationship — it helps you read the room, think clearly, and say what needs to be said.
 
