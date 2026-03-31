@@ -1,4 +1,4 @@
-# reply-skill
+# 电子军师 (Digital Strategist)
 
 <div align="center">
 
@@ -13,251 +13,282 @@
 
 ---
 
-Sometimes what's missing between you and your partner isn't love — it's the right reply.
+You're in the middle of pursuing someone and don't know what to say.  
+They sent you a message and you can't quite read it.  
+You have something you want to say but aren't sure if you should.
 
-reply-skill is a relationship reply assistant that runs inside Claude Code.  
-It analyzes the real meaning behind your partner's messages and generates reply options that deliver genuine emotional value — written in *your* voice, not an AI's.
+**电子军师 (Digital Strategist)** is a full-journey relationship assistant running inside Claude Code.
+
+From first conversation to long-term relationship — it helps you read the room, think clearly, and say what needs to be said.
 
 ---
 
 ## Core Features
 
-### Three-Layer Message Analysis
+### 1. Relationship Stage System
 
-Every message carries three layers of meaning:
+Different stages require completely different strategies.
+
+| Stage | Name | Tone |
+|-------|------|------|
+| 0 | Just Met | Interesting, don't reveal interest |
+| 1 | Flirting / Ambiguous | Subtle hints, let them guess |
+| 2 | Actively Pursuing | Confident, strategic |
+| 3 | Confessing / Confirming | Clear but not desperate |
+| 4 | Early Relationship | Sweet but retain independence |
+| 5 | Stable Relationship | Natural, maintain freshness |
+| 6 | Friction / Bottleneck | De-escalate, find core issue |
+| 7 | Crisis | Calm, composed, dignified |
+
+### 2. Oil Level Control (Clinginess Control)
+
+The biggest mistake in early stages: **exposing neediness**.
+
+"Are you ignoring me lately?" — in the flirting stage, this can get you written off immediately.
+
+The strategist controls the "oil level" (clinginess/intimacy level) of every reply based on your current stage:
+
+- Just Met / Flirting: cap at 0–1.5/5 — subtle, interesting, unhurried
+- Early Relationship: cap at 3.5/5 — sweet but not overwhelming
+- Crisis stage: cap at 0.5/5 — calm, dignified
+
+### 3. Three-Layer Message Analysis
+
+Every message has three layers:
 
 ```
-Layer 1 · Surface meaning    What they literally said
-Layer 2 · Emotional state    How they're actually feeling
-Layer 3 · Real need          What they're truly looking for
+Layer 1  Surface meaning    What they literally said
+Layer 2  Emotional state    What they're actually feeling right now
+Layer 3  Real need          What they actually want from you
 ```
 
-"Whatever, I don't care what we eat" might really mean "I want you to take charge."  
-"It's fine, don't worry about me" might really mean "I care a lot but I won't say it first."  
-reply-skill helps you see through to what matters.
+"Whatever, you decide" might mean "I want you to take charge."  
+"It's fine, don't worry" might mean "I care a lot but I won't say it first."
 
-### Emotional Value-Driven Replies
+### 4. Strategist Mode (军师模式)
 
-The goal of a reply isn't just to respond — it's to make your partner feel something:
+You have something you want to send them — but you're not sure:
 
-| Emotional Value | Description |
-|----------------|-------------|
-| Cherished | They feel like they matter to you |
-| Amused | They genuinely laugh |
+```
+/ask I want to say "do you kind of like me?"
+```
+
+The strategist evaluates: can you say this? why? how to rephrase it? when's the right timing?
+
+### 5. Auto-Feedback Analysis
+
+After sending a reply, upload the follow-up chat log:
+
+```
+/upload-followup
+```
+
+The strategist analyzes their reaction, determines if the strategy worked, and records it for future accuracy.
+
+### 6. Emotional Value Framework
+
+The goal of a reply isn't just to respond — it's to make them feel something real:
+
+| Emotional Value | Meaning |
+|----------------|---------|
+| Cherished | They feel important to you |
+| Amused | They actually laughed |
 | Understood | They feel truly seen |
-| Attracted | They feel a spark |
-| Reassured | Their anxiety fades |
-| Surprised | You said something they didn't expect |
+| Attracted | Their heart skipped a beat |
+| Reassured | Their anxiety faded |
+| Surprised | They didn't expect you to say that |
 | Admired | They think you're impressive |
-
-Each reply option shows which emotional value it delivers and what reaction to expect.
-
-### Partner Profile System
-
-Your partner has unique speech habits, emotional patterns, and subtext tendencies.  
-reply-skill builds a dedicated profile for them that gets more accurate over time:
-
-- Speech style analysis (message density, punctuation habits, favorite filler words)
-- Emotional needs map (love languages, being-seen needs, anxiety triggers)
-- Behavior pattern recognition (how they act when happy / sad / clingy / angry)
-- **Subtext dictionary** (their specific phrases and what they actually mean)
-
-### User Style Calibration
-
-Generated replies are aligned to *your* communication style —  
-if you're a person of few words, you won't get verbose suggestions. If you like playful banter, you'll see that.
 
 ---
 
 ## Quick Start
 
-### Installation
-
 ```bash
-# Clone the project
 git clone https://github.com/shoal-rat/reply-skill.git
 cd reply-skill
-
-# Register SKILL.md with Claude Code
-# In Claude Code, run:
 ```
 
-```
-/reply-love
-```
-
-### First Use
-
-Run `/reply-love` and the system guides you through 5 questions:
+In Claude Code, run:
 
 ```
-Q1: What should we call your partner? (a nickname is fine)
-Q2: Basic relationship info
-Q3: Their personality traits
-Q4: How do you usually reply to messages?
-Q5: Do you have chat logs to import? (optional)
+/zhunshi
 ```
 
-5 minutes to build a profile. Every reply after that gets more accurate.
+Answer 6 questions (all skippable), build a profile, and start.
 
 ---
 
 ## Usage Examples
 
-### Example 1: She asks "What have you been up to lately?"
+### Example 1: Flirting stage — she asks "What have you been up to lately?"
 
 ```
 /reply What have you been up to lately?
 ```
 
-**Message Reading**
+**Three-layer reading**
 
 ```
-Surface:    Asking about your recent life
-Emotional:  Mildly anxious / seeking connection · Intensity 2/5
-Real need:  To feel valued — she wants to know she has a place in your life
+Surface:   Asking about your life
+Emotional: Mildly anxious / wanting connection · Intensity 2/5
+Real need: To feel valued — she wants to know she matters in your life
 ```
 
-**Reply Options**
+**Reply options (Current stage: Flirting · Oil level cap 1.5/5)**
 
 ```
-[Option 1] Warm · Emotional value: Cherished
+[Option 1] Humorous · Amused · Oil level 0.5/5
 ————
-"Busy, yeah — but not too busy to miss you"
+"Staying alive, you?"
 ————
-Expected reaction: She'll feel you have her in mind, probably sends a blushing emoji
-Fit score: 9/10
+Expected: She finds it a bit funny, keeps the conversation going
+Fit: 8/10
 
-[Option 2] Playful · Emotional value: Attracted
+[Option 2] Subtly warm · Cherished · Oil level 1/5
 ————
-"Busy thinking about you. Any complaints?"
+"Been a lot going on, but having people around helps"
 ————
-Expected reaction: She'll roll her eyes but smile, keeps the conversation going
-Fit score: 8/10
+Expected: She notices she might be included in "people", wants to keep talking
+Fit: 9/10
 
-[Option 3] Genuine · Emotional value: Understood
+[Option 3] Create curiosity · Surprised · Oil level 0.5/5
 ————
-"Honestly the project's been stressful, but talking to you always helps. How are you doing?"
+"Got some stuff going on, I'll tell you later — how about you?"
 ————
-Expected reaction: She'll feel needed, opens up more
-Fit score: 7/10
+Expected: She's curious what you're up to, topic shifts to her
+Fit: 7/10
+```
+
+💡 Recommend Option 2. In the flirting stage, hiding signals inside everyday language works better than saying it directly.
+
+---
+
+### Example 2: Strategist mode — want to ask "do you kind of like me?"
+
+```
+/ask I want to ask "do you kind of like me?"
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 Strategist Assessment
+
+  You want to say: "do you kind of like me?"
+  Current stage: Flirting (Stage 1)
+
+Verdict: ❌ Not recommended
+
+  Stage fit: 3/10
+  Oil level: 3/5 (cap: 1.5/5)
+  Neediness risk: High
+
+  Risk: This turns an uncertain, building connection
+  into a question that requires an immediate answer.
+  If they're not ready, they can only say no —
+  even if they actually have feelings.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💬 Better options
+
+  [Option 1] Create a situation that lets them show it
+  ————
+  "You mentioned wanting to go to that place — free this weekend?"
+  ————
+  Why: Suggesting a meetup is more effective than asking directly.
+  The dynamic stays in your favor.
+
+  [Option 2] Hint instead of asking
+  ————
+  "You seem like you've been more talkative lately"
+  ————
+  Why: It's a factual observation. You leave them space to explain,
+  giving them the opening to show their hand.
+
+  [Option 3] Wait
+  ————
+  [Hold until they reach out first]
+  ————
+  Why: When they come to you, attraction is working.
+  That's when you advance.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🕐 Timing
+
+  Not now: Relationship is still forming, early reveals lose leverage
+  Best after a meetup: in-person context is stronger than text
 ```
 
 ---
 
-### Example 2: He says "I'm fine, I'm not tired" (but clearly is)
+### Example 3: Upload follow-up chat for automatic analysis
 
 ```
-/reply I'm fine, I'm not tired (he sounds heavy, said he had to work overtime)
+/upload-followup
+[paste follow-up chat log]
 ```
 
-**Message Reading**
-
 ```
-Surface:    Says he's not tired
-Emotional:  Exhausted + mildly sulky · Intensity 3/5
-Real need:  To be cared for — he says he's fine but wants you to see through it
-```
+📊 Effect Analysis
 
-Subtext alert: Profile records "I'm fine" = something's wrong but he won't say it first
+  You sent: "Been a lot going on, but having people around helps"
+  Strategy: Option 2 (subtly warm)
 
-**Reply Options**
+  Their response: "people? which people, be more specific"
+  Conversation continued: Yes, 5 more turns
 
-```
-[Option 1] Warm · Emotional value: Cared for
-————
-"I don't believe you. Tell me when you're done — I'll be here"
-————
-Expected reaction: He'll feel seen, his tone will soften
-Fit score: 9/10
+  Outcome: Very good ✓
+
+  Analysis: They picked up on the vague "people" and
+  pushed to clarify — they noticed. Subtle signal
+  strategy works well in the flirting stage. Recorded.
 ```
 
 ---
 
-### Example 3: She suddenly asks "Do you think we're right for each other?"
+## Command Reference
 
 ```
-/analyze Do you think we're right for each other?
-```
-
-**Message Reading**
-
-```
-[Surface Meaning]
-Asking your opinion on the compatibility of your relationship
-
-[Emotional State]
-Anxious / uncertain, Intensity: 4/5
-Likely experiencing relationship insecurity right now
-
-[Real Need]
-Reassurance — she's not doing math, she needs to hear "we're okay"
-
-[Message Type] Test · [Risk Level] Needs attention
-
-⚠️ Subtext note: This type of question is usually an emotional outlet,
-   not a rational discussion. Soothe the emotion first, then state your position.
-```
-
----
-
-## Profile Management
-
-```bash
-# View all profiles
-/list-partners
-
-# Switch to a profile
-/partner emily
-
-# Update partner profile
-/update-partner
-
-# Update your reply style
-/my-style
+/zhunshi              Create new profile
+/reply [message]      Analyze and generate reply options
+/ask [I want to say...] Strategist evaluates your idea
+/analyze [message]    Analysis only, no replies
+/upload-followup      Upload follow-up chat for effect analysis
+/stage [0-7]          Update current relationship stage
+/stats                View strategy effectiveness stats
+/update-partner       Update partner profile
+/my-style             Update your communication style
+/list-partners        View all profiles
 ```
 
 ---
 
 ## Chat Log Import
 
-Import chat logs for more accurate analysis:
-
 ```bash
-# Process WeChatMsg exported txt file
 python tools/wechat_parser.py \
   --file chat_log.txt \
-  --target "her name" \
+  --target "their name" \
   --output partners/emily/materials/analysis.txt
 ```
 
-Supported formats:
-- WeChatMsg exported `.txt` files
-- Manually pasted chat logs (format: `Name: message content`)
-
----
-
-## Feedback System
-
-After sending a reply, tell the system how it went:
-
-```
-"Sent option 1, she replied right away and seemed happy"  → Strategy logged as effective
-"Sent it and he went quiet"                               → Logged, adjusted next time
-"This suggestion is off — he wouldn't say that"          → Profile updated immediately
-```
-
-The more you use it, the better it knows your partner.
+Supported: WeChatMsg exported `.txt` / manually pasted chat (format: `Name: message`)
 
 ---
 
 ## Project Structure
 
 ```
-reply-skill/
+reply-skill/ (电子军师)
 ├── SKILL.md                    # Skill entry point
 ├── prompts/
-│   ├── intake.md               # Information collection flow
+│   ├── intake.md               # Info collection (includes stage selection)
+│   ├── stage_system.md         # 8-stage definitions and strategy rules
+│   ├── oil_control.md          # Clinginess level control
+│   ├── advisor_mode.md         # Strategist mode (evaluates your ideas)
+│   ├── auto_feedback.md        # Automatic effect analysis
 │   ├── partner_builder.md      # Partner profile template
 │   ├── partner_analyzer.md     # Profile analysis rules
 │   ├── message_analyzer.md     # Three-layer message analysis
@@ -265,16 +296,10 @@ reply-skill/
 │   ├── style_calibrator.md     # User style calibration
 │   └── correction_handler.md   # Correction and feedback handling
 ├── tools/
-│   ├── wechat_parser.py        # Chat log parsing tool
+│   ├── wechat_parser.py        # Chat log parser
 │   ├── profile_manager.py      # Profile management CLI
-│   └── session_log.py          # Session logging tool
+│   └── session_log.py          # Session logging and stats
 ├── partners/                   # Profile data (local, not committed)
-│   └── {slug}/
-│       ├── meta.json
-│       ├── profile.md
-│       ├── history/
-│       ├── versions/
-│       └── materials/
 └── docs/
 ```
 
@@ -282,22 +307,23 @@ reply-skill/
 
 ## Notes
 
-- **Privacy**: All profile data is stored locally and never sent to any server
-- **Reality**: This tool helps you find the right expression — it can't replace real feelings
-- **Boundaries**: No manipulative or coercive reply suggestions will be generated
-- **Judgment**: All options are suggestions. You know your relationship best
+- **Privacy**: All data stays in the local `partners/` folder — nothing is uploaded to any server
+- **Tool, not script**: The strategist helps you express yourself — the feelings have to be real
+- **No manipulation**: All suggestions aim for genuine emotional connection, no coercive tactics
+- **You're in charge**: These are options, not commands. You know your relationship best
 
 ---
 
 ## License
 
-MIT License — see [LICENSE](LICENSE)
+MIT — see [LICENSE](LICENSE)
 
 ---
 
 <div align="center">
 
-A good reply isn't about getting them to do something.<br>
-It's about making them feel that you genuinely care.
+Pursuing someone isn't a game to be won.<br>
+It's about finding the truest version of yourself<br>
+and letting them see it.
 
 </div>
