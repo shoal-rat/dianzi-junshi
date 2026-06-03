@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Partner profile manager for reply-skill.
+Partner profile manager for dianzi-junshi.
 List, show, and delete partner profiles stored under partners/{slug}/.
 """
 
@@ -8,10 +8,26 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 PARTNERS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'partners')
+
+STAGE_INFO = {
+    0: ('初识期', 0),
+    1: ('暧昧期', 1.5),
+    2: ('追求期', 2),
+    3: ('告白/确认期', 2.5),
+    4: ('热恋初期', 3.5),
+    5: ('稳定期', 3),
+    6: ('磨合/瓶颈期', 1.5),
+    7: ('危机期', 0.5),
+}
+
+
+def utc_now_iso():
+    """Return an ISO8601 UTC timestamp with a Z suffix."""
+    return datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
 
 
 def get_all_partners(base_dir):
@@ -37,7 +53,7 @@ def list_partners(base_dir):
     """List all partners with summary info."""
     partners = get_all_partners(base_dir)
     if not partners:
-        print("还没有对象档案。用 /reply-love 创建第一个。")
+        print("还没有对象档案。用 /junshi 创建第一个。")
         return
 
     print(f"{'代号':<15} {'在一起':<12} {'关系状态':<10} {'创建时间':<20} {'版本'}")
@@ -47,7 +63,7 @@ def list_partners(base_dir):
         if meta:
             name = meta.get('name', slug)
             duration = meta.get('profile', {}).get('together_duration', '未知')
-            status = meta.get('profile', {}).get('relationship_status', '稳定期')
+            status = meta.get('stage_name') or meta.get('profile', {}).get('relationship_status', '稳定期')
             created = meta.get('created_at', '')[:10]
             version = meta.get('version', 'v1')
             print(f"{name:<15} {duration:<12} {status:<10} {created:<20} {version}")
@@ -76,6 +92,9 @@ def show_partner(base_dir, slug):
     print(f"\n创建时间：{meta.get('created_at', '')}")
     print(f"最后更新：{meta.get('updated_at', '')}")
     print(f"版本：{meta.get('version', 'v1')}")
+    print(f"当前阶段：{meta.get('stage_name', '未知')}（{meta.get('stage', '未知')}）")
+    print(f"油腻上限：{meta.get('oiliness_cap', '未知')}/5")
+    print(f"反舔狗模式：{'开启' if meta.get('anti_simp_mode') else '关闭'}")
     print(f"纠正次数：{meta.get('corrections_count', 0)}")
 
     # Show session count
@@ -85,7 +104,7 @@ def show_partner(base_dir, slug):
         print(f"历史对话记录：{len(sessions)} 次")
 
 
-def init_partner(base_dir, slug, name):
+def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
     """Initialize directory structure for a new partner."""
     partner_dir = os.path.join(base_dir, slug)
     history_dir = os.path.join(partner_dir, 'history')
@@ -95,24 +114,43 @@ def init_partner(base_dir, slug, name):
     for d in [partner_dir, history_dir, versions_dir, materials_dir]:
         os.makedirs(d, exist_ok=True)
 
+    stage_name, oiliness_cap = STAGE_INFO.get(stage, STAGE_INFO[1])
+
     # Create initial meta.json
     meta = {
         'name': name,
         'slug': slug,
-        'created_at': datetime.utcnow().isoformat() + 'Z',
-        'updated_at': datetime.utcnow().isoformat() + 'Z',
+        'created_at': utc_now_iso(),
+        'updated_at': utc_now_iso(),
         'version': 'v1',
+        'stage': stage,
+        'stage_name': stage_name,
+        'oiliness_cap': oiliness_cap,
+        'anti_simp_mode': anti_simp_mode,
         'profile': {
             'together_duration': '',
             'distance': '',
             'occupation': '',
             'how_met': '',
-            'relationship_status': '稳定期',
+            'relationship_status': stage_name,
         },
         'tags': {
             'attachment_style': '',
             'love_language': '',
             'communication_style': '',
+        },
+        'interest': {
+            'score': None,
+            'confidence': '待观察',
+            'trend': '待观察',
+        },
+        'micro_info': {
+            'mbti': '',
+            'astrology_attitude': '',
+            'catchphrases': [],
+            'gift_preferences': [],
+            'food_restrictions': [],
+            'date_preferences': [],
         },
         'corrections_count': 0,
         'sessions_count': 0,
@@ -148,7 +186,7 @@ def delete_partner(base_dir, slug, force=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='reply-skill partner profile manager')
+    parser = argparse.ArgumentParser(description='dianzi-junshi partner profile manager')
     parser.add_argument('--action', '-a', required=True,
                         choices=['list', 'show', 'init', 'delete'],
                         help='Action to perform')
@@ -156,6 +194,10 @@ def main():
     parser.add_argument('--name', '-n', default=None, help='Partner display name (for init)')
     parser.add_argument('--base-dir', '-d', default=PARTNERS_DIR, help='Base partners directory')
     parser.add_argument('--force', action='store_true', help='Skip confirmation for delete')
+    parser.add_argument('--stage', type=int, default=1, choices=sorted(STAGE_INFO.keys()),
+                        help='Relationship stage for init (0-7, default: 1)')
+    parser.add_argument('--anti-simp', action='store_true',
+                        help='Enable anti-simp mode for init')
     args = parser.parse_args()
 
     if args.action == 'list':
@@ -169,7 +211,7 @@ def main():
         if not args.slug or not args.name:
             print("Error: --slug and --name required for init", file=sys.stderr)
             sys.exit(1)
-        init_partner(args.base_dir, args.slug, args.name)
+        init_partner(args.base_dir, args.slug, args.name, args.stage, args.anti_simp)
     elif args.action == 'delete':
         if not args.slug:
             print("Error: --slug required for delete", file=sys.stderr)

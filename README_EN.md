@@ -1,329 +1,256 @@
-# 电子军师 (Electronic Strategist)
+# Dianzi Junshi
 
 <div align="center">
 
-**Sometimes, you just need to say the right thing.**
+**A Chinese dating-chat strategist for people who need help showing themselves, flirting lightly, and knowing when to stop.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Claude_Code-blue)](https://claude.ai/code)
+[![Claude Code](https://img.shields.io/badge/platform-Claude_Code-blue)](https://claude.ai/code)
+[![Codex](https://img.shields.io/badge/platform-Codex-0F766E)](platforms/codex.md)
+[![ChatGPT](https://img.shields.io/badge/platform-ChatGPT-10A37F)](platforms/chatgpt-instructions.md)
 [![中文](https://img.shields.io/badge/中文-README.md-red)](README.md)
-[![EN](https://img.shields.io/badge/English-README__EN.md-lightgrey)](README_EN.md)
 
 </div>
 
 ---
 
-You're in the middle of pursuing someone and don't know what to say.  
-They sent you a message and you can't quite read it.  
-You have something you want to say but aren't sure if you should.
+**Dianzi Junshi** (电子军师, “Electronic Strategist”) is a Claude Code / Codex / ChatGPT skill for Chinese dating and relationship chats.
 
-**电子军师 (Electronic Strategist)** is a full-journey relationship assistant running inside Claude Code.
+It helps users:
 
-From first conversation to long-term relationship — it helps you read the room, think clearly, and say what needs to be said.
+- understand what a message may really mean,
+- draft natural replies that sound like the user,
+- keep “oiliness” low while still being playful,
+- judge whether the other person is actually interested,
+- analyze Moments/social screenshots,
+- auto-import a folder of chats, screenshots, photos, and notes,
+- plan dates with user-only reminders separated from copyable replies,
+- and stop over-investing when the signals are clearly bad.
+
+The core strategy:
+
+> Show yourself first. Flirt lightly. Watch whether they catch the signal. If they do not, cool down. If they are clearly not interested, leave with dignity.
+
+This is not a PUA script. It refuses coercion, deception, jealousy-baiting, stalking, privacy probing, threats, and emotional manipulation.
 
 ---
 
-## Core Features
+## Features
 
-### 1. Relationship Stage System
+### Three-layer message reading
 
-Different stages require completely different strategies.
-
-| Stage | Name | Tone |
-|-------|------|------|
-| 0 | Just Met | Interesting, don't reveal interest |
-| 1 | Flirting / Ambiguous | Subtle hints, let them guess |
-| 2 | Actively Pursuing | Confident, strategic |
-| 3 | Confessing / Confirming | Clear but not desperate |
-| 4 | Early Relationship | Sweet but retain independence |
-| 5 | Stable Relationship | Natural, maintain freshness |
-| 6 | Friction / Bottleneck | De-escalate, find core issue |
-| 7 | Crisis | Calm, composed, dignified |
-
-### 2. Oil Level Control (Clinginess Control)
-
-The biggest mistake in early stages: **exposing neediness**.
-
-"Are you ignoring me lately?" — in the flirting stage, this can get you written off immediately.
-
-The strategist controls the "oil level" (clinginess/intimacy level) of every reply based on your current stage:
-
-- Just Met / Flirting: cap at 0–1.5/5 — subtle, interesting, unhurried
-- Early Relationship: cap at 3.5/5 — sweet but not overwhelming
-- Crisis stage: cap at 0.5/5 — calm, dignified
-
-### 3. Three-Layer Message Analysis
-
-Every message has three layers:
-
-```
-Layer 1  Surface meaning    What they literally said
-Layer 2  Emotional state    What they're actually feeling right now
-Layer 3  Real need          What they actually want from you
+```text
+Surface: what they literally said
+Emotion: what they may be feeling
+Need: what they may want from you
 ```
 
-"Whatever, you decide" might mean "I want you to take charge."  
-"It's fine, don't worry" might mean "I care a lot but I won't say it first."
+The skill separates evidence from inference so it does not over-read a single message.
 
-### 4. Strategist Mode (军师模式)
+### Oiliness control
 
-You have something you want to send them — but you're not sure:
+“油腻度” is a Chinese internet term for overdoing intimacy, neediness, or clingy pressure.
 
+| Stage | Cap | Guidance |
+| --- | --- | --- |
+| Just met / flirting | 0-1.5/5 | show yourself, hint lightly, do not reveal too much |
+| Pursuing / confirming | 2-2.5/5 | be active, but do not force an answer |
+| Early / stable relationship | 3-3.5/5 | sweet and playful is fine, but do not repeat the same sugar |
+| Friction / crisis | 0.5-1.5/5 | cool down, keep boundaries and dignity |
+
+### Default reply options
+
+`/reply` usually returns:
+
+- **Safe version**: low-risk, not awkward.
+- **Flirty version**: playful, but under the oiliness cap.
+- **Self-display / sincere / de-escalation version**: chosen by context.
+
+### Interest detection
+
+`/interest` scores interest from `0-10` using chat evidence:
+
+- Initiating contact, asking questions, remembering details, catching jokes, accepting dates or offering alternatives: up.
+- Polite one-word replies, no follow-up, repeated date rejection without alternatives, only coming for favors: down.
+
+It looks for patterns, not one slow reply.
+
+### Anti-simp mode
+
+Turn it on during onboarding or with:
+
+```text
+/anti-simp on
 ```
-/ask I want to say "do you kind of like me?"
+
+When signals are clearly bad, the skill gets direct:
+
+```text
+This is not worth more investment right now.
+Stop chasing, pull attention back, and leave the interaction gracefully.
 ```
 
-The strategist evaluates: can you say this? why? how to rephrase it? when's the right timing?
+### Auto folder import
 
-### 5. Auto-Feedback Analysis
+Users do not need to classify materials manually.
 
-After sending a reply, upload the follow-up chat log:
-
-```
-/upload-followup
+```text
+/import-folder C:\Users\me\Desktop\ta-materials
 ```
 
-The strategist analyzes their reaction, determines if the strategy worked, and records it for future accuracy.
+The skill scans and classifies:
 
-### 6. Emotional Value Framework
+- chat logs,
+- Moments/social screenshots,
+- selfie/outfit/makeup/avatar images,
+- notes,
+- unknown files.
 
-The goal of a reply isn't just to respond — it's to make them feel something real:
+Image materials should be analyzed with a multimodal model, not OCR alone.
 
-| Emotional Value | Meaning |
-|----------------|---------|
-| Cherished | They feel important to you |
-| Amused | They actually laughed |
-| Understood | They feel truly seen |
-| Attracted | Their heart skipped a beat |
-| Reassured | Their anxiety faded |
-| Surprised | They didn't expect you to say that |
-| Admired | They think you're impressive |
+### Moments / social screenshot analysis
+
+`/moments` analyzes screenshots or pasted social posts with multimodal vision:
+
+- what the person is trying to show,
+- appearance presentation, makeup, outfit, filters, visual style,
+- comment/like/reply interaction style,
+- likely conversation style,
+- good topics,
+- topics to avoid,
+- how the user can show themselves without looking needy.
+- micro-information such as MBTI/astrology attitude, catchphrases, gift preferences, food restrictions, and mood-specific wording.
+
+Please anonymize real names, avatars, school/company names, locations, phone numbers, and other identifying details.
+
+### Date planning side notes
+
+When an invitation is sent or accepted, `/date-plan` separates:
+
+- **Copyable replies**: only text safe to send.
+- **User-only side notes**: booking, holidays, flowers/gifts, outfit, restaurant etiquette, pace, follow-up.
+
+For example, 520/Qixi/weekend dinner reminders, flower choices, and Western restaurant ordering etiquette go in the side notes, not in the message to copy.
+
+### Long-term local memory
+
+Profiles live in local `partners/`:
+
+- communication style,
+- subtext dictionary,
+- interest trend,
+- Moments/social profile,
+- appearance/makeup/outfit presentation,
+- MBTI/astrology attitude, food restrictions, gift preferences, catchphrases,
+- date preferences,
+- effective and ineffective strategies,
+- the user’s actual writing style.
+
+`partners/` is ignored by git.
 
 ---
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/shoal-rat/reply-skill.git
-cd reply-skill
+git clone https://github.com/shoal-rat/dianzi-junshi.git
+cd dianzi-junshi
 ```
 
-In Claude Code, run:
+### Claude Code
 
+Open the project in Claude Code and run:
+
+```text
+/junshi
 ```
-/zhunshi
-```
 
-Answer 6 questions (all skippable), build a profile, and start.
+Then use:
 
----
-
-## Usage Examples
-
-### Example 1: Flirting stage — she asks "What have you been up to lately?"
-
-```
+```text
 /reply What have you been up to lately?
+/ask I want to say "are you ignoring me?"
+/interest
+/moments
+/date-plan
 ```
 
-**Three-layer reading**
+### Codex
 
-```
-Surface:   Asking about your life
-Emotional: Mildly anxious / wanting connection · Intensity 2/5
-Real need: To feel valued — she wants to know she matters in your life
-```
+See [platforms/codex.md](platforms/codex.md).
 
-**Reply options (Current stage: Flirting · Oil level cap 1.5/5)**
+Recommended install path:
 
-```
-[Option 1] Humorous · Amused · Oil level 0.5/5
-————
-"Staying alive, you?"
-————
-Expected: She finds it a bit funny, keeps the conversation going
-Fit: 8/10
-
-[Option 2] Subtly warm · Cherished · Oil level 1/5
-————
-"Been a lot going on, but having people around helps"
-————
-Expected: She notices she might be included in "people", wants to keep talking
-Fit: 9/10
-
-[Option 3] Create curiosity · Surprised · Oil level 0.5/5
-————
-"Got some stuff going on, I'll tell you later — how about you?"
-————
-Expected: She's curious what you're up to, topic shifts to her
-Fit: 7/10
+```text
+$HOME/.agents/skills/dianzi-junshi
 ```
 
-💡 Recommend Option 2. In the flirting stage, hiding signals inside everyday language works better than saying it directly.
+Prompt example:
 
----
-
-### Example 2: Strategist mode — want to ask "do you kind of like me?"
-
-```
-/ask I want to ask "do you kind of like me?"
+```text
+Use $dianzi-junshi to analyze this chat and give me a low-oiliness flirty reply.
 ```
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+### ChatGPT
 
-🎯 Strategist Assessment
+See [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md).
 
-  You want to say: "do you kind of like me?"
-  Current stage: Flirting (Stage 1)
-
-Verdict: ❌ Not recommended
-
-  Stage fit: 3/10
-  Oil level: 3/5 (cap: 1.5/5)
-  Neediness risk: High
-
-  Risk: This turns an uncertain, building connection
-  into a question that requires an immediate answer.
-  If they're not ready, they can only say no —
-  even if they actually have feelings.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💬 Better options
-
-  [Option 1] Create a situation that lets them show it
-  ————
-  "You mentioned wanting to go to that place — free this weekend?"
-  ————
-  Why: Suggesting a meetup is more effective than asking directly.
-  The dynamic stays in your favor.
-
-  [Option 2] Hint instead of asking
-  ————
-  "You seem like you've been more talkative lately"
-  ————
-  Why: It's a factual observation. You leave them space to explain,
-  giving them the opening to show their hand.
-
-  [Option 3] Wait
-  ————
-  [Hold until they reach out first]
-  ————
-  Why: When they come to you, attraction is working.
-  That's when you advance.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🕐 Timing
-
-  Not now: Relationship is still forming, early reveals lose leverage
-  Best after a meetup: in-person context is stronger than text
-```
-
----
-
-### Example 3: Upload follow-up chat for automatic analysis
-
-```
-/upload-followup
-[paste follow-up chat log]
-```
-
-```
-📊 Effect Analysis
-
-  You sent: "Been a lot going on, but having people around helps"
-  Strategy: Option 2 (subtly warm)
-
-  Their response: "people? which people, be more specific"
-  Conversation continued: Yes, 5 more turns
-
-  Outcome: Very good ✓
-
-  Analysis: They picked up on the vague "people" and
-  pushed to clarify — they noticed. Subtle signal
-  strategy works well in the flirting stage. Recorded.
-```
-
----
-
-## Command Reference
-
-```
-/zhunshi              Create new profile
-/reply [message]      Analyze and generate reply options
-/ask [I want to say...] Strategist evaluates your idea
-/analyze [message]    Analysis only, no replies
-/upload-followup      Upload follow-up chat for effect analysis
-/stage [0-7]          Update current relationship stage
-/stats                View strategy effectiveness stats
-/update-partner       Update partner profile
-/my-style             Update your communication style
-/list-partners        View all profiles
-```
-
----
-
-## Chat Log Import
+To build a single knowledge file for a Custom GPT:
 
 ```bash
-python tools/wechat_parser.py \
-  --file chat_log.txt \
-  --target "their name" \
-  --output partners/emily/materials/analysis.txt
+python tools/build_chatgpt_pack.py
 ```
 
-Supported: WeChatMsg exported `.txt` / manually pasted chat (format: `Name: message`)
+Upload `dist/dianzi-junshi-chatgpt-pack.md`.
 
 ---
 
-## Project Structure
+## Commands
 
-```
-reply-skill/ (电子军师)
-├── SKILL.md                    # Skill entry point
-├── prompts/
-│   ├── intake.md               # Info collection (includes stage selection)
-│   ├── stage_system.md         # 8-stage definitions and strategy rules
-│   ├── oil_control.md          # Clinginess level control
-│   ├── advisor_mode.md         # Strategist mode (evaluates your ideas)
-│   ├── auto_feedback.md        # Automatic effect analysis
-│   ├── partner_builder.md      # Partner profile template
-│   ├── partner_analyzer.md     # Profile analysis rules
-│   ├── message_analyzer.md     # Three-layer message analysis
-│   ├── reply_generator.md      # Reply option generation
-│   ├── style_calibrator.md     # User style calibration
-│   └── correction_handler.md   # Correction and feedback handling
-├── tools/
-│   ├── wechat_parser.py        # Chat log parser
-│   ├── profile_manager.py      # Profile management CLI
-│   └── session_log.py          # Session logging and stats
-├── partners/                   # Profile data (local, not committed)
-└── docs/
+```text
+/junshi               Create a partner profile
+/import-folder [path] Auto-classify chats, images, screenshots, notes
+/reply [message]      Analyze and draft replies
+/analyze [message]    Analyze only
+/ask [idea]           Evaluate something you want to send
+/interest             Judge whether they are interested
+/anti-simp on/off     Toggle direct stop-loss mode
+/moments              Analyze Moments/social screenshots
+/date-plan            Date invitation replies and user-only notes
+/upload-followup      Analyze follow-up chat and update memory
+/stage [0-7]          Update relationship stage
+/memory               View memory
+/stats                Strategy stats
+/update-partner       Update partner profile
+/my-style             Update your style
+/list-partners        List profiles
 ```
 
 ---
 
-## Notes
+## Tools
 
-- **Privacy**: All data stays in the local `partners/` folder — nothing is uploaded to any server
-- **Tool, not script**: The strategist helps you express yourself — the feelings have to be real
-- **No manipulation**: All suggestions aim for genuine emotional connection, no coercive tactics
-- **You're in charge**: These are options, not commands. You know your relationship best
+```bash
+python tools/wechat_parser.py --file chat_log.txt --target "name"
+python tools/import_folder.py --path "C:\Users\me\Desktop\ta-materials"
+python tools/profile_manager.py --action init --slug emily --name Emily --stage 1 --anti-simp
+python tools/session_log.py --action stats --slug emily
+python tools/skill_check.py
+```
+
+All tools use the Python standard library.
+
+---
+
+## Principles
+
+- Keep the useful Chinese internet concepts: “oiliness”, “flirty version”, and “anti-simp mode”.
+- Judge interest mainly from real chat evidence and human dating experience, not academic labels.
+- Do not diagnose people or rely on gender stereotypes.
+- Do not generate manipulative, coercive, deceptive, or privacy-invasive advice.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
-
----
-
-<div align="center">
-
-Pursuing someone isn't a game to be won.<br>
-It's about finding the truest version of yourself<br>
-and letting them see it.
-
-</div>
+MIT. See [LICENSE](LICENSE).

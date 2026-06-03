@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WeChat chat log parser for reply-skill.
+WeChat chat log parser for dianzi-junshi.
 Extracts communication patterns from the partner's side of the conversation.
 """
 
@@ -11,6 +11,15 @@ import re
 import sys
 from collections import Counter
 from datetime import datetime
+
+
+LOW_EFFORT_REPLIES = {
+    '嗯', '嗯嗯', '哦', '哦哦', '噢', '噢噢', '好', '好的', '行', '可以',
+    '哈哈', '哈哈哈', 'hh', 'hhh', '笑死', '[表情]', '[动画表情]',
+}
+
+INVITATION_CUES = ('一起', '见面', '出来', '周末', '有空', '去不去', '吃饭', '喝咖啡', '看电影')
+SELF_DISCLOSURE_CUES = ('我', '今天', '刚刚', '最近', '昨天', '明天', '现在')
 
 
 def parse_wechatmsg_txt(content, target_name):
@@ -54,8 +63,29 @@ def parse_plain_text(content, target_name):
         line = line.strip()
         if not line:
             continue
+
+        line = re.sub(r'^\[?\d{1,2}:\d{2}(?::\d{2})?\]?\s*', '', line)
+
+        speaker_match = re.match(r'^(.{1,24}?)[：:]\s*(.+)$', line)
+        if speaker_match:
+            sender, content_part = speaker_match.groups()
+            sender = sender.strip()
+            content_part = content_part.strip()
+            is_target = (
+                (target_name and target_name.lower() in sender.lower())
+                or sender in ('对方', 'ta', 'TA', '他', '她')
+            )
+            if is_target:
+                messages.append({
+                    'sender': target_name or sender,
+                    'content': content_part,
+                    'hour': None,
+                    'timestamp': None
+                })
+            continue
+
         # Try to detect if line starts with name
-        if target_name and line.startswith(target_name + ':'):
+        if target_name and (line.startswith(target_name + ':') or line.startswith(target_name + '：')):
             content_part = line[len(target_name) + 1:].strip()
             messages.append({
                 'sender': target_name,
@@ -63,8 +93,8 @@ def parse_plain_text(content, target_name):
                 'hour': None,
                 'timestamp': None
             })
-        elif line.startswith('对方:') or line.startswith('ta:') or line.startswith('他:') or line.startswith('她:'):
-            colon_pos = line.index(':')
+        elif line.startswith(('对方:', '对方：', 'ta:', 'ta：', 'TA:', 'TA：', '他:', '他：', '她:', '她：')):
+            colon_pos = max(line.find(':'), line.find('：'))
             messages.append({
                 'sender': target_name or '对方',
                 'content': line[colon_pos + 1:].strip(),
@@ -127,7 +157,7 @@ def analyze_communication_patterns(messages):
     night_owl = late_night / len(hours) > 0.1 if hours else False
 
     # Detect voice messages
-    voice_count = sum(1 for c in contents if '[语音]' in c or '[Voice]' in c or len(c) < 5)
+    voice_count = sum(1 for c in contents if '[语音]' in c or '[Voice]' in c or '[voice]' in c)
 
     # Build message samples (representative)
     samples = []
@@ -139,6 +169,11 @@ def analyze_communication_patterns(messages):
 
     # Response after question detection
     questions = sum(1 for c in contents if '？' in c or '?' in c)
+
+    low_effort_count = sum(1 for c in contents if c.strip() in LOW_EFFORT_REPLIES or len(c.strip()) <= 2)
+    detail_count = sum(1 for c in contents if len(c) >= 20)
+    self_disclosure_count = sum(1 for c in contents if any(cue in c for cue in SELF_DISCLOSURE_CUES) and len(c) >= 8)
+    invitation_count = sum(1 for c in contents if any(cue in c for cue in INVITATION_CUES))
 
     return {
         'total_messages': len(messages),
@@ -156,6 +191,10 @@ def analyze_communication_patterns(messages):
         'night_owl': night_owl,
         'voice_message_rate': round(voice_count / len(contents), 2) if contents else 0,
         'question_rate': round(questions / len(contents), 2) if contents else 0,
+        'low_effort_rate': round(low_effort_count / len(contents), 2) if contents else 0,
+        'detail_rate': round(detail_count / len(contents), 2) if contents else 0,
+        'self_disclosure_rate': round(self_disclosure_count / len(contents), 2) if contents else 0,
+        'invitation_cue_count': invitation_count,
         'samples': samples,
     }
 
@@ -166,7 +205,7 @@ def format_report(analysis, target_name):
         f"=== {target_name} 聊天记录分析报告 ===\n",
         f"消息总数：{analysis['total_messages']} 条",
         f"平均消息长度：{analysis['avg_length']} 字",
-        f"消息风格：{{'short': '短句型', 'medium': '中等型', 'long': '长段落型'}[analysis['message_density']]}",
+        f"消息风格：{ {'short': '短句型', 'medium': '中等型', 'long': '长段落型'}[analysis['message_density']] }",
         "",
         "--- 标点/表达习惯 ---",
         f"发句号比例：{int(analysis['punctuation']['uses_period']*100)}%",
@@ -194,6 +233,10 @@ def format_report(analysis, target_name):
         f"夜猫子特征：{'是（深夜活跃）' if analysis['night_owl'] else '否'}",
         f"语音消息估算比例：{int(analysis['voice_message_rate']*100)}%",
         f"发问/问句比例：{int(analysis['question_rate']*100)}%",
+        f"低质量短回复比例：{int(analysis['low_effort_rate']*100)}%",
+        f"细节型回复比例：{int(analysis['detail_rate']*100)}%",
+        f"主动分享自我比例：{int(analysis['self_disclosure_rate']*100)}%",
+        f"邀约/见面线索次数：{analysis['invitation_cue_count']}",
         "",
         "--- 典型消息样本 ---",
     ]
@@ -204,7 +247,7 @@ def format_report(analysis, target_name):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='WeChat chat log analyzer for reply-skill')
+    parser = argparse.ArgumentParser(description='WeChat chat log analyzer for dianzi-junshi')
     parser.add_argument('--file', '-f', required=True, help='Path to chat log file')
     parser.add_argument('--target', '-t', required=True, help='Partner name/alias in the chat')
     parser.add_argument('--output', '-o', default=None, help='Output file path (default: stdout)')
