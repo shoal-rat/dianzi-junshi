@@ -132,11 +132,11 @@ def analyze_communication_patterns(messages):
     uses_exclamation = sum(1 for c in contents if '！' in c or '!' in c) / len(contents)
     uses_tilde = sum(1 for c in contents if '～' in c or '~' in c) / len(contents)
 
-    # Emoji / expression detection
-    emoji_pattern = re.compile(r'[\U00010000-\U0010ffff]', flags=re.UNICODE)
+    # Expression detection: custom sticker placeholders, WeChat bracket tags, and native symbols.
+    native_expression_pattern = re.compile(r'[\U00010000-\U0010ffff]', flags=re.UNICODE)
     bracket_pattern = re.compile(r'\[.+?\]')
-    has_emoji = sum(1 for c in contents if emoji_pattern.search(c) or bracket_pattern.search(c))
-    emoji_rate = has_emoji / len(contents)
+    has_expression = sum(1 for c in contents if native_expression_pattern.search(c) or bracket_pattern.search(c))
+    expression_rate = has_expression / len(contents)
 
     # Common particles (语气词)
     particle_counter = Counter()
@@ -185,7 +185,7 @@ def analyze_communication_patterns(messages):
             'uses_exclamation': round(uses_exclamation, 2),
             'uses_tilde': round(uses_tilde, 2),
         },
-        'emoji_rate': round(emoji_rate, 2),
+        'expression_rate': round(expression_rate, 2),
         'top_particles': dict(particle_counter.most_common(8)),
         'active_hours': active_hours,
         'night_owl': night_owl,
@@ -212,7 +212,7 @@ def format_report(analysis, target_name):
         f"用省略号比例：{int(analysis['punctuation']['uses_ellipsis']*100)}%",
         f"用感叹号比例：{int(analysis['punctuation']['uses_exclamation']*100)}%",
         f"用波浪号比例：{int(analysis['punctuation']['uses_tilde']*100)}%",
-        f"含 emoji/表情比例：{int(analysis['emoji_rate']*100)}%",
+        f"含表情包/微信表情比例：{int(analysis['expression_rate']*100)}%",
         "",
         "--- 高频语气词 ---",
     ]

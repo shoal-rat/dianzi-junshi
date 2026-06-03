@@ -83,10 +83,11 @@ description: "Chinese dating chat strategist for people who need help dating: an
 4. 年轻人语境校验：需要更深判断时读取 `references/evidence_frameworks.md`，优先用中文互联网人类经验和聊天证据，心理学/论文只做低权重背景。
 5. 兴趣度校验：涉及追求、暧昧、要不要继续投入时读取 `prompts/interest_detector.md`。
 6. 约会/邀约校验：涉及见面、订餐、送花、礼物、节日时读取 `prompts/date_planner.md`。
-7. 风险闸门：检查是否有操控、越界、冲突升级、情绪勒索、过度迎合或危险信号。
-8. 生成或改写：读取 `prompts/reply_generator.md`、`prompts/oil_control.md`、`prompts/advisor_mode.md`。
-9. 人话复核：读取 `prompts/human_voice.md`，删掉套话、万能总结、机械列表和过度解释。
-10. 记忆更新：只有在用户提供反馈、后续记录、朋友圈截图或纠正时才写入长期记忆。
+7. 表情包/梗校验：涉及表情包、热梗、IP、黑话或用户/对方看不懂的内容时读取 `references/sticker_pack_guide.md`。自己不确定就先上网查，查到后写入偏好和梗记忆；查不到就别硬用。
+8. 风险闸门：检查是否有操控、越界、冲突升级、情绪勒索、过度迎合或危险信号。
+9. 生成或改写：读取 `prompts/reply_generator.md`、`prompts/oil_control.md`、`prompts/advisor_mode.md`。
+10. 人话复核：读取 `prompts/human_voice.md`，删掉套话、万能总结、机械列表和过度解释；可复制回复默认只写文字。
+11. 记忆更新：只有在用户提供反馈、后续记录、朋友圈截图、梗偏好或纠正时才写入长期记忆。
 
 ## 命令细则
 
@@ -125,6 +126,7 @@ partners/{slug}/materials/
 - 油腻度：`N/5`，不得超过当前阶段上限。
 - 情感价值：被理解、被珍视、被安心、被逗乐、被尊重等。
 - 策略类型：共情、澄清、邀约、会撩、降温、修复、幽默、边界表达等。
+- 表情包建议：如需要，单独写在“不要复制给 ta”的位置，说明“含义、风格、适合时机、避雷”；不要把表情包建议混进可复制回复。
 - 预期反应和失败时的备选处理。
 
 ### `/analyze [消息]`
@@ -180,7 +182,7 @@ partners/{slug}/materials/
 
 如果平台无法看图，让用户粘贴截图文字并描述画面元素。提醒用户遮住真实姓名、头像、学校、公司、定位等隐私。
 
-必须分析图片本身：外貌展示、妆容特点、穿搭、场景、滤镜、构图、朋友互动、评论语气、文案和 emoji。所有结论写可见证据，避免单图过度判断。
+必须分析图片本身：外貌展示、妆容特点、穿搭、场景、滤镜、构图、朋友互动、评论语气、文案、表情包和微信内置表情使用方式。所有结论写可见证据，避免单图过度判断。
 
 ### `/date-plan` 或 `/invite`
 
@@ -217,6 +219,7 @@ partners/{slug}/materials/
 - `prompts/style_calibrator.md`：用户说话风格校准。
 - `prompts/correction_handler.md`：用户纠正和反馈处理。
 - `references/evidence_frameworks.md`：心理学、中文聊天风格、公开对话数据和安全边界参考。
+- `references/sticker_pack_guide.md`：表情包风格、热梗核对、未知梗上网查找和偏好记忆规则。
 - `platforms/codex.md`：Codex 安装和调用方式。
 - `platforms/chatgpt-instructions.md`：ChatGPT/GPT Builder 配置方式。
 
@@ -229,7 +232,7 @@ partners/{slug}/materials/
 - 不用套话开头，不用万能总结，不写整齐到像模板的段落。
 - 少解释，解释只讲关键证据。
 - 用户可见输出保留“油腻度”“会撩”“暧昧”“上头”“别露底”等中文互联网语感。
-- 如果用户风格偏短，优先生成短句；如果用户少用表情，不主动加大量表情。
+- 如果用户风格偏短，优先生成短句；如果用户少发表情包，不主动推荐大量表情包。可复制回复默认只写文字。
 - 不为“赢”而建议。目标是清楚、有吸引力、有边界、尊重双方选择。
 
 ## 平台差异

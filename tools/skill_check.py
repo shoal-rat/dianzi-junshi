@@ -21,6 +21,7 @@ REQUIRED_FILES = [
     "prompts/moments_analyzer.md",
     "prompts/date_planner.md",
     "references/evidence_frameworks.md",
+    "references/sticker_pack_guide.md",
     "platforms/codex.md",
     "platforms/chatgpt-instructions.md",
 ]
@@ -86,6 +87,7 @@ def check_skill_md():
         "油腻度",
         "会撩",
         "机器腔",
+        "表情包",
     ]
     missing_terms = [term for term in required_terms if term not in text]
     if missing_terms:
@@ -142,12 +144,50 @@ def check_machine_tone():
     return True
 
 
+def contains_raw_visual_symbol(char):
+    codepoint = ord(char)
+    if char in "●○":
+        return False
+    return (0x1F000 <= codepoint <= 0x1FAFF) or (0x2600 <= codepoint <= 0x27BF)
+
+
+def check_no_raw_visual_symbols():
+    targets = [
+        "README.md",
+        "README_EN.md",
+        "SKILL.md",
+        "prompts",
+        "platforms",
+        "references",
+        "tools",
+    ]
+    problems = []
+    for rel_path in targets:
+        path = ROOT / rel_path
+        files = [path] if path.is_file() else [p for p in path.rglob("*") if p.is_file()]
+        for file_path in files:
+            try:
+                text = file_path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            for line_no, line in enumerate(text.splitlines(), 1):
+                if any(contains_raw_visual_symbol(ch) for ch in line):
+                    problems.append(f"{file_path.relative_to(ROOT)}:{line_no}")
+
+    if problems:
+        return fail("Raw visual symbols found; use text labels or sticker-pack type notes: " + "; ".join(problems[:20]))
+
+    print("[OK] Raw visual symbol scan")
+    return True
+
+
 def main():
     checks = [
         check_required_files(),
         check_skill_md(),
         check_openai_yaml(),
         check_machine_tone(),
+        check_no_raw_visual_symbols(),
     ]
     if not all(checks):
         sys.exit(1)

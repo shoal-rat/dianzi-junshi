@@ -24,6 +24,7 @@ FILES = [
     "prompts/date_planner.md",
     "prompts/memory_engine.md",
     "references/evidence_frameworks.md",
+    "references/sticker_pack_guide.md",
     "platforms/chatgpt-instructions.md",
 ]
 

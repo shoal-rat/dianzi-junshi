@@ -30,6 +30,8 @@ The rule is simple:
 > If they do not, cool down.
 > If the signs are clearly bad, leave cleanly.
 
+It does not stuff raw reaction symbols into copyable replies. When tone needs help, it gives a separate sticker-pack note: what the sticker should mean, what style to use, when to send it, and what to avoid.
+
 ## Commands
 
 `/reply`
@@ -43,6 +45,9 @@ Direct stop-loss mode. If the pattern is bad, it says so.
 
 `/moments`
 Looks at Moments or social screenshots with vision: makeup, outfit, filters, places, comments, captions, and interaction style.
+
+`Sticker suggestions`
+Keeps copyable text separate from sticker guidance. It can suggest styles such as absurd meme, Nailong-like abstract, Line Puppy cute, Chiikawa cute, cool/pose, elder-style ironic, or silly text memes. Unknown memes should be checked online before being used.
 
 `/import-folder path`
 Point it at a folder. It sorts chats, screenshots, photos, and notes for you.
@@ -104,6 +109,7 @@ They remember:
 - Moments/social presentation
 - makeup, outfit, taste, catchphrases
 - MBTI / astrology attitude, food restrictions, gift preferences
+- sticker-pack and meme preferences, including what works and what should be avoided
 - what worked and what went cold
 - how you actually talk
 

@@ -95,17 +95,17 @@ def show_memory(slug: str):
         stage_info = f"阶段 {stage}（{stage_name}）"
 
     print(f"\n{'━' * 50}")
-    print(f"📚 {name} 的学习记忆档案")
+    print(f"{name} 的学习记忆档案")
     if stage_info:
         print(f"   {stage_info}")
     print(f"{'━' * 50}\n")
 
     # Extract and print memory sections
     sections = [
-        ("有效的策略", "✅ 有效策略"),
-        ("无效的模式", "❌ 无效模式"),
-        ("真实模式修正", "🔄 真实模式修正"),
-        ("关系进展日志", "📅 关系进展日志"),
+        ("有效的策略", "有效策略"),
+        ("无效的模式", "无效模式"),
+        ("真实模式修正", "真实模式修正"),
+        ("关系进展日志", "关系进展日志"),
     ]
 
     for section_key, section_label in sections:
@@ -118,7 +118,7 @@ def show_memory(slug: str):
     # User preference memory
     user_pref = _extract_section(content, "用户偏好记忆")
     if user_pref:
-        print("👤 用户偏好记忆\n")
+        print("用户偏好记忆\n")
         print(user_pref)
         print()
 
@@ -199,7 +199,7 @@ def export_memory(slug: str):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(export, f, ensure_ascii=False, indent=2)
 
-    print(f"\n✓ 记忆摘要已导出到：{output_path}")
+    print(f"\n记忆摘要已导出到：{output_path}")
     print(f"\n高置信度规则（●●●）：{len(high_confidence)} 条")
     for rule in high_confidence:
         print(f"  · {rule}")
@@ -243,7 +243,7 @@ def stats_summary(slug: str):
     corr_count = len([l for l in corrections_raw.split("\n")
                       if l.startswith("|") and "暂无记录" not in l])
 
-    print(f"\n📊 {name} 记忆统计\n")
+    print(f"\n{name} 记忆统计\n")
     print(f"  有效策略：{sum(eff_counts.values())} 条")
     print(f"    ●●● 强规则：{eff_counts['●●●']} 条")
     print(f"    ●●○ 强参考：{eff_counts['●●○']} 条")
@@ -258,11 +258,11 @@ def stats_summary(slug: str):
     print()
 
     if sum(eff_counts.values()) == 0 and sum(ineff_counts.values()) == 0:
-        print("  💡 记忆层尚为空白。使用 /upload-followup 上传聊天记录，或告知军师效果，开始积累记忆。")
+        print("  提示：记忆层尚为空白。使用 /upload-followup 上传聊天记录，或告知军师效果，开始积累记忆。")
     elif eff_counts["●●●"] > 0:
-        print(f"  ✓ 已有 {eff_counts['●●●']} 条强规则，军师现在对 {name} 的了解较准确。")
+        print(f"  已有 {eff_counts['●●●']} 条强规则，军师现在对 {name} 的了解较准确。")
     else:
-        print(f"  💡 记忆在积累中。再确认几次效果，即可形成强规则（●●●）。")
+        print(f"  提示：记忆在积累中。再确认几次效果，即可形成强规则（●●●）。")
     print()
 
 
