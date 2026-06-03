@@ -1,161 +1,122 @@
-# 电子军师
-
 <div align="center">
 
-**不会恋爱也没事。先把你这个人聊出来，再轻轻撩。**
+# 电子军师
+
+### 贴张微信截图，给你三条能直接发的回复。
+
+不会聊、怕翻车、看不懂 ta 什么意思。把聊天丢给它就行。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Claude Code](https://img.shields.io/badge/platform-Claude_Code-blue)](https://claude.ai/code)
-[![Codex](https://img.shields.io/badge/platform-Codex-0F766E)](platforms/codex.md)
-[![ChatGPT](https://img.shields.io/badge/platform-ChatGPT-10A37F)](platforms/chatgpt-instructions.md)
-[![EN](https://img.shields.io/badge/English-README__EN.md-lightgrey)](README_EN.md)
+[![Claude Code](https://img.shields.io/badge/装在-Claude_Code-blue)](https://claude.ai/code)
+[![Codex](https://img.shields.io/badge/装在-Codex-0F766E)](platforms/codex.md)
+[![ChatGPT](https://img.shields.io/badge/装在-ChatGPT-10A37F)](platforms/chatgpt-instructions.md)
+[![English](https://img.shields.io/badge/English-README__EN-lightgrey)](README_EN.md)
 
 </div>
 
+![贴一张截图，出三条能直接发的回复](assets/demo-reply.svg)
+
 ---
 
-追人最难的地方，通常不是“不会说话”。
+追人最难的地方，常常不是不会说话。
 
-是你不知道 ta 回这句到底算不算有意思；不知道该继续撩，还是该停一下；不知道朋友圈里那点暗示能不能接；也不知道 ta 答应见面以后，餐厅、花、礼物、话术该怎么安排。
+是你拿不准 ta 这句到底有没有戏，是该接着撩还是先停一下，是那句发出去会不会把人吓跑。朋友圈那点暗示该不该接、约成了之后餐厅和花怎么办，又是另一摊事。
 
-电子军师干的就是这件事：帮你读聊天、看反馈、判断有没有戏，然后给你几句能直接发的、人话一点的回复。
+电子军师就管这一摊：读你的聊天，告诉你 ta 什么意思、有没有意思，再给你几句拿来就能发、像人话的回复。
 
-它的底层打法很简单：
+它的路子很轴：
 
-> 先展示你自己，再低油腻地撩。
-> ta 接球，再推进。
-> ta 不接，别硬舔。
-> 明显没戏，体面撤。
+> 先把你这个人聊出来，再低油腻地撩。
+> ta 接球，就往前走；ta 不接，别硬舔；明显没戏，体面撤。
 
-它不会在可复制回复里硬塞尴尬小图标。需要补语气时，会单独给“表情包建议”，告诉你这张图该表达什么、用什么风格、什么时候发、哪里别踩雷。
+## 三步就能用上
 
-## 能干什么
+![三步：装一次、聊两句、发截图](assets/workflow.svg)
 
-`/reply`
-看 ta 的消息，拆一下字面意思、情绪、真实需求，然后给你三种说法：稳妥版、会撩版、展示自己/降温版。
+1. **装一次**。复制一行命令，装进你常用的 Claude Code、Codex 或 ChatGPT。
+2. **聊两句**。跟它说句「帮我追个人」，它问你几个小问题，自己把档案建好。
+3. **发截图**。之后把微信截图或聊天记录丢进去，回复就出来了。
 
-`/interest`
-看 ta 到底有没有意思。主动找你、问你问题、接你的梗、愿意见面，这些加分；长期只回“哈哈”“嗯嗯”、拒约又不给替代时间，这些减分。
+没有一堆命令要背。你正常说话，它知道你要干嘛。
 
-`/anti-simp on`
-反舔狗模式。开了以后，如果这段明显不值得加码，军师会直接劝你收手，不陪你自我感动。
+## 它能帮你什么
 
-`/moments`
-看朋友圈、社交动态、截图和照片。重点看图片里的信息：妆容、穿搭、滤镜、场景、评论区互动、文案语气。不是给人打分，是找切入点。
+**看一眼聊天，给三条能发的回复**
 
-`表情包建议`
-可复制回复和表情包建议分开。比如：抽象发疯、奶龙类、线条小狗、Chiikawa、帅气装酷、长辈图反差、沙雕文字。遇到军师不懂的梗，先上网查，查完再写进偏好记忆。
+拆完 ta 那句话的字面、情绪和真实需求，给你三种说法：稳妥版、会撩版、展示自己版。每条都标了油腻度，也就是这段关系现在能甜到几分；超了它自己会压回来，省得你一脚踩进尴尬里。
 
-`/import-folder 路径`
-你把聊天记录、朋友圈截图、自拍、备注都放进一个文件夹，军师自己分类。你不用先整理。
+**ta 到底有没有意思**
 
-`/date-plan`
-ta 答应见面以后用。它会分成两栏：能复制给 ta 的话，和只给你看的旁白提醒。520、七夕、周末订餐厅、送不送花、西餐怎么点，都放旁白里，避免你手滑发出去。
+![兴趣度评分，加分减分证据，反舔狗模式止损](assets/demo-interest.svg)
 
-## 油腻度
+主动找你、记得你说过的话、接得住你的梗、愿意见面，加分；长期只回「嗯嗯」「哈哈」、约了又拖、只在需要帮忙时冒头，减分。开了反舔狗模式，这段明显不值得加码的时候，它会直接拉住你，不陪你自我感动。
 
-油腻度不是不让你甜，也不是不让你撩。它只是提醒你：现在这段关系，信号给太满会不会把人吓跑。
+**约到了，话和提醒分开放**
+
+![左边是能发给对方的话，右边是只给你看的旁白](assets/demo-dateplan.svg)
+
+左边是照着发就行的话，右边是只给你看的旁白：哪天订位、送不送花、西餐怎么点、聊到什么程度可以提下次。两栏分开，省得你手滑把「记得订餐厅」发出去。
+
+**还顺手帮你**
+
+- **看朋友圈**：截图丢进去，看妆容、穿搭、滤镜、评论区，帮你找切入点。要用能看图的环境，朋友圈一半信息都藏在图里。
+- **换窗口也记得 ta**：每个对象一份本地档案，聊得越多越准。新开一个窗口它自己接上，不用你从头解释一遍。
+- **资料自动分类**：聊天记录、截图、自拍、备注，丢一个文件夹给它，它自己分好，不用你先整理。
+
+## 油腻度是什么
+
+不是不让你甜，也不是不让你撩。它只是提醒你：现在这段关系，信号给太满会不会把人吓跑。
 
 | 阶段 | 大概上限 | 感觉 |
 | --- | --- | --- |
-| 初识/暧昧 | 0-1.5/5 | 有意思，但别露底 |
-| 追求/确认 | 2-2.5/5 | 可以主动，别逼问 |
-| 热恋/稳定 | 3-3.5/5 | 可以甜，但别腻成复读机 |
-| 磨合/危机 | 0.5-1.5/5 | 先降温，别上头 |
+| 初识 / 暧昧 | 0–1.5 / 5 | 有意思，但别露底 |
+| 追求 / 确认 | 2–2.5 / 5 | 可以主动，别逼问 |
+| 热恋 / 稳定 | 3–3.5 / 5 | 可以甜，别腻成复读机 |
+| 磨合 / 危机 | 0.5–1.5 / 5 | 先降温，别上头 |
 
-## 开始用
+## 装一次
 
-```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git
-cd dianzi-junshi
-```
-
-在 Claude Code 里打开项目，输入：
-
-```text
-/junshi
-```
-
-建好档案以后，可以这样用：
-
-```text
-/reply 你最近忙什么呢
-/ask 我想说“你是不是不想理我了”
-/interest
-/moments
-/date-plan
-```
-
-Codex 安装见 [platforms/codex.md](platforms/codex.md)。
-ChatGPT 配置见 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)。
-
-## 文件夹导入
-
-把资料放一起就行：
-
-```text
-/import-folder C:\Users\你\Desktop\ta资料
-```
-
-会被分成：
-
-- 聊天记录
-- 朋友圈/社交动态截图
-- 自拍、穿搭、妆容、头像
-- 备注和对象画像
-- 其他暂时看不出的文件
-
-看图这件事要用能看图片的环境。只读文字不够，朋友圈很多信息都在照片里。
-
-## 本地档案
-
-档案在 `partners/`，默认不提交。
-
-里面会记：
-
-- ta 的聊天习惯和潜台词
-- 兴趣度变化
-- 朋友圈展示面
-- 妆容、穿搭、审美、口头禅
-- MBTI/星座态度、忌口、礼物偏好
-- 表情包/梗偏好，比如抽象、可爱、帅气、长辈图反差，哪些能用哪些别用
-- 哪些话对 ta 有用，哪些会冷场
-- 你真实会怎么说话
-
-## 命令
-
-```text
-/junshi               建档
-/reply [消息]         看消息，给回复
-/analyze [消息]       只分析，不给回复
-/ask [我想说...]      判断这句话能不能发
-/interest             看 ta 有没有意思
-/anti-simp on/off     开关反舔狗模式
-/moments              看朋友圈/截图
-/date-plan            邀约和见面旁白
-/import-folder [路径] 扫描资料文件夹
-/upload-followup      看后续反馈，更新记忆
-/stage [0-7]          改关系阶段
-/memory               看记忆
-/stats                看策略效果
-/my-style             更新你的说话风格
-/list-partners        看所有档案
-```
-
-## 工具
+macOS / Linux 上的 Claude Code、Codex：
 
 ```bash
-python tools/wechat_parser.py --file chat_log.txt --target "她的名字"
-python tools/import_folder.py --path "C:\Users\你\Desktop\ta资料"
-python tools/profile_manager.py --action init --slug xiaomei --name 小美 --stage 1 --anti-simp
-python tools/session_log.py --action stats --slug xiaomei
-python tools/skill_check.py
+curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
 ```
 
-## 底线
+Windows（PowerShell）：
 
-不做 PUA，不教查岗，不教冷暴力，不教骗，不教诱导嫉妒。
-军师只是帮你把话说清楚一点，把节奏拿稳一点。你才是主角。
+```powershell
+irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
+```
+
+不想跑脚本，手动一行也行（装进 Claude Code 的个人技能目录）：
+
+```bash
+git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
+```
+
+ChatGPT 读不到你的本地文件，配置方式另见 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)。
+
+## 之后怎么用
+
+装好以后打开 Claude Code 或 Codex，正常说话就行：
+
+```text
+帮我追个人，先建个档
+（贴一张微信截图）这条我该怎么回
+ta 这么说是什么意思，我还有戏吗
+我想发「你是不是不想理我了」，行不行
+ta 答应周末见面了，帮我安排一下
+```
+
+它会自己判断该分析、该给回复、还是该拉住你。习惯敲命令的话，`/reply`、`/interest`、`/moments`、`/date-plan` 这些它也都认，记不住也无所谓。
+
+## 它的路子
+
+它帮你做的是把你最好的一面亮出来，把话说清楚，节奏拿稳，不是教你套路、查岗、冷暴力那一套，那些既掉价又没用。你才是主角，它只是个参谋。
+
+## 你的数据
+
+每个对象的档案都存在本地 `partners/`，默认不上传，`.gitignore` 已经排除。真实聊天记录建议先把名字、头像、学校、公司、定位打码再用。删掉文件，记忆就跟着没了。
 
 ## 许可证
 

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 408" width="900" height="408" font-family="'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <filter id="ds" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#0B1F33" flood-opacity="0.10"/>
+    </filter>
+    <linearGradient id="db" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="900" height="408" fill="#FFFFFF"/>
+  <rect x="12" y="12" width="876" height="384" rx="22" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#ds)"/>
+
+  <!-- header -->
+  <circle cx="48" cy="50" r="14" fill="url(#db)"/>
+  <path d="M41 50 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="56" font-size="21" font-weight="700" fill="#111827">电子军师</text>
+  <text x="852" y="56" font-size="14" fill="#9AA3AF" text-anchor="end">演示 · ta 答应周末见面</text>
+  <line x1="36" y1="80" x2="864" y2="80" stroke="#EEF0F2" stroke-width="1"/>
+
+  <!-- LEFT: copyable -->
+  <rect x="36" y="100" width="388" height="280" rx="16" fill="#F3FBF6" stroke="#DCEFE4"/>
+  <circle cx="60" cy="130" r="11" fill="#2BB673"/>
+  <path d="M55 130 l3.5 3.5 l6 -7" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="80" y="135" font-size="15.5" font-weight="700" fill="#0F766E">能直接发给 ta</text>
+
+  <rect x="60" y="158" width="318" height="66" rx="13" fill="#DCFBE0"/>
+  <text x="80" y="184" font-size="14.5" fill="#16321A">那周六下午吧，带你去家我常去</text>
+  <text x="80" y="208" font-size="14.5" fill="#16321A">的咖啡馆，环境很舒服</text>
+
+  <rect x="60" y="236" width="190" height="40" rx="13" fill="#DCFBE0"/>
+  <text x="80" y="261" font-size="14.5" fill="#16321A">六点我去接你？</text>
+
+  <text x="60" y="336" font-size="13" fill="#9AA3AF">都是照着发就行的话，</text>
+  <text x="60" y="357" font-size="13" fill="#9AA3AF">没夹任何提醒进去</text>
+
+  <!-- divider -->
+  <line x1="450" y1="108" x2="450" y2="372" stroke="#E6E8EB" stroke-width="1.5" stroke-dasharray="3 6"/>
+
+  <!-- RIGHT: private side-notes -->
+  <rect x="476" y="100" width="388" height="280" rx="16" fill="#FBF9F2" stroke="#ECE4D2"/>
+  <rect x="496" y="120" width="17" height="13" rx="3" fill="none" stroke="#A07D1E" stroke-width="2"/>
+  <path d="M499 120 v-4 a5.5 5.5 0 0 1 11 0 v4" fill="none" stroke="#A07D1E" stroke-width="2"/>
+  <text x="522" y="135" font-size="15.5" font-weight="700" fill="#8A6D1A">只给你看 · 别复制</text>
+
+  <g font-size="13.8" fill="#5A4A2A">
+    <rect x="498" y="160" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 163)"/>
+    <text x="514" y="167">周六热门时段，咖啡馆先订位</text>
+    <rect x="498" y="190" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 193)"/>
+    <text x="514" y="197">暧昧期先别送花，太重；带杯奶茶刚好</text>
+    <rect x="498" y="220" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 223)"/>
+    <text x="514" y="227">穿得干净利落点，她朋友圈走简约风</text>
+    <rect x="498" y="250" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 253)"/>
+    <text x="514" y="257">聊得好可以自然提下次，别当场逼确认</text>
+    <rect x="498" y="280" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 283)"/>
+    <text x="514" y="287">结束后别马上猛发消息</text>
+  </g>
+  <text x="498" y="357" font-size="13" fill="#B0A079">这些发出去就尴尬了，所以单独放</text>
+</svg>

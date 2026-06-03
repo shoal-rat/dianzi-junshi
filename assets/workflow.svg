@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 232" width="900" height="232" font-family="'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <filter id="ws" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="11" flood-color="#0B1F33" flood-opacity="0.09"/>
+    </filter>
+    <linearGradient id="wb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="900" height="232" fill="#FFFFFF"/>
+
+  <!-- step 1 -->
+  <rect x="24" y="40" width="250" height="176" rx="18" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#ws)"/>
+  <circle cx="149" cy="80" r="21" fill="url(#wb)"/>
+  <text x="149" y="87" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+  <text x="149" y="130" font-size="18" font-weight="700" fill="#111827" text-anchor="middle">装一次</text>
+  <text x="149" y="158" font-size="13.5" fill="#6B7280" text-anchor="middle">复制一行命令到终端</text>
+  <text x="149" y="178" font-size="13.5" fill="#6B7280" text-anchor="middle">装进你常用的 AI</text>
+
+  <!-- arrow 1 -->
+  <path d="M295 116 l11 12 l-11 12" fill="none" stroke="#0F766E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+
+  <!-- step 2 -->
+  <rect x="325" y="40" width="250" height="176" rx="18" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#ws)"/>
+  <circle cx="450" cy="80" r="21" fill="url(#wb)"/>
+  <text x="450" y="87" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+  <text x="450" y="130" font-size="18" font-weight="700" fill="#111827" text-anchor="middle">聊两句</text>
+  <text x="450" y="158" font-size="13.5" fill="#6B7280" text-anchor="middle">回答几个小问题</text>
+  <text x="450" y="178" font-size="13.5" fill="#6B7280" text-anchor="middle">建档它自己来</text>
+
+  <!-- arrow 2 -->
+  <path d="M596 116 l11 12 l-11 12" fill="none" stroke="#0F766E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+
+  <!-- step 3 -->
+  <rect x="626" y="40" width="250" height="176" rx="18" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#ws)"/>
+  <circle cx="751" cy="80" r="21" fill="url(#wb)"/>
+  <text x="751" y="87" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+  <text x="751" y="130" font-size="18" font-weight="700" fill="#111827" text-anchor="middle">发截图</text>
+  <text x="751" y="158" font-size="13.5" fill="#6B7280" text-anchor="middle">丢张微信截图</text>
+  <text x="751" y="178" font-size="13.5" fill="#6B7280" text-anchor="middle">三条回复直接出</text>
+</svg>

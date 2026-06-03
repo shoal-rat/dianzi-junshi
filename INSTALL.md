@@ -1,100 +1,67 @@
-# 安装指南
+# 安装
 
-## 前置要求
+## 一行命令
 
-- Claude Code、Codex 或 ChatGPT
-- Python 3.8+（可选，用于聊天记录解析、档案管理和 ChatGPT 知识包生成）
-
-本项目工具只使用 Python 标准库，`requirements.txt` 保留为空依赖说明。
-
-## 克隆项目
+macOS / Linux：
 
 ```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git
-cd dianzi-junshi
+curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
 ```
 
-## Claude Code
-
-在 Claude Code 中打开项目目录，运行：
-
-```text
-/junshi
-```
-
-按引导建立对象档案。首次建档时可以选择是否开启反舔狗模式。
-
-如果资料很多，可以直接给文件夹路径：
-
-```text
-/import-folder C:\Users\你\Desktop\ta资料
-```
-
-## Codex
-
-Codex 会扫描 `.agents/skills` 和用户级 skills 目录。推荐：
+Windows（PowerShell）：
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
+irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
 ```
 
-重启 Codex 后调用：
+脚本会把技能装进你已经在用的 Claude Code（`~/.claude/skills/`）或 Codex（`~/.agents/skills/`）；两个都装了就都装。
+
+## 然后交给它
+
+打开 Claude Code 或 Codex，说一句：
 
 ```text
-Use $dianzi-junshi to analyze this message and draft three replies.
+帮我追个人
 ```
 
-更多说明见 [platforms/codex.md](platforms/codex.md)。
+它会问你几个小问题（对象代号、现在什么阶段、ta 大概什么性格、你平时怎么说话、要不要开反舔狗模式），然后自己把档案建好。每个问题都能跳过。
+
+手头有资料就直接丢路径，不用自己分类：
+
+```text
+ta 的资料都在 C:\Users\你\Desktop\ta资料
+```
+
+之后把微信截图、聊天记录发给它，或者直接粘进来，它给你回复。
+
+## 手动装
+
+不想跑脚本，clone 到技能目录就行：
+
+```bash
+git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
+```
+
+Codex 把目标换成 `~/.agents/skills/dianzi-junshi`。装完重启一下客户端就能用。
 
 ## ChatGPT
 
-使用方式见 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)。
+ChatGPT 读不到你的本地文件，把它当「当前对话版」或自定义 GPT 用，配置见 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)。
 
-如果创建自定义 GPT，建议先生成单文件知识包：
+想做成自定义 GPT，先打包成单文件知识包再上传：
 
 ```bash
 python tools/build_chatgpt_pack.py
 ```
 
-然后上传 `dist/dianzi-junshi-chatgpt-pack.md` 到 GPT knowledge。
+生成的 `dist/dianzi-junshi-chatgpt-pack.md` 传到 GPT 的 knowledge 即可。
 
-ChatGPT 默认不能直接读取你的本地文件夹路径；请上传图片、文本或压缩包。Claude Code/Codex 更适合直接使用 `/import-folder [路径]`。
+## 前置
 
-## 本地数据
+- Claude Code、Codex 或 ChatGPT 任选其一。
+- 分析朋友圈和自拍要用能看图的模型，光读文字会漏掉一半信息。
+- Python 3.8+ 可选，给文件夹分类和知识包打包用；工具只用标准库，不用额外装依赖。
 
-对象档案默认存储在项目根目录下的 `partners/`。
+## 你的数据
 
-该目录已被 `.gitignore` 排除，不会被默认提交。真实聊天记录建议先匿名化。
-
-## 工具命令
-
-### 聊天记录解析
-
-```bash
-python tools/wechat_parser.py --help
-```
-
-### 文件夹自动分类
-
-```bash
-python tools/import_folder.py --help
-```
-
-### 档案管理
-
-```bash
-python tools/profile_manager.py --help
-```
-
-### 对话记录和统计
-
-```bash
-python tools/session_log.py --help
-```
-
-### 项目自检
-
-```bash
-python tools/skill_check.py
-```
+档案存在技能目录下的 `partners/`，默认不提交（`.gitignore` 已排除）。真实聊天记录建议先把名字、头像、学校、公司、定位打码再用。

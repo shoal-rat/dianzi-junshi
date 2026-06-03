@@ -1,133 +1,122 @@
-# Dianzi Junshi
-
 <div align="center">
 
-**A Chinese dating-chat strategist: show yourself first, flirt lightly, stop chasing when the signs are bad.**
+# Dianzi Junshi
+
+### Paste a chat screenshot, get three replies you can send right now.
+
+For people who freeze up, who worry about saying the wrong thing, who can't read what the other person actually means.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Claude Code](https://img.shields.io/badge/platform-Claude_Code-blue)](https://claude.ai/code)
-[![Codex](https://img.shields.io/badge/platform-Codex-0F766E)](platforms/codex.md)
-[![ChatGPT](https://img.shields.io/badge/platform-ChatGPT-10A37F)](platforms/chatgpt-instructions.md)
-[![中文](https://img.shields.io/badge/中文-README.md-red)](README.md)
+[![Claude Code](https://img.shields.io/badge/runs_in-Claude_Code-blue)](https://claude.ai/code)
+[![Codex](https://img.shields.io/badge/runs_in-Codex-0F766E)](platforms/codex.md)
+[![ChatGPT](https://img.shields.io/badge/runs_in-ChatGPT-10A37F)](platforms/chatgpt-instructions.md)
+[![中文](https://img.shields.io/badge/中文-README-red)](README.md)
 
 </div>
 
+![Paste a screenshot, get three replies you can send](assets/demo-reply.svg)
+
 ---
 
-Dating is messy in the small places.
+The hard part of chasing someone usually isn't the words.
 
-Did they reply because they care, or because they are polite? Should you flirt back, ask them out, or stop trying so hard? What does their Moments feed say about their taste? If they said yes to meeting, do you need flowers, a booking, a gift, a better line?
+It's not knowing whether that reply means anything, whether to flirt back or pull away, whether the line you want to send will scare them off. Their Moments feed, the restaurant, the flowers once they say yes. Each one is its own puzzle.
 
-Dianzi Junshi helps with that.
+Dianzi Junshi handles that. It reads your Chinese chats, tells you what they mean and whether they're into you, then hands you a few short replies that sound like a person instead of a script.
 
-It reads Chinese chats, checks whether the other person is actually investing, and gives short replies that can be sent without turning the conversation into a speech.
+The approach is stubborn and simple:
 
-The rule is simple:
+> Show who you are first, then flirt lightly.
+> They catch it, move forward. They don't, stop pushing. Clearly no, leave cleanly.
 
-> Show yourself first.
-> Flirt lightly.
-> If they catch it, move forward.
-> If they do not, cool down.
-> If the signs are clearly bad, leave cleanly.
+## Three steps
 
-It does not stuff raw reaction symbols into copyable replies. When tone needs help, it gives a separate sticker-pack note: what the sticker should mean, what style to use, when to send it, and what to avoid.
+![Install once, answer a few questions, send a screenshot](assets/workflow.svg)
 
-## Commands
+1. **Install once** — one command, into the Claude Code, Codex, or ChatGPT you already use.
+2. **Talk** — say "help me with someone I like," answer a few small questions, and it builds the profile itself.
+3. **Send a screenshot** — drop in a WeChat screenshot or a chat log, get replies back.
 
-`/reply`
-Reads a message and gives three versions: safe, flirty, and self-display / sincere / cool-down.
+No command list to memorize. You talk normally; it knows what you want.
 
-`/interest`
-Scores whether they are interested. Questions, details, remembering things, accepting dates, and catching jokes count. Empty politeness and repeated rejection without an alternative do not.
+## What it does
 
-`/anti-simp on`
-Direct stop-loss mode. If the pattern is bad, it says so.
+**Reads the chat, gives you three replies**
 
-`/moments`
-Looks at Moments or social screenshots with vision: makeup, outfit, filters, places, comments, captions, and interaction style.
+It breaks down what they literally said, the feeling under it, and what they actually want, then gives three versions: safe, flirty, show-yourself. Each one carries an oiliness score (how sweet this stage can take), and anything over the line gets pulled back down for you.
 
-`Sticker suggestions`
-Keeps copyable text separate from sticker guidance. It can suggest styles such as absurd meme, Nailong-like abstract, Line Puppy cute, Chiikawa cute, cool/pose, elder-style ironic, or silly text memes. Unknown memes should be checked online before being used.
+**Whether they're actually into you**
 
-`/import-folder path`
-Point it at a folder. It sorts chats, screenshots, photos, and notes for you.
+![Interest score with evidence, plus anti-simp stop-loss](assets/demo-interest.svg)
 
-`/date-plan`
-For invitations and accepted dates. It separates text you can copy from side notes only you should see: booking, flowers, gifts, timing, etiquette, and follow-up.
+Starting conversations, remembering what you said, catching your jokes, agreeing to meet — points up. Endless "haha," dodged plans, showing up only when they need a favor — points down. Turn on anti-simp mode and when a thread clearly isn't worth more effort, it tells you to stop rather than cheer you on.
+
+**Once you have a date, replies and reminders stay apart**
+
+![Left column to send, right column for your eyes only](assets/demo-dateplan.svg)
+
+The left column is text you can send as-is. The right is for your eyes only: when to book, whether to bring flowers, how to order, when it's fine to float a next time. Kept apart so you never paste "remember to book the table" by accident.
+
+**And along the way**
+
+- **Reads Moments** — drop in screenshots; it looks at makeup, outfit, filters, and comment threads to find openers. Use a setup that can see images; half of a Moments feed lives in the pictures.
+- **Remembers across windows** — one local profile per person, sharper the more you use it. A new window picks up where you left off, no re-explaining.
+- **Sorts a folder for you** — chat logs, screenshots, selfies, your own notes; point it at a folder and it sorts them, no prep on your end.
 
 ## Oiliness
 
-“油腻度” means how much intimacy pressure a line carries.
+Not about banning sweetness or flirting. It's a reminder: at this stage, would too strong a signal scare them off?
 
 | Stage | Rough cap | Feel |
 | --- | --- | --- |
-| Just met / flirting | 0-1.5/5 | signal, but do not reveal everything |
-| Pursuing / confirming | 2-2.5/5 | be active, do not force an answer |
-| Early / stable relationship | 3-3.5/5 | sweet is fine, repetitive sugar is not |
-| Friction / crisis | 0.5-1.5/5 | cool down first |
+| Just met / flirting | 0–1.5 / 5 | interesting, don't show your hand |
+| Pursuing / confirming | 2–2.5 / 5 | be active, don't push for an answer |
+| Early / stable | 3–3.5 / 5 | sweet is fine, don't loop |
+| Friction / crisis | 0.5–1.5 / 5 | cool down first |
 
-## Start
+## Install once
 
-```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git
-cd dianzi-junshi
-```
-
-Open the project in Claude Code and run:
-
-```text
-/junshi
-```
-
-Codex setup: [platforms/codex.md](platforms/codex.md)
-ChatGPT setup: [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)
-
-## Folder import
-
-```text
-/import-folder C:\Users\me\Desktop\ta-materials
-```
-
-It sorts:
-
-- chat logs
-- Moments / social screenshots
-- selfie, outfit, makeup, avatar images
-- notes
-- unknown files
-
-Image-heavy material needs an environment that can look at images. Text alone misses too much.
-
-## Local profiles
-
-Profiles live in `partners/` and are not committed by default.
-
-They remember:
-
-- chat habits and subtext
-- interest trend
-- Moments/social presentation
-- makeup, outfit, taste, catchphrases
-- MBTI / astrology attitude, food restrictions, gift preferences
-- sticker-pack and meme preferences, including what works and what should be avoided
-- what worked and what went cold
-- how you actually talk
-
-## Tools
+Claude Code / Codex on macOS or Linux:
 
 ```bash
-python tools/wechat_parser.py --file chat_log.txt --target "name"
-python tools/import_folder.py --path "C:\Users\me\Desktop\ta-materials"
-python tools/profile_manager.py --action init --slug emily --name Emily --stage 1 --anti-simp
-python tools/session_log.py --action stats --slug emily
-python tools/skill_check.py
+curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
 ```
 
-## Boundaries
+Windows (PowerShell):
 
-No PUA, stalking, coercion, cold-violence scripts, lying, jealousy bait, or privacy probing.
+```powershell
+irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
+```
 
-The strategist helps you say things cleanly. It does not replace your judgment.
+Or one line by hand, into the Claude Code personal skills folder:
+
+```bash
+git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
+```
+
+ChatGPT can't read your local files — setup is in [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md).
+
+## Then just talk
+
+Open Claude Code or Codex and say it plainly:
+
+```text
+help me with someone, set up a profile
+(paste a screenshot) how should I reply to this
+what does this mean, do I still have a shot
+I want to send "are you ignoring me" — should I
+they said yes to the weekend, help me plan it
+```
+
+It works out whether to analyze, draft, or tell you to back off. If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all work too. You just don't need them.
+
+## How it plays
+
+It helps you show your best self, say things clearly, and keep your pacing. It won't run lines, check up on people, or go cold on them; that stuff is cheap and it doesn't work. You're the lead; it's only the advisor.
+
+## Your data
+
+Every profile lives locally in `partners/`, uncommitted by default (`.gitignore` already excludes it). For real chat logs, blur names, avatars, schools, employers, and locations first. Delete the file and the memory goes with it.
 
 ## License
 

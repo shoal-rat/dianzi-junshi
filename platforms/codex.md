@@ -8,14 +8,33 @@ Codex 支持 Agent Skills。这个仓库已经按 Codex 可识别的结构提供
 
 ## 安装到用户级 Codex
 
-把仓库复制或克隆到用户技能目录：
+一行命令（macOS / Linux）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
+```
+
+Windows（PowerShell）：
+
+```powershell
+irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
+```
+
+或者手动 clone 到用户技能目录：
 
 ```powershell
 New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
 git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
 ```
 
-重启 Codex 后，可显式调用：
+重启 Codex 后，最省事的用法是直接贴截图、说人话：
+
+```text
+帮我追个人，先建个档
+（贴一张微信截图）这条我该怎么回
+```
+
+想显式点名也行：
 
 ```text
 Use $dianzi-junshi to analyze this message and draft three replies: "你最近忙什么呢"

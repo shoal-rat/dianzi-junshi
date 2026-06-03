@@ -1,0 +1,2 @@
+# Shell scripts must stay LF so `curl ... | bash` works on macOS/Linux
+*.sh text eol=lf
