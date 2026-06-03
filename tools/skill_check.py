@@ -17,11 +17,24 @@ REQUIRED_FILES = [
     "prompts/message_analyzer.md",
     "prompts/interest_detector.md",
     "prompts/reply_generator.md",
+    "prompts/human_voice.md",
     "prompts/moments_analyzer.md",
     "prompts/date_planner.md",
     "references/evidence_frameworks.md",
     "platforms/codex.md",
     "platforms/chatgpt-instructions.md",
+]
+
+MACHINE_TONE_BANNED = [
+    "AI 小作文",
+    "不像 AI",
+    "作为一个",
+    "总的来说",
+    "综上所述",
+    "需要注意的是",
+    "值得注意的是",
+    "在这个场景下，我们可以看出",
+    "希望这些建议",
 ]
 
 
@@ -72,6 +85,7 @@ def check_skill_md():
         "/date-plan",
         "油腻度",
         "会撩",
+        "机器腔",
     ]
     missing_terms = [term for term in required_terms if term not in text]
     if missing_terms:
@@ -105,11 +119,35 @@ def check_openai_yaml():
     return True
 
 
+def check_machine_tone():
+    targets = [
+        "README.md",
+        "README_EN.md",
+        "SKILL.md",
+        "prompts/reply_generator.md",
+        "prompts/style_calibrator.md",
+        "platforms/chatgpt-instructions.md",
+    ]
+    problems = []
+    for rel_path in targets:
+        text = (ROOT / rel_path).read_text(encoding="utf-8")
+        for phrase in MACHINE_TONE_BANNED:
+            if phrase in text:
+                problems.append(f"{rel_path}: {phrase}")
+
+    if problems:
+        return fail("Machine-tone phrases found: " + "; ".join(problems))
+
+    print("[OK] Machine-tone scan")
+    return True
+
+
 def main():
     checks = [
         check_required_files(),
         check_skill_md(),
         check_openai_yaml(),
+        check_machine_tone(),
     ]
     if not all(checks):
         sys.exit(1)

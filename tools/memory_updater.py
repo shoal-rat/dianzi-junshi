@@ -3,7 +3,7 @@
 Memory updater for 电子军师.
 
 Reads and manages the learning memory layer in partner profile files.
-The memory layer is what allows the AI to pick up where it left off
+The memory layer is what lets the strategist pick up where it left off
 in any new Claude Code window.
 
 Usage:

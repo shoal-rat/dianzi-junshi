@@ -17,6 +17,7 @@ FILES = [
     "prompts/message_analyzer.md",
     "prompts/interest_detector.md",
     "prompts/reply_generator.md",
+    "prompts/human_voice.md",
     "prompts/oil_control.md",
     "prompts/advisor_mode.md",
     "prompts/moments_analyzer.md",

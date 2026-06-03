@@ -133,7 +133,7 @@ def write_markdown(manifest, output_json):
         '',
         '1. 先处理 `chat_text`，建立聊天节奏、兴趣度和口头禅基线。',
         '2. 再用多模态模型处理 `moments_image` / `appearance_image`，提取朋友圈展示面、外貌妆容和审美偏好。',
-        '3. 最后读取 `notes` / `document` 补充用户描述。',
+        '3. 再读取 `notes` / `document` 补充用户描述。',
         '',
         '## 文件列表',
         '',

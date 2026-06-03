@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**A Chinese dating-chat strategist for people who need help showing themselves, flirting lightly, and knowing when to stop.**
+**A Chinese dating-chat strategist: show yourself first, flirt lightly, stop chasing when the signs are bad.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/platform-Claude_Code-blue)](https://claude.ai/code)
@@ -14,150 +14,59 @@
 
 ---
 
-**Dianzi Junshi** (电子军师, “Electronic Strategist”) is a Claude Code / Codex / ChatGPT skill for Chinese dating and relationship chats.
+Dating is messy in the small places.
 
-It helps users:
+Did they reply because they care, or because they are polite? Should you flirt back, ask them out, or stop trying so hard? What does their Moments feed say about their taste? If they said yes to meeting, do you need flowers, a booking, a gift, a better line?
 
-- understand what a message may really mean,
-- draft natural replies that sound like the user,
-- keep “oiliness” low while still being playful,
-- judge whether the other person is actually interested,
-- analyze Moments/social screenshots,
-- auto-import a folder of chats, screenshots, photos, and notes,
-- plan dates with user-only reminders separated from copyable replies,
-- and stop over-investing when the signals are clearly bad.
+Dianzi Junshi helps with that.
 
-The core strategy:
+It reads Chinese chats, checks whether the other person is actually investing, and gives short replies that can be sent without turning the conversation into a speech.
 
-> Show yourself first. Flirt lightly. Watch whether they catch the signal. If they do not, cool down. If they are clearly not interested, leave with dignity.
+The rule is simple:
 
-This is not a PUA script. It refuses coercion, deception, jealousy-baiting, stalking, privacy probing, threats, and emotional manipulation.
+> Show yourself first.
+> Flirt lightly.
+> If they catch it, move forward.
+> If they do not, cool down.
+> If the signs are clearly bad, leave cleanly.
 
----
+## Commands
 
-## Features
+`/reply`
+Reads a message and gives three versions: safe, flirty, and self-display / sincere / cool-down.
 
-### Three-layer message reading
+`/interest`
+Scores whether they are interested. Questions, details, remembering things, accepting dates, and catching jokes count. Empty politeness and repeated rejection without an alternative do not.
 
-```text
-Surface: what they literally said
-Emotion: what they may be feeling
-Need: what they may want from you
-```
+`/anti-simp on`
+Direct stop-loss mode. If the pattern is bad, it says so.
 
-The skill separates evidence from inference so it does not over-read a single message.
+`/moments`
+Looks at Moments or social screenshots with vision: makeup, outfit, filters, places, comments, captions, and interaction style.
 
-### Oiliness control
+`/import-folder path`
+Point it at a folder. It sorts chats, screenshots, photos, and notes for you.
 
-“油腻度” is a Chinese internet term for overdoing intimacy, neediness, or clingy pressure.
+`/date-plan`
+For invitations and accepted dates. It separates text you can copy from side notes only you should see: booking, flowers, gifts, timing, etiquette, and follow-up.
 
-| Stage | Cap | Guidance |
+## Oiliness
+
+“油腻度” means how much intimacy pressure a line carries.
+
+| Stage | Rough cap | Feel |
 | --- | --- | --- |
-| Just met / flirting | 0-1.5/5 | show yourself, hint lightly, do not reveal too much |
-| Pursuing / confirming | 2-2.5/5 | be active, but do not force an answer |
-| Early / stable relationship | 3-3.5/5 | sweet and playful is fine, but do not repeat the same sugar |
-| Friction / crisis | 0.5-1.5/5 | cool down, keep boundaries and dignity |
+| Just met / flirting | 0-1.5/5 | signal, but do not reveal everything |
+| Pursuing / confirming | 2-2.5/5 | be active, do not force an answer |
+| Early / stable relationship | 3-3.5/5 | sweet is fine, repetitive sugar is not |
+| Friction / crisis | 0.5-1.5/5 | cool down first |
 
-### Default reply options
-
-`/reply` usually returns:
-
-- **Safe version**: low-risk, not awkward.
-- **Flirty version**: playful, but under the oiliness cap.
-- **Self-display / sincere / de-escalation version**: chosen by context.
-
-### Interest detection
-
-`/interest` scores interest from `0-10` using chat evidence:
-
-- Initiating contact, asking questions, remembering details, catching jokes, accepting dates or offering alternatives: up.
-- Polite one-word replies, no follow-up, repeated date rejection without alternatives, only coming for favors: down.
-
-It looks for patterns, not one slow reply.
-
-### Anti-simp mode
-
-Turn it on during onboarding or with:
-
-```text
-/anti-simp on
-```
-
-When signals are clearly bad, the skill gets direct:
-
-```text
-This is not worth more investment right now.
-Stop chasing, pull attention back, and leave the interaction gracefully.
-```
-
-### Auto folder import
-
-Users do not need to classify materials manually.
-
-```text
-/import-folder C:\Users\me\Desktop\ta-materials
-```
-
-The skill scans and classifies:
-
-- chat logs,
-- Moments/social screenshots,
-- selfie/outfit/makeup/avatar images,
-- notes,
-- unknown files.
-
-Image materials should be analyzed with a multimodal model, not OCR alone.
-
-### Moments / social screenshot analysis
-
-`/moments` analyzes screenshots or pasted social posts with multimodal vision:
-
-- what the person is trying to show,
-- appearance presentation, makeup, outfit, filters, visual style,
-- comment/like/reply interaction style,
-- likely conversation style,
-- good topics,
-- topics to avoid,
-- how the user can show themselves without looking needy.
-- micro-information such as MBTI/astrology attitude, catchphrases, gift preferences, food restrictions, and mood-specific wording.
-
-Please anonymize real names, avatars, school/company names, locations, phone numbers, and other identifying details.
-
-### Date planning side notes
-
-When an invitation is sent or accepted, `/date-plan` separates:
-
-- **Copyable replies**: only text safe to send.
-- **User-only side notes**: booking, holidays, flowers/gifts, outfit, restaurant etiquette, pace, follow-up.
-
-For example, 520/Qixi/weekend dinner reminders, flower choices, and Western restaurant ordering etiquette go in the side notes, not in the message to copy.
-
-### Long-term local memory
-
-Profiles live in local `partners/`:
-
-- communication style,
-- subtext dictionary,
-- interest trend,
-- Moments/social profile,
-- appearance/makeup/outfit presentation,
-- MBTI/astrology attitude, food restrictions, gift preferences, catchphrases,
-- date preferences,
-- effective and ineffective strategies,
-- the user’s actual writing style.
-
-`partners/` is ignored by git.
-
----
-
-## Quick Start
+## Start
 
 ```bash
 git clone https://github.com/shoal-rat/dianzi-junshi.git
 cd dianzi-junshi
 ```
-
-### Claude Code
 
 Open the project in Claude Code and run:
 
@@ -165,68 +74,38 @@ Open the project in Claude Code and run:
 /junshi
 ```
 
-Then use:
+Codex setup: [platforms/codex.md](platforms/codex.md)
+ChatGPT setup: [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)
+
+## Folder import
 
 ```text
-/reply What have you been up to lately?
-/ask I want to say "are you ignoring me?"
-/interest
-/moments
-/date-plan
+/import-folder C:\Users\me\Desktop\ta-materials
 ```
 
-### Codex
+It sorts:
 
-See [platforms/codex.md](platforms/codex.md).
+- chat logs
+- Moments / social screenshots
+- selfie, outfit, makeup, avatar images
+- notes
+- unknown files
 
-Recommended install path:
+Image-heavy material needs an environment that can look at images. Text alone misses too much.
 
-```text
-$HOME/.agents/skills/dianzi-junshi
-```
+## Local profiles
 
-Prompt example:
+Profiles live in `partners/` and are not committed by default.
 
-```text
-Use $dianzi-junshi to analyze this chat and give me a low-oiliness flirty reply.
-```
+They remember:
 
-### ChatGPT
-
-See [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md).
-
-To build a single knowledge file for a Custom GPT:
-
-```bash
-python tools/build_chatgpt_pack.py
-```
-
-Upload `dist/dianzi-junshi-chatgpt-pack.md`.
-
----
-
-## Commands
-
-```text
-/junshi               Create a partner profile
-/import-folder [path] Auto-classify chats, images, screenshots, notes
-/reply [message]      Analyze and draft replies
-/analyze [message]    Analyze only
-/ask [idea]           Evaluate something you want to send
-/interest             Judge whether they are interested
-/anti-simp on/off     Toggle direct stop-loss mode
-/moments              Analyze Moments/social screenshots
-/date-plan            Date invitation replies and user-only notes
-/upload-followup      Analyze follow-up chat and update memory
-/stage [0-7]          Update relationship stage
-/memory               View memory
-/stats                Strategy stats
-/update-partner       Update partner profile
-/my-style             Update your style
-/list-partners        List profiles
-```
-
----
+- chat habits and subtext
+- interest trend
+- Moments/social presentation
+- makeup, outfit, taste, catchphrases
+- MBTI / astrology attitude, food restrictions, gift preferences
+- what worked and what went cold
+- how you actually talk
 
 ## Tools
 
@@ -238,18 +117,11 @@ python tools/session_log.py --action stats --slug emily
 python tools/skill_check.py
 ```
 
-All tools use the Python standard library.
+## Boundaries
 
----
+No PUA, stalking, coercion, cold-violence scripts, lying, jealousy bait, or privacy probing.
 
-## Principles
-
-- Keep the useful Chinese internet concepts: “oiliness”, “flirty version”, and “anti-simp mode”.
-- Judge interest mainly from real chat evidence and human dating experience, not academic labels.
-- Do not diagnose people or rely on gender stereotypes.
-- Do not generate manipulative, coercive, deceptive, or privacy-invasive advice.
-
----
+The strategist helps you say things cleanly. It does not replace your judgment.
 
 ## License
 

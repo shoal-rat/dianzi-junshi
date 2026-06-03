@@ -200,7 +200,7 @@ def analyze_communication_patterns(messages):
 
 
 def format_report(analysis, target_name):
-    """Format analysis into a readable report for the AI."""
+    """Format analysis into a readable report for the strategist."""
     lines = [
         f"=== {target_name} 聊天记录分析报告 ===\n",
         f"消息总数：{analysis['total_messages']} 条",
