@@ -15,7 +15,7 @@
   <circle cx="48" cy="50" r="14" fill="url(#db)"/>
   <path d="M41 50 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="72" y="56" font-size="21" font-weight="700" fill="#111827">电子军师</text>
-  <text x="852" y="56" font-size="14" fill="#9AA3AF" text-anchor="end">演示 · ta 答应周末见面</text>
+  <text x="852" y="56" font-size="14" fill="#9AA3AF" text-anchor="end">演示 · 今天周三，约周六</text>
   <line x1="36" y1="80" x2="864" y2="80" stroke="#EEF0F2" stroke-width="1"/>
 
   <!-- LEFT: copyable -->
@@ -45,7 +45,7 @@
 
   <g font-size="13.8" fill="#5A4A2A">
     <rect x="498" y="160" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 163)"/>
-    <text x="514" y="167">周六热门时段，咖啡馆先订位</text>
+    <text x="514" y="167">今天周三，周六的位现在订正好</text>
     <rect x="498" y="190" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 193)"/>
     <text x="514" y="197">暧昧期先别送花，太重；带杯奶茶刚好</text>
     <rect x="498" y="220" width="6" height="6" rx="1.5" fill="#C99B2E" transform="rotate(45 501 223)"/>

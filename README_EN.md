@@ -33,9 +33,9 @@ The approach is stubborn and simple:
 
 ![Install once, answer a few questions, send a screenshot](assets/workflow.svg)
 
-1. **Install once** — one command, into the Claude Code, Codex, or ChatGPT you already use.
-2. **Talk** — say "help me with someone I like," answer a few small questions, and it builds the profile itself.
-3. **Send a screenshot** — drop in a WeChat screenshot or a chat log, get replies back.
+1. **Install once.** One command, into the Claude Code, Codex, or ChatGPT you already use.
+2. **Talk.** Say "help me with someone I like," answer a few small questions, and it builds the profile itself.
+3. **Send a screenshot.** Drop in a WeChat screenshot or a chat log, get replies back.
 
 No command list to memorize. You talk normally; it knows what you want.
 
@@ -61,7 +61,7 @@ Hot and cold, dangling maybes, all flirt and no plans, playing hard to get: it k
 
 ![Left column to send, right column for your eyes only](assets/demo-dateplan.svg)
 
-The left column is text you can send as-is. The right is for your eyes only: when to book, whether to bring flowers, how to order, when it's fine to float a next time. Kept apart so you never paste "remember to book the table" by accident.
+The left column is text you can send as-is. The right is for your eyes only: when to book, whether to bring flowers, how to order, when it's fine to float a next time. Kept apart so you never paste "remember to book the table" by accident. It also watches the clock and the calendar: your anniversaries and birthdays, plus 520, Qixi, and Valentine's, counted down so it reminds you to book and shop before they sneak up.
 
 **Chasing more than one? Each stays separate.**
 
@@ -71,9 +71,9 @@ You're not stuck with one person. Everyone gets their own profile (stage, chat h
 
 **And along the way**
 
-- **Reads Moments** — drop in screenshots; it looks at makeup, outfit, filters, and comment threads to find openers. Use a setup that can see images; half of a Moments feed lives in the pictures.
-- **Remembers across windows** — one local profile per person, sharper the more you use it. A new window picks up where you left off, no re-explaining.
-- **Sorts a folder for you** — chat logs, screenshots, selfies, your own notes; point it at a folder and it sorts them, no prep on your end.
+- **Reads Moments**: drop in screenshots; it looks at makeup, outfit, filters, and comment threads to find openers. Use a setup that can see images; half of a Moments feed lives in the pictures.
+- **Remembers across windows**: it keeps what you've told it and corrected, and gets sharper with use. A new window picks up where you left off, no re-explaining.
+- **Sorts a folder for you**: chat logs, screenshots, selfies, your own notes; point it at a folder and it sorts them, no prep on your end.
 
 ## Oiliness
 
@@ -106,7 +106,7 @@ Or one line by hand, into the Claude Code personal skills folder:
 git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
 ```
 
-ChatGPT can't read your local files — setup is in [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md).
+ChatGPT can't read your local files; setup is in [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md).
 
 ## Then just talk
 
@@ -116,7 +116,7 @@ Open Claude Code or Codex; it first asks who you're talking to (pick one or star
 help me with someone, set up a profile
 (paste a screenshot) how should I reply to this
 what does this mean, do I still have a shot
-I want to send "are you ignoring me" — should I
+I want to send "are you ignoring me," should I
 they said yes to the weekend, help me plan it
 new profile, there's someone else now
 ```
@@ -125,11 +125,11 @@ It works out whether to analyze, draft, or tell you to back off. If you like com
 
 ## How it plays
 
-It helps you show your best self, say things clearly, and keep your pacing. When the moment calls for push and pull, it plays it with you. When the other person runs games (blowing hot and cold, dangling maybes, keeping you on the hook), it flags it early so you don't waste your head on it. You're the lead; it's only the advisor.
+It helps you show your best self, say things clearly, and keep your pacing: lean in when it's time, pull back when it's time, and stay a step ahead of whatever the other person is playing. You're the lead; it's only the advisor.
 
 ## Your data
 
-Everyone gets their own profile, stored locally in `partners/` and uncommitted by default (`.gitignore` already excludes it). Delete a person's file and their memory goes with it.
+Profiles live locally in `partners/`, uncommitted by default (`.gitignore` already excludes it). Delete a person's file and their memory goes with it.
 
 ## License
 

@@ -95,13 +95,13 @@ description: "Chinese dating chat strategist for people who need help dating: an
 
 每次 `/reply`、`/analyze`、`/ask` 都按这个顺序执行：
 
-1. 确认上下文：对象、关系阶段、最近冲突/进展、用户风格、是否有时间/场景信息。
+1. 确认上下文，先读当前真实时间：能跑命令的环境直接跑 `date`（Windows 用 PowerShell 的 `Get-Date`）拿到今天的日期、星期、时间；跑不了就问用户今天几号、现在几点。用它判断时段语气（深夜和工作日下午不一样）、距上次聊多久、离节日和纪念日还有几天。再确认对象、关系阶段、最近冲突/进展、用户风格。
 2. 证据先行：先写“消息里明确出现了什么”，再写“可能说明什么”。不要把推测说成事实。
 3. 三层解读：表面含义、情绪状态、真正需要。详细规则见 `prompts/message_analyzer.md`。
 4. 年轻人语境校验：需要更深判断时读取 `references/evidence_frameworks.md`，优先用中文互联网人类经验和聊天证据，心理学/论文只做低权重背景。
 5. 兴趣度校验：涉及追求、暧昧、要不要继续投入时读取 `prompts/interest_detector.md`。
 6. 套路与拉扯校验：对方忽冷忽热、只撩不约、画饼、明显在带节奏时，读取 `references/tactics_and_pushpull.md`，先帮用户分清是正常拉扯还是套路，再决定陪着拉还是收手。
-7. 约会/邀约校验：涉及见面、订餐、送花、礼物、节日时读取 `prompts/date_planner.md`。
+7. 约会/邀约校验：涉及见面、订餐、送花、礼物、节日时读取 `prompts/date_planner.md`；查 520、七夕、情人节、纪念日等具体日期读取 `references/calendar_dates.md`。
 8. 表情包/梗校验：涉及表情包、热梗、IP、黑话或用户/对方看不懂的内容时读取 `references/sticker_pack_guide.md`。自己不确定就先上网查，查到后写入偏好和梗记忆；查不到就别硬用。
 9. 需求感与节奏检查：这条回复会不会显得太舔、太急，或把对方逼到必须立刻表态；早期阶段尤其别暴露需求感。
 10. 生成或改写：读取 `prompts/reply_generator.md`、`prompts/oil_control.md`、`prompts/advisor_mode.md`。
@@ -244,6 +244,7 @@ partners/{slug}/materials/
 - `references/evidence_frameworks.md`：心理学、中文聊天风格、公开对话数据和安全边界参考。
 - `references/sticker_pack_guide.md`：表情包风格、热梗核对、未知梗上网查找和偏好记忆规则。
 - `references/tactics_and_pushpull.md`：暧昧期拉扯打法，和识破对方忽冷忽热、画饼、养鱼等套路。
+- `references/calendar_dates.md`：520、七夕、情人节等情侣节日日期，和纪念日提醒规则。
 - `platforms/codex.md`：Codex 安装和调用方式。
 - `platforms/chatgpt-instructions.md`：ChatGPT/GPT Builder 配置方式。
 
