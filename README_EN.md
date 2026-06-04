@@ -38,6 +38,7 @@ The approach is stubborn and simple:
 - [How it plays](#how-it-plays)
 - [Setup and first run](#setup-and-first-run)
 - [FAQ](#faq)
+- [How it works](#how-it-works)
 
 ## What it does
 
@@ -177,6 +178,19 @@ Profiles live only on your own computer in the `partners/` folder, uncommitted b
 
 **Will it teach me to run games or PUA people?**
 No. It helps you show your best self, see through the other person's games, and keep your pacing, not manipulate anyone.
+
+## How it works
+
+It doesn't just hand your message to an AI and let it wing a line. Every time, it runs the same pipeline:
+
+![From a screenshot to three replies, plus a memory loop that sharpens with use](assets/demo-how.svg)
+
+1. **Read the scene**: pull up this person's profile, check the time, and lift out what was actually said before inferring anything.
+2. **Three layers**: what they said, the feeling under it, what they actually want.
+3. **Weigh it**: are they into you, is this a tactic, how sweet can this stage take.
+4. **Hand you lines**: three ready-to-send replies, then one more pass for "does this sound like a real person" to strip the filler.
+
+Every time you send, give feedback, or correct it, it writes that back to the person's profile, so it sharpens with use and remembers across windows.
 
 ## Your data
 
