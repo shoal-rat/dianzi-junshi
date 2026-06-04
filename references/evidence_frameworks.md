@@ -178,7 +178,6 @@
 - GitHub `thu-coai/CDial-GPT`: 大规模中文短文本对话数据集。
 - GitHub `scutcyr/CPED`: 中文个性化与情感对话数据集。
 - OpenAI Codex manual: Agent Skills use `SKILL.md` with `name` and `description`, progressive disclosure, and optional `agents/openai.yaml`.
-- OpenAI Help Center: GPTs can combine instructions, knowledge and capabilities; custom instructions apply across chats but have length/privacy considerations.
 - Nonviolent Communication: Rosenberg 的观察、感受、需要、请求框架。
 - The Gottman Institute: Four Horsemen conflict patterns.
 - PubMed, “Adult Romantic Attachment, Electronic Messaging, and Relationship Quality” (PMID: 35085449). 低权重背景，仅辅助理解消息偏好。

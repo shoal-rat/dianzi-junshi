@@ -9,7 +9,7 @@
 - Windows：`irm https://claude.ai/install.ps1 | iex`
 - macOS / Linux：`curl -fsSL https://claude.ai/install.sh | bash`
 
-或者用 Codex，或者用 ChatGPT（不用装，配置见 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)）。
+或者用 Codex（见 [platforms/codex.md](platforms/codex.md)）。
 
 ## 2. 再装电子军师
 
@@ -40,9 +40,9 @@ git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\d
 
 ## 前置
 
-- Claude Code、Codex 或 ChatGPT 任选其一。
-- 分析朋友圈、自拍要用能看图的模型。
-- Python 3.8+ 可选，给文件夹分类和 ChatGPT 知识包打包用；工具只用标准库，不用额外装依赖。
+- Claude Code 或 Codex。
+- 朋友圈、自拍它直接看图，Claude Code 和 Codex 都自带这个能力。
+- Python 3.8+ 可选，给文件夹分类用；工具只用标准库，不用额外装依赖。
 
 ## 你的数据
 

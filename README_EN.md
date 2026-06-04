@@ -9,7 +9,6 @@ For people who freeze up, who worry about saying the wrong thing, who can't read
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/runs_in-Claude_Code-blue)](https://claude.ai/code)
 [![Codex](https://img.shields.io/badge/runs_in-Codex-0F766E)](platforms/codex.md)
-[![ChatGPT](https://img.shields.io/badge/runs_in-ChatGPT-10A37F)](platforms/chatgpt-instructions.md)
 [![中文](https://img.shields.io/badge/中文-README-red)](README.md)
 
 </div>
@@ -72,7 +71,7 @@ You're not stuck with one person. Everyone gets their own profile (stage, chat h
 
 **And along the way**
 
-- **Reads Moments**: drop in screenshots; it looks at makeup, outfit, filters, and comment threads to find openers. Use a setup that can see images; half of a Moments feed lives in the pictures.
+- **Reads Moments**: drop in screenshots; it looks straight at the makeup, outfit, filters, and comment threads to find openers. Half of a Moments feed lives in the pictures, and it reads the pictures, not just the text.
 - **Remembers across windows**: it keeps what you've told it and corrected, and gets sharper with use. A new window picks up where you left off, no re-explaining.
 - **Sorts a folder for you**: chat logs, screenshots, selfies, your own notes; point it at a folder and it sorts them, no prep on your end.
 
@@ -131,11 +130,7 @@ Never used something like this? That's fine. Pick the path that fits you.
 
 **Step 3, start talking.** Type `claude` and hit Enter, then type "help me with someone." It asks a couple of quick questions, builds a profile, and then you drop in a WeChat screenshot or chat log and it replies.
 
-### Path B - ChatGPT (easiest, nothing to install)
-
-Already on ChatGPT? Take this path, no commands at all. Follow [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md): paste one block of instructions and start chatting. The catch is it forgets between chats, so long-term memory is weaker than Path A.
-
-### Path C - Codex
+### Path B - Codex
 
 On Codex, one command clones it into the Codex skills folder:
 
@@ -162,10 +157,10 @@ If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all wo
 ## FAQ
 
 **I'm not technical and have never used a terminal. Can I still use this?**
-Yes. Follow Path A and paste the lines one at a time; they're all written out for you. If you'd rather not touch commands at all, take Path B with ChatGPT.
+Yes. Follow Path A and paste the lines one at a time; they're all written out for you, no coding needed.
 
 **A command errors out, or it says git is missing?**
-On Windows, install [Git](https://git-scm.com/downloads/win) (just click through), then redo step 2. Still stuck? Use the ChatGPT path.
+On Windows, install [Git](https://git-scm.com/downloads/win) (just click through), then redo step 2.
 
 **It's installed but doesn't recognize the skill, or ignores me?**
 Fully quit Claude Code (or Codex) and open it again; a newly installed skill loads on restart. Then say "help me with someone." If it still doesn't wake up, type `/dianzi-junshi` in Claude Code and hit Enter to call it directly.

@@ -23,7 +23,6 @@ REQUIRED_FILES = [
     "references/evidence_frameworks.md",
     "references/sticker_pack_guide.md",
     "platforms/codex.md",
-    "platforms/chatgpt-instructions.md",
 ]
 
 MACHINE_TONE_BANNED = [
@@ -128,7 +127,6 @@ def check_machine_tone():
         "SKILL.md",
         "prompts/reply_generator.md",
         "prompts/style_calibrator.md",
-        "platforms/chatgpt-instructions.md",
     ]
     problems = []
     for rel_path in targets:

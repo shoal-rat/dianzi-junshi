@@ -9,7 +9,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/装在-Claude_Code-blue)](https://claude.ai/code)
 [![Codex](https://img.shields.io/badge/装在-Codex-0F766E)](platforms/codex.md)
-[![ChatGPT](https://img.shields.io/badge/装在-ChatGPT-10A37F)](platforms/chatgpt-instructions.md)
 [![English](https://img.shields.io/badge/English-README__EN-lightgrey)](README_EN.md)
 
 </div>
@@ -72,7 +71,7 @@
 
 **还顺手帮你**
 
-- **看朋友圈**：截图丢进去，看妆容、穿搭、滤镜、评论区，帮你找切入点。要用能看图的环境，朋友圈一半信息都藏在图里。
+- **看朋友圈**：截图丢进去，它直接看图里的妆容、穿搭、滤镜、评论区，帮你找切入点。朋友圈一半信息都在图里，它不是只读文字。
 - **换窗口也记得 ta**：聊过的、你纠正过的，它都存着，越用越准。新开一个窗口自己接上，不用你从头解释一遍。
 - **资料自动分类**：聊天记录、截图、自拍、备注，丢一个文件夹给它，它自己分好，不用你先整理。
 
@@ -133,11 +132,7 @@
 
 > 每步长什么样、卡住怎么办，看[新手指南](docs/新手指南.md)。
 
-### 路线 B · ChatGPT（最省事，什么都不用装）
-
-已经在用 ChatGPT 就走这条，一行命令都不用。照 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md) 把一段说明粘进去就能聊。缺点是换个对话它就忘了，长期记忆不如路线 A。
-
-### 路线 C · Codex
+### 路线 B · Codex
 
 在用 Codex，一行命令克隆到 Codex 的技能目录：
 
@@ -164,10 +159,10 @@ ta 答应周末见面了，帮我安排一下
 ## 常见问题
 
 **我电脑小白，连终端都没用过，能用吗？**
-能。照路线 A 一步步粘命令就行，每条都给你写好了。实在不想碰命令，走路线 B 用 ChatGPT，一行都不用敲。
+能。照路线 A 一步步粘命令就行，每条都给你写好了，不用懂代码。每步长什么样、卡住怎么办，[新手指南](docs/新手指南.md)里写得更细。
 
 **粘命令报错，或者提示没有 git？**
-Windows 先装个 [Git](https://git-scm.com/downloads/win)（下载后一路点下一步），再回到第 2 步重来一遍。还是不行就改走 ChatGPT 那条路。
+Windows 先装个 [Git](https://git-scm.com/downloads/win)（下载后一路点下一步），再回到第 2 步重来一遍。还卡着就看[新手指南](docs/新手指南.md)里的排错那段。
 
 **装完它不理我，或者找不到？**
 把 Claude Code（或 Codex）整个关掉、重新打开一次，新装的技能要重启才认得。然后再说一句「帮我追个人」。还是不出来，就在 Claude Code 里直接打 `/dianzi-junshi` 回车，把它叫出来。
