@@ -11,29 +11,28 @@
 
 或者用 Codex，或者用 ChatGPT（不用装，配置见 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)）。
 
-## 2. 再装电子军师（一行命令）
+## 2. 再装电子军师
 
-Windows（PowerShell）：
+**Claude Code（装成技能，一行命令）**
 
-```powershell
-irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
-```
+- Windows：`irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex`
+- macOS / Linux：`curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash`
 
-macOS / Linux：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
-```
-
-脚本会装进 Claude Code（`~/.claude/skills/`）和 Codex（`~/.agents/skills/`，有就装）。**装完如果客户端开着，关掉重开一次，新技能才认。**
-
-不想跑脚本，手动 clone 也行：
+装进 `~/.claude/skills/dianzi-junshi`。不想跑脚本，手动 clone 也行：
 
 ```bash
 git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
 ```
 
-Codex 把目标换成 `~/.agents/skills/dianzi-junshi`。
+**Codex（克隆到 Codex 技能目录）**
+
+```powershell
+git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
+```
+
+（macOS / Linux 用 `$HOME/.agents/skills/dianzi-junshi`。）
+
+装完如果客户端本来开着，关掉重开一次，新技能才认。
 
 ## 3. 开始用
 

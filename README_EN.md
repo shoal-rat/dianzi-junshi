@@ -16,7 +16,7 @@ For people who freeze up, who worry about saying the wrong thing, who can't read
 
 ![Paste a screenshot, get three replies you can send](assets/demo-reply.svg)
 
-> **First time, not very technical?** No problem. Follow the five-minute setup below, pasting one line at a time. No coding needed. Stuck on a step? Jump to the [FAQ](#faq).
+> Want to jump straight in? See [Setup and first run](#setup-and-first-run) and paste one line at a time. No coding needed. Below is what it does first.
 
 ---
 
@@ -33,78 +33,11 @@ The approach is stubborn and simple:
 
 ## Contents
 
-- [Five-minute setup](#five-minute-setup)
 - [What it does](#what-it-does)
 - [Oiliness](#oiliness)
+- [How it plays](#how-it-plays)
+- [Setup and first run](#setup-and-first-run)
 - [FAQ](#faq)
-
-## Five-minute setup
-
-Never used something like this? That's fine. Pick the path that fits you.
-
-![Install once, answer a few questions, send a screenshot](assets/workflow.svg)
-
-### Path A - Claude Code (recommended, full features, remembers everyone)
-
-**Step 1, install Claude Code.** It's an AI tool that understands plain language and can read the screenshots on your computer.
-
-- Windows: press `Win + X`, click "Terminal" (older systems: "Windows PowerShell"), paste this and hit Enter:
-
-  ```powershell
-  irm https://claude.ai/install.ps1 | iex
-  ```
-
-- Mac: press `Command + Space`, type "Terminal", hit Enter, then paste:
-
-  ```bash
-  curl -fsSL https://claude.ai/install.sh | bash
-  ```
-
-  When it finishes, sign in with a Claude account (free to create one).
-
-**Step 2, install Dianzi Junshi.** In the same window, paste one more line:
-
-- Windows:
-
-  ```powershell
-  irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
-  ```
-
-- Mac:
-
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
-  ```
-
-**Step 3, start talking.** Type `claude` and hit Enter to go in, then just type:
-
-```text
-help me with someone
-```
-
-It asks a couple of quick questions, builds a profile, and then you drop in a WeChat screenshot or chat log and it replies.
-
-### Path B - ChatGPT (easiest, nothing to install)
-
-Already on ChatGPT? Take this path, no commands at all. Follow [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md): paste one block of instructions and start chatting. The catch is it forgets between chats, so long-term memory is weaker than Path A.
-
-### Path C - Codex
-
-On Codex? See [platforms/codex.md](platforms/codex.md), one command.
-
-### Once it's set up, just talk to it
-
-No commands to memorize, just type normally:
-
-```text
-(paste a screenshot) how should I reply to this
-what does this mean, do I still have a shot
-I want to send "are you ignoring me," should I
-they said yes to the weekend, help me plan it
-new profile, there's someone else now
-```
-
-If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all work too. You just don't need them.
 
 ## What it does
 
@@ -153,6 +86,78 @@ Not about banning sweetness or flirting. It's a reminder: at this stage, would t
 | Early / stable | 3–3.5 / 5 | sweet is fine, don't loop |
 | Friction / crisis | 0.5–1.5 / 5 | cool down first |
 
+## How it plays
+
+It helps you show your best self, say things clearly, and keep your pacing: lean in when it's time, pull back when it's time, and stay a step ahead of whatever the other person is playing. You're the lead; it's only the advisor.
+
+## Setup and first run
+
+Never used something like this? That's fine. Pick the path that fits you.
+
+![Install once, answer a few questions, send a screenshot](assets/workflow.svg)
+
+### Path A - Claude Code (install as a Skill; recommended, remembers everyone)
+
+**Step 1, install Claude Code.** It's an AI tool that understands plain language and can read the screenshots on your computer.
+
+- Windows: press `Win + X`, click "Terminal" (older systems: "Windows PowerShell"), paste this and hit Enter:
+
+  ```powershell
+  irm https://claude.ai/install.ps1 | iex
+  ```
+
+- Mac: press `Command + Space`, type "Terminal", hit Enter, then paste:
+
+  ```bash
+  curl -fsSL https://claude.ai/install.sh | bash
+  ```
+
+  When it finishes, sign in with a Claude account (free to create one).
+
+**Step 2, install Dianzi Junshi as a Claude Skill.** In the same window, paste one more line; it lands in `~/.claude/skills/dianzi-junshi`:
+
+- Windows:
+
+  ```powershell
+  irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
+  ```
+
+- Mac:
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
+  ```
+
+**Step 3, start talking.** Type `claude` and hit Enter, then type "help me with someone." It asks a couple of quick questions, builds a profile, and then you drop in a WeChat screenshot or chat log and it replies.
+
+### Path B - ChatGPT (easiest, nothing to install)
+
+Already on ChatGPT? Take this path, no commands at all. Follow [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md): paste one block of instructions and start chatting. The catch is it forgets between chats, so long-term memory is weaker than Path A.
+
+### Path C - Codex
+
+On Codex, one command clones it into the Codex skills folder:
+
+```powershell
+git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
+```
+
+(On Mac / Linux use `$HOME/.agents/skills/dianzi-junshi`.) More in [platforms/codex.md](platforms/codex.md).
+
+### Once it's set up, just talk to it
+
+No commands to memorize, just type normally:
+
+```text
+(paste a screenshot) how should I reply to this
+what does this mean, do I still have a shot
+I want to send "are you ignoring me," should I
+they said yes to the weekend, help me plan it
+new profile, there's someone else now
+```
+
+If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all work too. You just don't need them.
+
 ## FAQ
 
 **I'm not technical and have never used a terminal. Can I still use this?**
@@ -172,10 +177,6 @@ Profiles live only on your own computer in the `partners/` folder, uncommitted b
 
 **Will it teach me to run games or PUA people?**
 No. It helps you show your best self, see through the other person's games, and keep your pacing, not manipulate anyone.
-
-## How it plays
-
-It helps you show your best self, say things clearly, and keep your pacing: lean in when it's time, pull back when it's time, and stay a step ahead of whatever the other person is playing. You're the lead; it's only the advisor.
 
 ## Your data
 
