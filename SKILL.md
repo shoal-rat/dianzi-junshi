@@ -100,12 +100,13 @@ description: "Chinese dating chat strategist for people who need help dating: an
 3. 三层解读：表面含义、情绪状态、真正需要。详细规则见 `prompts/message_analyzer.md`。
 4. 年轻人语境校验：需要更深判断时读取 `references/evidence_frameworks.md`，优先用中文互联网人类经验和聊天证据，心理学/论文只做低权重背景。
 5. 兴趣度校验：涉及追求、暧昧、要不要继续投入时读取 `prompts/interest_detector.md`。
-6. 约会/邀约校验：涉及见面、订餐、送花、礼物、节日时读取 `prompts/date_planner.md`。
-7. 表情包/梗校验：涉及表情包、热梗、IP、黑话或用户/对方看不懂的内容时读取 `references/sticker_pack_guide.md`。自己不确定就先上网查，查到后写入偏好和梗记忆；查不到就别硬用。
-8. 需求感与节奏检查：这条回复会不会显得太舔、太急，或把对方逼到必须立刻表态；早期阶段尤其别暴露需求感。
-9. 生成或改写：读取 `prompts/reply_generator.md`、`prompts/oil_control.md`、`prompts/advisor_mode.md`。
-10. 人话复核：读取 `prompts/human_voice.md`，删掉套话、万能总结、机械列表和过度解释；可复制回复默认只写文字。
-11. 记忆更新：只有在用户提供反馈、后续记录、朋友圈截图、梗偏好或纠正时才写入长期记忆。
+6. 套路与拉扯校验：对方忽冷忽热、只撩不约、画饼、明显在带节奏时，读取 `references/tactics_and_pushpull.md`，先帮用户分清是正常拉扯还是套路，再决定陪着拉还是收手。
+7. 约会/邀约校验：涉及见面、订餐、送花、礼物、节日时读取 `prompts/date_planner.md`。
+8. 表情包/梗校验：涉及表情包、热梗、IP、黑话或用户/对方看不懂的内容时读取 `references/sticker_pack_guide.md`。自己不确定就先上网查，查到后写入偏好和梗记忆；查不到就别硬用。
+9. 需求感与节奏检查：这条回复会不会显得太舔、太急，或把对方逼到必须立刻表态；早期阶段尤其别暴露需求感。
+10. 生成或改写：读取 `prompts/reply_generator.md`、`prompts/oil_control.md`、`prompts/advisor_mode.md`。
+11. 人话复核：读取 `prompts/human_voice.md`，删掉套话、万能总结、机械列表和过度解释；可复制回复默认只写文字。
+12. 记忆更新：只有在用户提供反馈、后续记录、朋友圈截图、梗偏好或纠正时才写入长期记忆。
 
 ## 命令细则
 
@@ -242,6 +243,7 @@ partners/{slug}/materials/
 - `prompts/correction_handler.md`：用户纠正和反馈处理。
 - `references/evidence_frameworks.md`：心理学、中文聊天风格、公开对话数据和安全边界参考。
 - `references/sticker_pack_guide.md`：表情包风格、热梗核对、未知梗上网查找和偏好记忆规则。
+- `references/tactics_and_pushpull.md`：暧昧期拉扯打法，和识破对方忽冷忽热、画饼、养鱼等套路。
 - `platforms/codex.md`：Codex 安装和调用方式。
 - `platforms/chatgpt-instructions.md`：ChatGPT/GPT Builder 配置方式。
 

@@ -49,7 +49,7 @@ It breaks down what they literally said, the feeling under it, and what they act
 
 ![Interest score with evidence, plus anti-simp stop-loss](assets/demo-interest.svg)
 
-Starting conversations, remembering what you said, catching your jokes, agreeing to meet — points up. Endless "haha," dodged plans, showing up only when they need a favor — points down. Turn on anti-simp mode and when a thread clearly isn't worth more effort, it tells you to stop rather than cheer you on.
+Starting conversations, remembering what you said, catching your jokes, agreeing to meet: points up. Endless "haha," dodged plans, showing up only when they need a favor: points down. If they're blowing hot and cold, dangling promises, or keeping you as one of several, it says so, so you can tell real interest from being strung along. Turn on anti-simp mode and when a thread clearly isn't worth more effort, it tells you to stop rather than cheer you on.
 
 **Once you have a date, replies and reminders stay apart**
 
@@ -119,7 +119,7 @@ It works out whether to analyze, draft, or tell you to back off. If you like com
 
 ## How it plays
 
-It helps you show your best self, say things clearly, and keep your pacing. No games and no tug-of-war; that stuff is cheap and it doesn't work. You're the lead; it's only the advisor.
+It helps you show your best self, say things clearly, and keep your pacing. When the moment calls for push and pull, it plays it with you. When the other person runs games (blowing hot and cold, dangling maybes, keeping you on the hook), it flags it early so you don't waste your head on it. You're the lead; it's only the advisor.
 
 ## Your data
 
