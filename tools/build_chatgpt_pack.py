@@ -25,6 +25,8 @@ FILES = [
     "prompts/memory_engine.md",
     "references/evidence_frameworks.md",
     "references/sticker_pack_guide.md",
+    "references/tactics_and_pushpull.md",
+    "references/calendar_dates.md",
     "platforms/chatgpt-instructions.md",
 ]
 
