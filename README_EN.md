@@ -59,7 +59,7 @@ Direct, slow-burn, aesthetic/ritual, social butterfly, high-option player type: 
 
 ![It flags dangling promises and hot-and-cold games, with a no-bite reply and a take-back-control move](assets/demo-tactics.svg)
 
-Hot and cold, dangling maybes, all flirt and no plans, playing hard to get: it knows these, tells you whether it's a game or just normal push-pull, then hands you a move that holds. When push-pull is the right call, it adds a strategy box: when to reply, whether to pause, what feedback to watch, and a Haiwang/Haihou confidence score.
+Hot and cold, dangling maybes, all flirt and no plans, playing hard to get: it knows these, tells you whether it's a game or just normal push-pull, then hands you a move that holds. It also watches newer platform-native signals: template-perfect emotional value, flirty comment sections, Moments bait, multi-line scheduling, and holiday heat without plans. When push-pull is the right call, it adds a strategy box: when to reply, whether to pause, what feedback to watch, and a Haiwang/Haihou confidence score.
 
 **Once you have a date, replies and reminders stay apart**
 

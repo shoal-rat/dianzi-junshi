@@ -22,6 +22,7 @@ REQUIRED_FILES = [
     "prompts/date_planner.md",
     "references/evidence_frameworks.md",
     "references/pursuit_playbooks.md",
+    "references/player_tactics_intel.md",
     "references/sticker_pack_guide.md",
     "platforms/codex.md",
 ]
@@ -91,6 +92,7 @@ def check_skill_md():
         "海王/海后置信度",
         "追法类型",
         "拉扯强度",
+        "近期海王/海后套路",
         "机器腔",
         "表情包",
     ]

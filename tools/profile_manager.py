@@ -149,6 +149,8 @@ def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
             'level': '待观察',
             'confidence': '待观察',
             'trend': '待观察',
+            'recent_signals': [],
+            'next_test_action': '',
         },
         'cadence_strategy': {
             'preferred_reply_interval': '',

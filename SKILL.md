@@ -107,13 +107,14 @@ description: "Chinese dating chat strategist for people who need help dating: an
 5. 兴趣度校验：涉及追求、暧昧、要不要继续投入时读取 `prompts/interest_detector.md`。
 6. 类型追法校验：涉及追男生/追女生、朋友圈画像、高选择权、慢热、直球、社交活跃等类型时，读取 `references/pursuit_playbooks.md`，输出追法类型和建议拉扯强度。
 7. 拉扯与玩家信号校验：对方忽冷忽热、只撩不约、画饼、明显在带节奏时，读取 `references/tactics_and_pushpull.md`，给出拉扯动作、回复间隔、消失/停顿建议和海王/海后置信度。
-8. 约会/邀约校验：涉及见面、订餐、送花、礼物、节日时读取 `prompts/date_planner.md`；查 520、七夕、情人节、纪念日等具体日期读取 `references/calendar_dates.md`。
-9. 表情包/梗校验：涉及表情包、热梗、IP、黑话或用户/对方看不懂的内容时读取 `references/sticker_pack_guide.md`。自己不确定就先上网查，查到后写入偏好和梗记忆；查不到就别硬用。
-10. 需求感与节奏检查：这条回复会不会显得太舔、太急，早期阶段尤其要控节奏。
-11. 生成或改写：读取 `prompts/reply_generator.md`、`prompts/oil_control.md`、`prompts/advisor_mode.md`。
-12. 人话复核：读取 `prompts/human_voice.md`，删掉套话、万能总结、机械列表和过度解释；可复制回复默认只写文字。
-13. 策略反馈闭环：如果输出了策略方框，必须让用户回来反馈实际发送版本、发送时间、对方多久回、回了什么。
-14. 记忆更新：只有在用户提供反馈、后续记录、朋友圈截图、梗偏好或纠正时才写入长期记忆。
+8. 近期海王/海后套路校验：涉及平台人设、评论区暧昧、朋友圈定向投喂、dating app、多线排班、模板化高情绪价值时，读取 `references/player_tactics_intel.md`，更新玩家信号和测试动作。
+9. 约会/邀约校验：涉及见面、订餐、送花、礼物、节日时读取 `prompts/date_planner.md`；查 520、七夕、情人节、纪念日等具体日期读取 `references/calendar_dates.md`。
+10. 表情包/梗校验：涉及表情包、热梗、IP、黑话或用户/对方看不懂的内容时读取 `references/sticker_pack_guide.md`。自己不确定就先上网查，查到后写入偏好和梗记忆；查不到就别硬用。
+11. 需求感与节奏检查：这条回复会不会显得太舔、太急，早期阶段尤其要控节奏。
+12. 生成或改写：读取 `prompts/reply_generator.md`、`prompts/oil_control.md`、`prompts/advisor_mode.md`。
+13. 人话复核：读取 `prompts/human_voice.md`，删掉套话、万能总结、机械列表和过度解释；可复制回复默认只写文字。
+14. 策略反馈闭环：如果输出了策略方框，必须让用户回来反馈实际发送版本、发送时间、对方多久回、回了什么。
+15. 记忆更新：只有在用户提供反馈、后续记录、朋友圈截图、梗偏好或纠正时才写入长期记忆。
 
 ## 命令细则
 
@@ -252,6 +253,7 @@ partners/{slug}/materials/
 - `prompts/correction_handler.md`：用户纠正和反馈处理。
 - `references/evidence_frameworks.md`：中文聊天风格、公开对话数据和社区经验参考。
 - `references/pursuit_playbooks.md`：追男生/追女生类型打法、拉扯强度和高选择权对象策略。
+- `references/player_tactics_intel.md`：近期海王/海后平台化套路、模板化高情绪价值、多线排班和测试动作。
 - `references/sticker_pack_guide.md`：表情包风格、热梗核对、未知梗上网查找和偏好记忆规则。
 - `references/tactics_and_pushpull.md`：暧昧期拉扯打法、回复间隔、消失/停顿建议、策略反馈框和海王/海后置信度。
 - `references/calendar_dates.md`：520、七夕、情人节等情侣节日日期，和纪念日提醒规则。

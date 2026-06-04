@@ -205,6 +205,8 @@ def main():
     parser.add_argument('--pushpull-action', default='', help='Push-pull action used')
     parser.add_argument('--pursuit-type', default='', help='Pursuit playbook type')
     parser.add_argument('--pushpull-intensity', default='', help='Push-pull intensity 0-3')
+    parser.add_argument('--recent-player-signal', default='', help='Recent player signal pattern')
+    parser.add_argument('--player-test-action', default='', help='Test action for player signal')
     parser.add_argument('--cadence-worked', action='store_true',
                         help='The cadence/pause strategy appeared to work')
     parser.add_argument('--caught-flirt', action='store_true',
@@ -233,6 +235,8 @@ def main():
             'pushpull_action': args.pushpull_action,
             'pursuit_type': args.pursuit_type,
             'pushpull_intensity': args.pushpull_intensity,
+            'recent_player_signal': args.recent_player_signal,
+            'player_test_action': args.player_test_action,
             'cadence_worked': args.cadence_worked,
             'caught_flirt_signal': args.caught_flirt,
             'continued_user_self_display': args.continued_self_display,
