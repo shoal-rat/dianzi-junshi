@@ -16,11 +16,13 @@ For people who freeze up, who worry about saying the wrong thing, who can't read
 
 ![Paste a screenshot, get three replies you can send](assets/demo-reply.svg)
 
+> **First time, not very technical?** No problem. Follow the five-minute setup below, pasting one line at a time. No coding needed. Stuck on a step? Jump to the [FAQ](#faq).
+
 ---
 
 The hard part of chasing someone usually isn't the words.
 
-It's not knowing whether that reply means anything, whether to flirt back or pull away, whether the line you want to send will scare them off. Their Moments feed, the restaurant, the flowers once they say yes. Each one is its own puzzle.
+It's not knowing whether that reply means anything, whether to flirt back or pull away, whether the line you want to send will scare them off. Their Moments feed, the restaurant, the flowers once they say yes. Each is its own puzzle.
 
 Dianzi Junshi handles that. It reads your Chinese chats, tells you what they mean and whether they're into you, then hands you a few short replies that sound like a person instead of a script.
 
@@ -29,15 +31,80 @@ The approach is stubborn and simple:
 > Show who you are first, then flirt lightly.
 > They catch it, move forward. They don't, stop pushing. Clearly no, leave cleanly.
 
-## Three steps
+## Contents
+
+- [Five-minute setup](#five-minute-setup)
+- [What it does](#what-it-does)
+- [Oiliness](#oiliness)
+- [FAQ](#faq)
+
+## Five-minute setup
+
+Never used something like this? That's fine. Pick the path that fits you.
 
 ![Install once, answer a few questions, send a screenshot](assets/workflow.svg)
 
-1. **Install once.** One command, into the Claude Code, Codex, or ChatGPT you already use.
-2. **Talk.** Say "help me with someone I like," answer a few small questions, and it builds the profile itself.
-3. **Send a screenshot.** Drop in a WeChat screenshot or a chat log, get replies back.
+### Path A - Claude Code (recommended, full features, remembers everyone)
 
-No command list to memorize. You talk normally; it knows what you want.
+**Step 1, install Claude Code.** It's an AI tool that understands plain language and can read the screenshots on your computer.
+
+- Windows: press `Win + X`, click "Terminal" (older systems: "Windows PowerShell"), paste this and hit Enter:
+
+  ```powershell
+  irm https://claude.ai/install.ps1 | iex
+  ```
+
+- Mac: press `Command + Space`, type "Terminal", hit Enter, then paste:
+
+  ```bash
+  curl -fsSL https://claude.ai/install.sh | bash
+  ```
+
+  When it finishes, sign in with a Claude account (free to create one).
+
+**Step 2, install Dianzi Junshi.** In the same window, paste one more line:
+
+- Windows:
+
+  ```powershell
+  irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
+  ```
+
+- Mac:
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
+  ```
+
+**Step 3, start talking.** Type `claude` and hit Enter to go in, then just type:
+
+```text
+help me with someone
+```
+
+It asks a couple of quick questions, builds a profile, and then you drop in a WeChat screenshot or chat log and it replies.
+
+### Path B - ChatGPT (easiest, nothing to install)
+
+Already on ChatGPT? Take this path, no commands at all. Follow [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md): paste one block of instructions and start chatting. The catch is it forgets between chats, so long-term memory is weaker than Path A.
+
+### Path C - Codex
+
+On Codex? See [platforms/codex.md](platforms/codex.md), one command.
+
+### Once it's set up, just talk to it
+
+No commands to memorize, just type normally:
+
+```text
+(paste a screenshot) how should I reply to this
+what does this mean, do I still have a shot
+I want to send "are you ignoring me," should I
+they said yes to the weekend, help me plan it
+new profile, there's someone else now
+```
+
+If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all work too. You just don't need them.
 
 ## What it does
 
@@ -86,42 +153,25 @@ Not about banning sweetness or flirting. It's a reminder: at this stage, would t
 | Early / stable | 3–3.5 / 5 | sweet is fine, don't loop |
 | Friction / crisis | 0.5–1.5 / 5 | cool down first |
 
-## Install once
+## FAQ
 
-Claude Code / Codex on macOS or Linux:
+**I'm not technical and have never used a terminal. Can I still use this?**
+Yes. Follow Path A and paste the lines one at a time; they're all written out for you. If you'd rather not touch commands at all, take Path B with ChatGPT.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
-```
+**A command errors out, or it says git is missing?**
+On Windows, install [Git](https://git-scm.com/downloads/win) (just click through), then redo step 2. Still stuck? Use the ChatGPT path.
 
-Windows (PowerShell):
+**It's installed but doesn't recognize the skill, or ignores me?**
+Fully quit Claude Code (or Codex) and open it again; a newly installed skill loads on restart. Then say "help me with someone."
 
-```powershell
-irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
-```
+**How do I switch people, or chase a few at once?**
+Just say "switch" or "new one." It lists the people you've set up and you pick. Each gets their own profile, and they never get mixed up.
 
-Or one line by hand, into the Claude Code personal skills folder:
+**Are my chats safe?**
+Profiles live only on your own computer in the `partners/` folder, uncommitted by default. Delete the file and it's gone.
 
-```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
-```
-
-ChatGPT can't read your local files; setup is in [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md).
-
-## Then just talk
-
-Open Claude Code or Codex; it first asks who you're talking to (pick one or start a new one), then you just talk:
-
-```text
-help me with someone, set up a profile
-(paste a screenshot) how should I reply to this
-what does this mean, do I still have a shot
-I want to send "are you ignoring me," should I
-they said yes to the weekend, help me plan it
-new profile, there's someone else now
-```
-
-It works out whether to analyze, draft, or tell you to back off. If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all work too. You just don't need them.
+**Will it teach me to run games or PUA people?**
+No. It helps you show your best self, see through the other person's games, and keep your pacing, not manipulate anyone.
 
 ## How it plays
 

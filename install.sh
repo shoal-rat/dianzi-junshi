@@ -22,5 +22,7 @@ for t in "${targets[@]}"; do
 done
 
 echo
-echo "装好了。打开 Claude Code 或 Codex，说一句：帮我追个人。"
-echo "它会问你几个小问题，然后你把微信截图丢给它就行。"
+echo "装好了！接下来三步："
+echo "  1. 打开 Claude Code（或 Codex）；要是它本来就开着，先关掉再打开（新技能要重启才认）。"
+echo "  2. 进去说一句：帮我追个人"
+echo "  3. 回答几个小问题，然后把微信截图丢给它就行。"

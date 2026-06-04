@@ -16,6 +16,8 @@
 
 ![贴一张截图，出三条能直接发的回复](assets/demo-reply.svg)
 
+> **第一次用、电脑也不太懂？** 别慌，跟着下面的「五分钟上手」一步步粘命令就行，不用懂代码。哪步卡住了，翻到最后看[常见问题](#常见问题)，或者点开[新手指南](docs/新手指南.md)，那里写得更细。
+
 ---
 
 追人最难的地方，常常不是不会说话。
@@ -29,15 +31,82 @@
 > 先把你这个人聊出来，再低油腻地撩。
 > ta 接球，就往前走；ta 不接，别硬舔；明显没戏，体面撤。
 
-## 三步就能用上
+## 目录
+
+- [五分钟上手](#五分钟上手)
+- [它能帮你什么](#它能帮你什么)
+- [油腻度是什么](#油腻度是什么)
+- [常见问题](#常见问题)
+
+## 五分钟上手
+
+完全没用过也没关系，照着做就行。先挑一条适合你的路：
 
 ![三步：装一次、聊两句、发截图](assets/workflow.svg)
 
-1. **装一次**。复制一行命令，装进你常用的 Claude Code、Codex 或 ChatGPT。
-2. **聊两句**。跟它说句「帮我追个人」，它问你几个小问题，自己把档案建好。
-3. **发截图**。之后把微信截图或聊天记录丢进去，回复就出来了。
+### 路线 A · Claude Code（推荐，功能最全，能记住每个人）
 
-没有一堆命令要背。你正常说话，它知道你要干嘛。
+**第 1 步，装 Claude Code。** 它是个能听懂人话、能读你电脑里截图的 AI 工具。
+
+- Windows：按键盘 `Win + X`，点弹出菜单里的「终端」（老系统叫「Windows PowerShell」），把这行粘进去回车：
+
+  ```powershell
+  irm https://claude.ai/install.ps1 | iex
+  ```
+
+- Mac：按 `Command + 空格`，打字「终端」回车打开，把这行粘进去回车：
+
+  ```bash
+  curl -fsSL https://claude.ai/install.sh | bash
+  ```
+
+  装完按屏幕提示用 Claude 账号登录一下（没有就免费注册一个）。
+
+**第 2 步，装电子军师。** 还在刚才那个黑窗口里，再粘一行回车：
+
+- Windows：
+
+  ```powershell
+  irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
+  ```
+
+- Mac：
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
+  ```
+
+**第 3 步，开聊。** 在终端里输入 `claude` 回车进去，然后直接打一句：
+
+```text
+帮我追个人
+```
+
+它会问你几个小问题，自己把档案建好。之后把微信截图或聊天记录丢给它，回复就出来了。
+
+> 每一步该点哪、长什么样，[新手指南](docs/新手指南.md)里有更细的图文。
+
+### 路线 B · ChatGPT（最省事，什么都不用装）
+
+已经在用 ChatGPT 就走这条，一行命令都不用。照 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md) 把一段说明粘进去就能聊。缺点是换个对话它就忘了，长期记忆不如路线 A。
+
+### 路线 C · Codex
+
+在用 Codex 的看 [platforms/codex.md](platforms/codex.md)，同样一行命令装好。
+
+### 装好之后，平时就这么跟它说话
+
+不用记命令，正常打字就行：
+
+```text
+（贴一张微信截图）这条我该怎么回
+ta 这么说是什么意思，我还有戏吗
+我想发「你是不是不想理我了」，行不行
+ta 答应周末见面了，帮我安排一下
+换个人，帮我新建个对象
+```
+
+习惯敲命令的话，`/reply`、`/interest`、`/moments`、`/date-plan` 这些它也都认，记不住也无所谓。
 
 ## 它能帮你什么
 
@@ -86,42 +155,25 @@
 | 热恋 / 稳定 | 3–3.5 / 5 | 可以甜，别腻成复读机 |
 | 磨合 / 危机 | 0.5–1.5 / 5 | 先降温，别上头 |
 
-## 装一次
+## 常见问题
 
-macOS / Linux 上的 Claude Code、Codex：
+**我电脑小白，连终端都没用过，能用吗？**
+能。照「五分钟上手」路线 A 一步步粘命令就行，每条命令都给你写好了。实在不想碰命令，走路线 B 用 ChatGPT，一行都不用敲。
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
-```
+**粘命令报错，或者提示没有 git？**
+Windows 先装个 [Git](https://git-scm.com/downloads/win)（下载后一路点下一步），再回到第 2 步重来一遍。还是不行就改走 ChatGPT 那条路。
 
-Windows（PowerShell）：
+**装完它不理我，或者找不到？**
+把 Claude Code（或 Codex）整个关掉、重新打开一次，新装的技能要重启才认得。然后再说一句「帮我追个人」。
 
-```powershell
-irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
-```
+**怎么换对象？同时追好几个会不会乱？**
+直接说「换人」或「新建」，它会把你建过的对象列出来让你选。每个人一份档案，各记各的，不会串。
 
-不想跑脚本，手动一行也行（装进 Claude Code 的个人技能目录）：
+**我的聊天记录安全吗？**
+档案只存在你自己电脑上的 `partners/` 文件夹里，默认不上传，删掉就没了。
 
-```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
-```
-
-ChatGPT 读不到你的本地文件，配置方式另见 [platforms/chatgpt-instructions.md](platforms/chatgpt-instructions.md)。
-
-## 之后怎么用
-
-装好以后打开 Claude Code 或 Codex，它先问你这次聊谁（选已有的，或新建一个），然后正常说话就行：
-
-```text
-帮我追个人，先建个档
-（贴一张微信截图）这条我该怎么回
-ta 这么说是什么意思，我还有戏吗
-我想发「你是不是不想理我了」，行不行
-ta 答应周末见面了，帮我安排一下
-再追一个，帮我新建个对象
-```
-
-它会自己判断该分析、该给回复、还是该拉住你。习惯敲命令的话，`/reply`、`/interest`、`/moments`、`/date-plan` 这些它也都认，记不住也无所谓。
+**它会教我套路、PUA 别人吗？**
+不往那个方向带。它帮你把自己最好的一面拿出来、看穿对方的套路、把节奏拿稳，而不是去操控谁。
 
 ## 它的路子
 
