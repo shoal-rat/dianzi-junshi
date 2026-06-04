@@ -43,7 +43,3 @@ git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\d
 - Claude Code 或 Codex。
 - 朋友圈、自拍它直接看图，Claude Code 和 Codex 都自带这个能力。
 - Python 3.8+ 可选，给文件夹分类用；工具只用标准库，不用额外装依赖。
-
-## 你的数据
-
-每个对象一份档案，存在技能目录下的 `partners/`，默认不提交（`.gitignore` 已排除）。

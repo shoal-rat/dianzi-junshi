@@ -168,9 +168,6 @@ Fully quit Claude Code (or Codex) and open it again; a newly installed skill loa
 **How do I switch people, or chase a few at once?**
 Just say "switch" or "new one." It lists the people you've set up and you pick. Each gets their own profile, and they never get mixed up.
 
-**Are my chats safe?**
-Profiles live only on your own computer in the `partners/` folder, uncommitted by default. Delete the file and it's gone.
-
 **Will it teach me to run games or PUA people?**
 No. It helps you show your best self, see through the other person's games, and keep your pacing, not manipulate anyone.
 
@@ -186,10 +183,6 @@ It doesn't just hand your message to an AI and let it wing a line. Every time, i
 4. **Hand you lines**: three ready-to-send replies, then one more pass for "does this sound like a real person" to strip the filler.
 
 Every time you send, give feedback, or correct it, it writes that back to the person's profile, so it sharpens with use and remembers across windows.
-
-## Your data
-
-Profiles live locally in `partners/`, uncommitted by default (`.gitignore` already excludes it). Delete a person's file and their memory goes with it.
 
 ## License
 
