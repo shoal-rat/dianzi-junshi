@@ -57,6 +57,12 @@ Starting conversations, remembering what you said, catching your jokes, agreeing
 
 The left column is text you can send as-is. The right is for your eyes only: when to book, whether to bring flowers, how to order, when it's fine to float a next time. Kept apart so you never paste "remember to book the table" by accident.
 
+**Chasing more than one? Each stays separate.**
+
+![On open it asks who you're talking to; pick someone or start a new profile](assets/demo-switch.svg)
+
+You're not stuck with one person. Everyone gets their own profile (stage, chat habits, what actually works), all kept apart. Each time you open it, it asks who you're on about and lets you pick or start a new one, so it never mixes up one person's notes with another's.
+
 **And along the way**
 
 - **Reads Moments** — drop in screenshots; it looks at makeup, outfit, filters, and comment threads to find openers. Use a setup that can see images; half of a Moments feed lives in the pictures.
@@ -98,7 +104,7 @@ ChatGPT can't read your local files — setup is in [platforms/chatgpt-instructi
 
 ## Then just talk
 
-Open Claude Code or Codex and say it plainly:
+Open Claude Code or Codex; it first asks who you're talking to (pick one or start a new one), then you just talk:
 
 ```text
 help me with someone, set up a profile
@@ -106,17 +112,18 @@ help me with someone, set up a profile
 what does this mean, do I still have a shot
 I want to send "are you ignoring me" — should I
 they said yes to the weekend, help me plan it
+new profile, there's someone else now
 ```
 
 It works out whether to analyze, draft, or tell you to back off. If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all work too. You just don't need them.
 
 ## How it plays
 
-It helps you show your best self, say things clearly, and keep your pacing. It won't run lines, check up on people, or go cold on them; that stuff is cheap and it doesn't work. You're the lead; it's only the advisor.
+It helps you show your best self, say things clearly, and keep your pacing. No games and no tug-of-war; that stuff is cheap and it doesn't work. You're the lead; it's only the advisor.
 
 ## Your data
 
-Every profile lives locally in `partners/`, uncommitted by default (`.gitignore` already excludes it). For real chat logs, blur names, avatars, schools, employers, and locations first. Delete the file and the memory goes with it.
+Everyone gets their own profile, stored locally in `partners/` and uncommitted by default (`.gitignore` already excludes it). Delete a person's file and their memory goes with it.
 
 ## License
 

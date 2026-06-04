@@ -75,11 +75,9 @@ git clone https://github.com/shoal-rat/dianzi-junshi.git ".agents\skills\dianzi-
 
 注意：Codex 会扫描 `.agents/skills`，不是任意项目根目录。把本仓库直接当工作目录打开时，仍建议复制到 `.agents/skills/dianzi-junshi` 或 `$HOME/.agents/skills/dianzi-junshi`。
 
-## 数据与隐私
+## 档案存哪
 
-Claude Code 和 Codex 可以读写本地 `partners/`，因此适合保存长期档案。`partners/` 已被 `.gitignore` 忽略，不会被默认提交。
-
-如果你让 Codex 帮你处理真实聊天记录，建议先删掉真实姓名、手机号、地址、学校、公司等可识别信息。
+Claude Code 和 Codex 能读写本地 `partners/`，所以适合存长期档案。每个对象一个文件夹，互不干扰；`partners/` 已被 `.gitignore` 忽略，不会默认提交。
 
 ## 常用能力
 
