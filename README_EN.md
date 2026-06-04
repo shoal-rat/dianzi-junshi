@@ -49,7 +49,13 @@ It breaks down what they literally said, the feeling under it, and what they act
 
 ![Interest score with evidence, plus anti-simp stop-loss](assets/demo-interest.svg)
 
-Starting conversations, remembering what you said, catching your jokes, agreeing to meet: points up. Endless "haha," dodged plans, showing up only when they need a favor: points down. If they're blowing hot and cold, dangling promises, or keeping you as one of several, it says so, so you can tell real interest from being strung along. Turn on anti-simp mode and when a thread clearly isn't worth more effort, it tells you to stop rather than cheer you on.
+Starting conversations, remembering what you said, catching your jokes, agreeing to meet: points up. Endless "haha," dodged plans, showing up only when they need a favor: points down. Turn on anti-simp mode and when a thread clearly isn't worth more effort, it tells you to stop rather than cheer you on.
+
+**Spot their games the moment they start**
+
+![It flags dangling promises and hot-and-cold games, with a no-bite reply and a take-back-control move](assets/demo-tactics.svg)
+
+Hot and cold, dangling maybes, all flirt and no plans, playing hard to get: it knows these, tells you whether it's a game or just normal push-pull, then hands you a move that holds: not taking the bait, or pulling your attention back. When push-pull is the right call, it plants a setup to tip the rhythm your way.
 
 **Once you have a date, replies and reminders stay apart**
 
