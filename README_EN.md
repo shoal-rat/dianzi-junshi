@@ -162,7 +162,7 @@ Yes. Follow Path A and paste the lines one at a time; they're all written out fo
 On Windows, install [Git](https://git-scm.com/downloads/win) (just click through), then redo step 2. Still stuck? Use the ChatGPT path.
 
 **It's installed but doesn't recognize the skill, or ignores me?**
-Fully quit Claude Code (or Codex) and open it again; a newly installed skill loads on restart. Then say "help me with someone."
+Fully quit Claude Code (or Codex) and open it again; a newly installed skill loads on restart. Then say "help me with someone." If it still doesn't wake up, type `/dianzi-junshi` in Claude Code and hit Enter to call it directly.
 
 **How do I switch people, or chase a few at once?**
 Just say "switch" or "new one." It lists the people you've set up and you pick. Each gets their own profile, and they never get mixed up.
