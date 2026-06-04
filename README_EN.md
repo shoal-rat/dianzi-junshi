@@ -2,9 +2,9 @@
 
 # Dianzi Junshi
 
-### Paste a chat screenshot, get three replies you can send right now.
+### A Chinese dating-chat agent for people who freeze up, overthink, or cannot read the room.
 
-For people who freeze up, who worry about saying the wrong thing, who can't read what the other person actually means.
+Paste a chat screenshot. It reads the situation, judges interest, drafts three replies, and switches into anti-Haiwang/Haihou push-pull mode when someone looks like a player.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/runs_in-Claude_Code-blue)](https://claude.ai/code)
@@ -15,114 +15,111 @@ For people who freeze up, who worry about saying the wrong thing, who can't read
 
 ![Paste a screenshot, get three replies you can send](assets/demo-reply.svg)
 
-> Want to jump straight in? See [Setup and first run](#setup-and-first-run) and paste one line at a time. No coding needed. Below is what it does first.
+> Want to jump straight in? See [Setup and first run](#setup-and-first-run). You paste a few commands once, then talk normally.
 
----
+## Who It Helps
 
-The hard part of chasing someone usually isn't the words.
+Use it when you are stuck on:
 
-It's not knowing whether that reply means anything, whether to flirt back or pull away, whether the line you want to send will scare them off. Their Moments feed, the restaurant, the flowers once they say yes. Each is its own puzzle.
+- Whether their reply actually means anything.
+- How to flirt without sounding oily, needy, or too intense.
+- Whether hot-and-cold behavior is normal push-pull or a player pattern.
+- What to say once a date is possible.
+- Remembering multiple people without mixing up their details.
 
-Dianzi Junshi handles that. It reads your Chinese chats, tells you what they mean and whether they're into you, then hands you a few short replies that sound like a person instead of a script.
+The default playbook is simple: **show who you are first, flirt lightly, move forward when they catch the ball, pull back when they do not, and switch tactics when the other person looks like a Haiwang/Haihou.**
 
-The approach is stubborn and simple:
+## Core Features
 
-> Show who you are first, then flirt lightly.
-> They catch it, move forward. They don't, stop pushing. Clearly no, leave cleanly.
+### 1. Reads the chat and gives sendable replies
 
-## Contents
+It breaks the message into literal meaning, emotional state, and what they may actually want, then gives three versions: safe, flirty, and show-yourself. Each one includes an oiliness score for the current stage.
 
-- [What it does](#what-it-does)
-- [Oiliness](#oiliness)
-- [How it plays](#how-it-plays)
-- [Setup and first run](#setup-and-first-run)
-- [FAQ](#faq)
-- [How it works](#how-it-works)
-
-## What it does
-
-**Reads the chat, gives you three replies**
-
-It breaks down what they literally said, the feeling under it, and what they actually want, then gives three versions: safe, flirty, show-yourself. Each one carries an oiliness score (how sweet this stage can take), and anything over the line gets pulled back down for you.
-
-**Whether they're actually into you**
+### 2. Judges whether they are into you
 
 ![Interest score with evidence, plus anti-simp stop-loss](assets/demo-interest.svg)
 
-Starting conversations, remembering what you said, catching your jokes, agreeing to meet: points up. Endless "haha," dodged plans, showing up only when they need a favor: points down. Turn on anti-simp mode and when a thread clearly isn't worth more effort, it tells you to stop rather than cheer you on.
+Initiating, remembering your details, catching your jokes, and agreeing to meet push the score up. Endless "haha," vague plans, and showing up only when they need help push it down. Anti-simp mode tells you when a thread is not worth more effort.
 
-**Different types need different plays**
+### 3. Anti-Haiwang/Haihou mode
 
-Direct, slow-burn, aesthetic/ritual, social butterfly, high-option player type: it reads the chat and Moments evidence, then picks a playbook and a push-pull intensity. Pursuing men and pursuing women get calibrated against common social scripts, without forcing everything through gender.
+![Anti-Haiwang/Haihou mode with confidence score, signals, and push-pull strategy](assets/demo-anti-player.svg)
 
-**Spot their games the moment they start**
+It watches older patterns like hot-and-cold and all-flirt-no-plans, plus newer platform-native signals: template-perfect emotional value, flirty comment sections, Moments bait, multi-line scheduling, and holiday heat without concrete plans.
 
-![It flags dangling promises and hot-and-cold games, with a no-bite reply and a take-back-control move](assets/demo-tactics.svg)
+When the confidence score gets high, it changes the game:
 
-Hot and cold, dangling maybes, all flirt and no plans, playing hard to get: it knows these, tells you whether it's a game or just normal push-pull, then hands you a move that holds. It also watches newer platform-native signals: template-perfect emotional value, flirty comment sections, Moments bait, multi-line scheduling, and holiday heat without plans. When push-pull is the right call, it adds a strategy box: when to reply, whether to pause, what feedback to watch, and a Haiwang/Haihou confidence score.
+- **Lower frequency**: stop feeding endless emotional value.
+- **Push the ball back**: turn "someday" into time, place, and action.
+- **Test another time slot**: check whether attention exists outside their usual maintenance window.
+- **Check your details**: pretty words matter less if they remember nothing about you.
+- **Ask for concrete plans**: real action gets more investment; vague warmth does not.
 
-**Anti-Haiwang/Haihou mode: when it spots one, it changes the game**
+### 4. Different types need different plays
 
-When the confidence score gets high, it stops feeding endless emotional value and switches into a push-pull sparring plan: lower frequency, push the ball back, test another time slot, check whether they remember your details, and ask for concrete plans. Pretty words do not get extra investment; real action does.
+Direct, slow-burn, aesthetic/ritual, social butterfly, high-option player type: it reads the chat and Moments evidence, then picks a playbook and push-pull intensity. Pursuing men and pursuing women get calibrated against common social scripts, without forcing everything through gender.
 
-**Once you have a date, replies and reminders stay apart**
+### 5. Reads Moments and social screenshots
+
+Moments feeds are mostly visual. It looks at makeup, outfit, filters, framing, comments, captions, stickers, and interaction patterns to infer openers, date ideas, gift hints, and what not to touch.
+
+### 6. Keeps date replies and private reminders apart
 
 ![Left column to send, right column for your eyes only](assets/demo-dateplan.svg)
 
-The left column is text you can send as-is. The right is for your eyes only: when to book, whether to bring flowers, how to order, when it's fine to float a next time. Kept apart so you never paste "remember to book the table" by accident. It also watches the clock and the calendar: your anniversaries and birthdays, plus 520, Qixi, and Valentine's, counted down so it reminds you to book and shop before they sneak up.
+The sendable reply stays separate from user-only reminders: when to book, whether to bring flowers, what to order, and how to follow up. That way you do not accidentally paste "remember to book the table."
 
-**Chasing more than one? Each stays separate.**
+### 7. Remembers each person separately
 
 ![On open it asks who you're talking to; pick someone or start a new profile](assets/demo-switch.svg)
 
-You're not stuck with one person. Everyone gets their own profile (stage, chat habits, what actually works), all kept apart. Each time you open it, it asks who you're on about and lets you pick or start a new one, so it never mixes up one person's notes with another's.
+Each person gets a separate profile: stage, chat habits, what worked, Haiwang/Haihou confidence, Moments read, taboos, verbal habits, and sticker preferences. New windows can continue from the same file.
 
-**And along the way**
+## What The Output Looks Like
 
-- **Reads Moments**: drop in screenshots; it looks straight at the makeup, outfit, filters, and comment threads to find openers. Half of a Moments feed lives in the pictures, and it reads the pictures, not just the text.
-- **Remembers across windows**: it keeps what you've told it and corrected, and gets sharper with use. A new window picks up where you left off, no re-explaining.
-- **Sorts a folder for you**: chat logs, screenshots, selfies, your own notes; point it at a folder and it sorts them, no prep on your end.
+For a normal chat, it gives short replies:
 
-## Oiliness
+```text
+Safe: Just wrapped up a project, catching up on sleep these two days. You?
+Flirty: Busy making life slightly more interesting, while waiting for an interesting person to ask.
+Show-yourself: Went hiking this weekend. The view at the top was ridiculous. What do your weekends usually look like?
+```
 
-Not about banning sweetness or flirting. It's a reminder: at this stage, would too strong a signal scare them off?
+For push-pull, low interest, or player signals, it adds a strategy box away from the copyable reply:
 
-| Stage | Rough cap | Feel |
-| --- | --- | --- |
-| Just met / flirting | 0–1.5 / 5 | interesting, don't show your hand |
-| Pursuing / confirming | 2–2.5 / 5 | be active, don't push for an answer |
-| Early / stable | 3–3.5 / 5 | sweet is fine, don't loop |
-| Friction / crisis | 0.5–1.5 / 5 | cool down first |
+```text
+┌ Strategy
+│ Reply interval: 1-4 hours
+│ Pause advice: close this round
+│ Push-pull move: push the ball back
+│ Watch: whether they give a time/place or add details
+│ Come back with: what you sent, when you sent it, how long they took, what they replied
+└
+```
 
-## How it plays
+## Setup And First Run
 
-It helps you show your best self, say things clearly, and keep your pacing: lean in when it's time, pull back when it's time, and stay a step ahead of whatever the other person is playing. You're the lead; it's only the advisor.
-
-## Setup and first run
-
-Never used something like this? That's fine. Pick the path that fits you.
+Pick the path that fits you.
 
 ![Install once, answer a few questions, send a screenshot](assets/workflow.svg)
 
-### Path A - Claude Code (install as a Skill; recommended, remembers everyone)
+### Path A - Claude Code
 
-**Step 1, install Claude Code.** It's an AI tool that understands plain language and can read the screenshots on your computer.
+**Step 1, install Claude Code.**
 
-- Windows: press `Win + X`, click "Terminal" (older systems: "Windows PowerShell"), paste this and hit Enter:
+- Windows: press `Win + X`, click "Terminal" or "Windows PowerShell", paste:
 
   ```powershell
   irm https://claude.ai/install.ps1 | iex
   ```
 
-- Mac: press `Command + Space`, type "Terminal", hit Enter, then paste:
+- Mac: open Terminal and paste:
 
   ```bash
   curl -fsSL https://claude.ai/install.sh | bash
   ```
 
-  When it finishes, sign in with a Claude account (free to create one).
-
-**Step 2, install Dianzi Junshi as a Claude Skill.** In the same window, paste one more line; it lands in `~/.claude/skills/dianzi-junshi`:
+**Step 2, install Dianzi Junshi as a Skill.**
 
 - Windows:
 
@@ -136,58 +133,75 @@ Never used something like this? That's fine. Pick the path that fits you.
   curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
   ```
 
-**Step 3, start talking.** Type `claude` and hit Enter, then type "help me with someone." It asks a couple of quick questions, builds a profile, and then you drop in a WeChat screenshot or chat log and it replies.
+**Step 3, start talking.** Run `claude`, then say "help me with someone." It builds a profile and you drop in a WeChat screenshot or chat log.
 
 ### Path B - Codex
 
-On Codex, one command clones it into the Codex skills folder:
+Clone it into the Codex skills folder:
 
 ```powershell
 git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
 ```
 
-(On Mac / Linux use `$HOME/.agents/skills/dianzi-junshi`.) More in [platforms/codex.md](platforms/codex.md).
+On Mac / Linux:
 
-### Once it's set up, just talk to it
+```bash
+git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.agents/skills/dianzi-junshi"
+```
 
-No commands to memorize, just type normally:
+More in [platforms/codex.md](platforms/codex.md).
+
+## How To Talk To It
+
+No commands required:
 
 ```text
 (paste a screenshot) how should I reply to this
 what does this mean, do I still have a shot
 I want to send "are you ignoring me," should I
+this feels like a Haihou, help me judge
 they said yes to the weekend, help me plan it
 new profile, there's someone else now
 ```
 
-If you like commands, `/reply`, `/interest`, `/moments`, and `/date-plan` all work too. You just don't need them.
+Commands like `/reply`, `/interest`, `/moments`, `/date-plan`, and `/anti-simp on` also work.
 
-## FAQ
+## Oiliness
 
-**I'm not technical and have never used a terminal. Can I still use this?**
-Yes. Follow Path A and paste the lines one at a time; they're all written out for you, no coding needed.
+Oiliness is not about banning sweetness or flirting. It asks: at this stage, would a stronger signal scare them off?
 
-**A command errors out, or it says git is missing?**
-On Windows, install [Git](https://git-scm.com/downloads/win) (just click through), then redo step 2.
+| Stage | Rough cap | Feel |
+| --- | --- | --- |
+| Just met / flirting | 0-1.5 / 5 | interesting, do not show your hand |
+| Pursuing / confirming | 2-2.5 / 5 | active, but do not push for an answer |
+| Early / stable | 3-3.5 / 5 | sweet is fine, do not loop |
+| Friction / crisis | 0.5-1.5 / 5 | cool down first |
 
-**It's installed but doesn't recognize the skill, or ignores me?**
-Fully quit Claude Code (or Codex) and open it again; a newly installed skill loads on restart. Then say "help me with someone." If it still doesn't wake up, type `/dianzi-junshi` in Claude Code and hit Enter to call it directly.
+The Chinese UI keeps words like "油腻度", "会撩", "暧昧", "上头", and "别露底" because they are direct and useful in Chinese internet dating talk.
 
-**How do I switch people, or chase a few at once?**
-Just say "switch" or "new one." It lists the people you've set up and you pick. Each gets their own profile, and they never get mixed up.
-
-## How it works
-
-It doesn't just hand your message to an AI and let it wing a line. Every time, it runs the same pipeline:
+## How It Works
 
 ![From a screenshot to three replies, plus a memory loop that sharpens with use](assets/demo-how.svg)
 
-1. **Read the scene**: pull up this person's profile, check the time, and lift out what was actually said before inferring anything.
-2. **Three layers**: what they said, the feeling under it, what they actually want.
-3. **Weigh it**: are they into you, is this a tactic, how sweet can this stage take.
-4. **Hand you lines**: three ready-to-send replies, then one more pass for "does this sound like a real person" to strip the filler.
+1. **Read the scene**: load this person's profile, current time, stage, and recent context.
+2. **Three layers**: what they said, what mood it carries, what they may want.
+3. **Weigh it**: interest, tactics, oiliness, timing, and push-pull intensity.
+4. **Hand you lines**: three sendable replies, then a human-voice pass.
+5. **Write memory**: feedback updates what works for this person.
 
-Every time you send, give feedback, or correct it, it writes that back to the person's profile, so it sharpens with use and remembers across windows.
+## FAQ
+
+**I'm not technical. Can I still use this?**
+Yes. Follow Path A and paste the lines one by one.
+
+**A command errors out, or it says git is missing?**
+On Windows, install [Git](https://git-scm.com/downloads/win), then redo the install step.
+
+**It is installed but does not wake up.**
+Fully quit Claude Code or Codex and open it again. Newly installed skills often load after restart.
+
+**How do I switch people?**
+Say "switch" or "new one." Each person has a separate profile.
 
 ## License
 

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 540" width="940" height="540" font-family="'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <filter id="apShadow" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#0B1F33" flood-opacity="0.10"/>
+    </filter>
+    <linearGradient id="apBrand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="940" height="540" fill="#FFFFFF"/>
+  <rect x="12" y="12" width="916" height="516" rx="22" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#apShadow)"/>
+
+  <circle cx="48" cy="50" r="14" fill="url(#apBrand)"/>
+  <path d="M41 50 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="56" font-size="21" font-weight="700" fill="#111827">电子军师</text>
+  <text x="892" y="56" font-size="14" fill="#9AA3AF" text-anchor="end">演示 · 反海王/海后打擂台</text>
+  <line x1="36" y1="80" x2="904" y2="80" stroke="#EEF0F2" stroke-width="1"/>
+
+  <!-- evidence stream -->
+  <text x="40" y="116" font-size="15" font-weight="700" fill="#6B7280">聊天和朋友圈里出现的信号</text>
+  <rect x="40" y="132" width="398" height="104" rx="16" fill="#F4F6F9" stroke="#E6E8EB"/>
+  <circle cx="72" cy="166" r="15" fill="#D7B98E"/>
+  <text x="72" y="171" font-size="13" fill="#5B4A33" text-anchor="middle" font-weight="700">ta</text>
+  <rect x="96" y="148" width="210" height="34" rx="12" fill="#FFFFFF" stroke="#ECECEC"/>
+  <text x="112" y="170" font-size="14.5" fill="#1F2937">下次一定带你去</text>
+  <rect x="96" y="190" width="286" height="30" rx="11" fill="#FFFFFF" stroke="#ECECEC"/>
+  <text x="112" y="210" font-size="13.5" fill="#4B5563">朋友圈发歌 + 评论区对多人热</text>
+
+  <!-- score card -->
+  <rect x="470" y="112" width="430" height="142" rx="18" fill="#FFF7F1" stroke="#F6D9C6"/>
+  <rect x="470" y="112" width="6" height="142" rx="3" fill="#E8A33D"/>
+  <text x="496" y="146" font-size="17" font-weight="800" fill="#B45309">海王/海后置信度</text>
+  <text x="496" y="214" font-size="58" font-weight="800" fill="#B45309">72</text>
+  <text x="574" y="214" font-size="24" font-weight="700" fill="#C9A27B">/100</text>
+  <rect x="686" y="137" width="166" height="28" rx="14" fill="#FDF1E3"/>
+  <text x="769" y="156" font-size="13" font-weight="700" fill="#B45309" text-anchor="middle">偏高 · 先打擂台</text>
+  <text x="686" y="192" font-size="13.5" fill="#5B4636">命中：只撩不约、多线排班、</text>
+  <text x="686" y="216" font-size="13.5" fill="#5B4636">评论区暧昧、节日借势</text>
+
+  <!-- mode title -->
+  <rect x="40" y="278" width="860" height="54" rx="16" fill="#F0F7F6" stroke="#CFE3E0"/>
+  <text x="70" y="312" font-size="18" font-weight="800" fill="#0F766E">切换策略：不继续投喂，开始拉扯打擂台</text>
+  <path d="M650 305 h58 M700 294 l15 11 l-15 11" fill="none" stroke="#0F766E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="740" y="310" font-size="14" fill="#0F766E">看行动，不吃漂亮话</text>
+
+  <!-- strategy cards -->
+  <rect x="40" y="356" width="260" height="112" rx="16" fill="#FFFFFF" stroke="#E6E8EB"/>
+  <rect x="40" y="356" width="5" height="112" rx="2.5" fill="#0D9488"/>
+  <text x="62" y="386" font-size="15.5" font-weight="800" fill="#0F766E">降频观察</text>
+  <text x="62" y="416" font-size="14" fill="#1F2937">12-48 小时不主动</text>
+  <text x="62" y="442" font-size="12.5" fill="#9AA3AF">看 ta 会不会补主动、补细节</text>
+
+  <rect x="340" y="356" width="260" height="112" rx="16" fill="#FFFFFF" stroke="#E6E8EB"/>
+  <rect x="340" y="356" width="5" height="112" rx="2.5" fill="#3B82F6"/>
+  <text x="362" y="386" font-size="15.5" font-weight="800" fill="#1D4ED8">轻推回球</text>
+  <text x="362" y="416" font-size="14" fill="#1F2937">“你定好时间叫我”</text>
+  <text x="362" y="442" font-size="12.5" fill="#9AA3AF">把空头承诺变成行动测试</text>
+
+  <rect x="640" y="356" width="260" height="112" rx="16" fill="#FFFFFF" stroke="#E6E8EB"/>
+  <rect x="640" y="356" width="5" height="112" rx="2.5" fill="#E8A33D"/>
+  <text x="662" y="386" font-size="15.5" font-weight="800" fill="#B45309">专属细节测试</text>
+  <text x="662" y="416" font-size="14" fill="#1F2937">问一个只有认真聊过才懂的点</text>
+  <text x="662" y="442" font-size="12.5" fill="#9AA3AF">模板话术接不上，置信度上调</text>
+
+  <!-- footer strategy box -->
+  <text x="48" y="504" font-size="13.5" fill="#6B7280">策略框会分开放：回复间隔、消失建议、拉扯动作、看什么反馈，避免用户误复制。</text>
+</svg>
