@@ -67,7 +67,7 @@ def list_sessions(base_dir, slug, limit=10):
         print("还没有对话记录。")
         return
 
-    print(f"\n{'序号':<4} {'时间':<22} {'消息类型':<15} {'方案':<5} {'效果':<8} {'兴趣':<6} {'海王'}")
+    print(f"\n{'序号':<4} {'时间':<22} {'消息类型':<15} {'方案':<5} {'效果':<8} {'兴趣':<6} {'海王':<6} {'强度'}")
     print('-' * 78)
     for i, fname in enumerate(sessions, 1):
         path = os.path.join(history_dir, fname)
@@ -79,7 +79,8 @@ def list_sessions(base_dir, slug, limit=10):
         outcome = s.get('outcome', '未标记')
         interest_delta = s.get('interest_delta', '-')
         player_delta = s.get('player_confidence_delta', '-')
-        print(f"{i:<4} {ts:<22} {msg_type:<15} {chosen:<5} {outcome:<8} {interest_delta:<6} {player_delta}")
+        intensity = s.get('pushpull_intensity', '-')
+        print(f"{i:<4} {ts:<22} {msg_type:<15} {chosen:<5} {outcome:<8} {interest_delta:<6} {player_delta:<6} {intensity}")
 
 
 def get_effective_patterns(base_dir, slug):
@@ -111,6 +112,10 @@ def get_effective_patterns(base_dir, slug):
                 'player_up': 0,
                 'player_down': 0,
                 'cadence_good': 0,
+                'intensity_0': 0,
+                'intensity_1': 0,
+                'intensity_2': 0,
+                'intensity_3': 0,
                 'flirt_caught': 0,
             }
         if outcome in ('good', 'great', '效果好', '很好用'):
@@ -148,6 +153,10 @@ def get_effective_patterns(base_dir, slug):
         if s.get('cadence_worked'):
             strategy_results[strategy]['cadence_good'] += 1
 
+        intensity = s.get('pushpull_intensity', '')
+        if str(intensity) in ('0', '1', '2', '3'):
+            strategy_results[strategy][f'intensity_{intensity}'] += 1
+
     return strategy_results
 
 
@@ -166,7 +175,9 @@ def print_stats(base_dir, slug):
             f"{strategy:<20} 好用: {counts['good']}次  差: {counts['bad']}次  "
             f"好用率: {good_rate:.0f}%  兴趣+:{counts['interest_up']}  "
             f"兴趣-:{counts['interest_down']}  海王+:{counts['player_up']}  "
-            f"海王-:{counts['player_down']}  节奏有效:{counts['cadence_good']}  接撩:{counts['flirt_caught']}"
+            f"海王-:{counts['player_down']}  节奏有效:{counts['cadence_good']}  "
+            f"强度0/1/2/3:{counts['intensity_0']}/{counts['intensity_1']}/{counts['intensity_2']}/{counts['intensity_3']}  "
+            f"接撩:{counts['flirt_caught']}"
         )
 
 
@@ -192,6 +203,8 @@ def main():
     parser.add_argument('--actual-reply-interval', default='', help='Actual reply interval')
     parser.add_argument('--pause-advice', default='', help='Pause/disappear recommendation')
     parser.add_argument('--pushpull-action', default='', help='Push-pull action used')
+    parser.add_argument('--pursuit-type', default='', help='Pursuit playbook type')
+    parser.add_argument('--pushpull-intensity', default='', help='Push-pull intensity 0-3')
     parser.add_argument('--cadence-worked', action='store_true',
                         help='The cadence/pause strategy appeared to work')
     parser.add_argument('--caught-flirt', action='store_true',
@@ -218,6 +231,8 @@ def main():
             'actual_reply_interval': args.actual_reply_interval,
             'pause_advice': args.pause_advice,
             'pushpull_action': args.pushpull_action,
+            'pursuit_type': args.pursuit_type,
+            'pushpull_intensity': args.pushpull_intensity,
             'cadence_worked': args.cadence_worked,
             'caught_flirt_signal': args.caught_flirt,
             'continued_user_self_display': args.continued_self_display,

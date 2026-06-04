@@ -51,6 +51,10 @@ It breaks down what they literally said, the feeling under it, and what they act
 
 Starting conversations, remembering what you said, catching your jokes, agreeing to meet: points up. Endless "haha," dodged plans, showing up only when they need a favor: points down. Turn on anti-simp mode and when a thread clearly isn't worth more effort, it tells you to stop rather than cheer you on.
 
+**Different types need different plays**
+
+Direct, slow-burn, aesthetic/ritual, social butterfly, high-option player type: it reads the chat and Moments evidence, then picks a playbook and a push-pull intensity. Pursuing men and pursuing women get calibrated against common social scripts, without forcing everything through gender.
+
 **Spot their games the moment they start**
 
 ![It flags dangling promises and hot-and-cold games, with a no-bite reply and a take-back-control move](assets/demo-tactics.svg)

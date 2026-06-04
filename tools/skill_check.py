@@ -21,6 +21,7 @@ REQUIRED_FILES = [
     "prompts/moments_analyzer.md",
     "prompts/date_planner.md",
     "references/evidence_frameworks.md",
+    "references/pursuit_playbooks.md",
     "references/sticker_pack_guide.md",
     "platforms/codex.md",
 ]
@@ -88,6 +89,8 @@ def check_skill_md():
         "策略方框",
         "回复间隔",
         "海王/海后置信度",
+        "追法类型",
+        "拉扯强度",
         "机器腔",
         "表情包",
     ]

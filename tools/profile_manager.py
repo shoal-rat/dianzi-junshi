@@ -155,6 +155,14 @@ def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
             'pause_advice': '',
             'last_pushpull_action': '',
         },
+        'pursuit_playbook': {
+            'type': '待观察',
+            'gender_script': '待观察',
+            'pushpull_intensity': None,
+            'effective_actions': [],
+            'escalation_window': '',
+            'pause_window': '',
+        },
         'micro_info': {
             'mbti': '',
             'astrology_attitude': '',
