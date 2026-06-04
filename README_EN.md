@@ -55,7 +55,7 @@ Starting conversations, remembering what you said, catching your jokes, agreeing
 
 ![It flags dangling promises and hot-and-cold games, with a no-bite reply and a take-back-control move](assets/demo-tactics.svg)
 
-Hot and cold, dangling maybes, all flirt and no plans, playing hard to get: it knows these, tells you whether it's a game or just normal push-pull, then hands you a move that holds: not taking the bait, or pulling your attention back. When push-pull is the right call, it plants a setup to tip the rhythm your way.
+Hot and cold, dangling maybes, all flirt and no plans, playing hard to get: it knows these, tells you whether it's a game or just normal push-pull, then hands you a move that holds. When push-pull is the right call, it adds a strategy box: when to reply, whether to pause, what feedback to watch, and a Haiwang/Haihou confidence score.
 
 **Once you have a date, replies and reminders stay apart**
 
@@ -167,9 +167,6 @@ Fully quit Claude Code (or Codex) and open it again; a newly installed skill loa
 
 **How do I switch people, or chase a few at once?**
 Just say "switch" or "new one." It lists the people you've set up and you pick. Each gets their own profile, and they never get mixed up.
-
-**Will it teach me to run games or PUA people?**
-No. It helps you show your best self, see through the other person's games, and keep your pacing, not manipulate anyone.
 
 ## How it works
 

@@ -67,7 +67,7 @@ def list_sessions(base_dir, slug, limit=10):
         print("还没有对话记录。")
         return
 
-    print(f"\n{'序号':<4} {'时间':<22} {'消息类型':<15} {'方案':<5} {'效果':<8} {'兴趣'}")
+    print(f"\n{'序号':<4} {'时间':<22} {'消息类型':<15} {'方案':<5} {'效果':<8} {'兴趣':<6} {'海王'}")
     print('-' * 78)
     for i, fname in enumerate(sessions, 1):
         path = os.path.join(history_dir, fname)
@@ -78,7 +78,8 @@ def list_sessions(base_dir, slug, limit=10):
         chosen = s.get('chosen_option', '-')
         outcome = s.get('outcome', '未标记')
         interest_delta = s.get('interest_delta', '-')
-        print(f"{i:<4} {ts:<22} {msg_type:<15} {chosen:<5} {outcome:<8} {interest_delta}")
+        player_delta = s.get('player_confidence_delta', '-')
+        print(f"{i:<4} {ts:<22} {msg_type:<15} {chosen:<5} {outcome:<8} {interest_delta:<6} {player_delta}")
 
 
 def get_effective_patterns(base_dir, slug):
@@ -107,6 +108,9 @@ def get_effective_patterns(base_dir, slug):
                 'neutral': 0,
                 'interest_up': 0,
                 'interest_down': 0,
+                'player_up': 0,
+                'player_down': 0,
+                'cadence_good': 0,
                 'flirt_caught': 0,
             }
         if outcome in ('good', 'great', '效果好', '很好用'):
@@ -130,6 +134,20 @@ def get_effective_patterns(base_dir, slug):
         if s.get('caught_flirt_signal'):
             strategy_results[strategy]['flirt_caught'] += 1
 
+        player_delta = s.get('player_confidence_delta', '')
+        if isinstance(player_delta, str) and player_delta.startswith('+'):
+            strategy_results[strategy]['player_up'] += 1
+        elif isinstance(player_delta, str) and player_delta.startswith('-'):
+            strategy_results[strategy]['player_down'] += 1
+        elif isinstance(player_delta, (int, float)):
+            if player_delta > 0:
+                strategy_results[strategy]['player_up'] += 1
+            elif player_delta < 0:
+                strategy_results[strategy]['player_down'] += 1
+
+        if s.get('cadence_worked'):
+            strategy_results[strategy]['cadence_good'] += 1
+
     return strategy_results
 
 
@@ -147,7 +165,8 @@ def print_stats(base_dir, slug):
         print(
             f"{strategy:<20} 好用: {counts['good']}次  差: {counts['bad']}次  "
             f"好用率: {good_rate:.0f}%  兴趣+:{counts['interest_up']}  "
-            f"兴趣-:{counts['interest_down']}  接撩:{counts['flirt_caught']}"
+            f"兴趣-:{counts['interest_down']}  海王+:{counts['player_up']}  "
+            f"海王-:{counts['player_down']}  节奏有效:{counts['cadence_good']}  接撩:{counts['flirt_caught']}"
         )
 
 
@@ -167,6 +186,14 @@ def main():
     parser.add_argument('--strategy', default='', help='Strategy name of chosen option')
     parser.add_argument('--outcome', default='', help='How it went: good/bad/neutral')
     parser.add_argument('--interest-delta', default='', help='Interest score change, e.g. +1, 0, -2')
+    parser.add_argument('--player-confidence-delta', default='',
+                        help='Haiwang/Haihou confidence change, e.g. +10, 0, -10')
+    parser.add_argument('--reply-interval-advice', default='', help='Recommended reply interval')
+    parser.add_argument('--actual-reply-interval', default='', help='Actual reply interval')
+    parser.add_argument('--pause-advice', default='', help='Pause/disappear recommendation')
+    parser.add_argument('--pushpull-action', default='', help='Push-pull action used')
+    parser.add_argument('--cadence-worked', action='store_true',
+                        help='The cadence/pause strategy appeared to work')
     parser.add_argument('--caught-flirt', action='store_true',
                         help='Partner caught/responded to a flirt signal')
     parser.add_argument('--continued-self-display', action='store_true',
@@ -186,6 +213,12 @@ def main():
             'chosen_strategy': args.strategy,
             'outcome': args.outcome,
             'interest_delta': args.interest_delta,
+            'player_confidence_delta': args.player_confidence_delta,
+            'reply_interval_advice': args.reply_interval_advice,
+            'actual_reply_interval': args.actual_reply_interval,
+            'pause_advice': args.pause_advice,
+            'pushpull_action': args.pushpull_action,
+            'cadence_worked': args.cadence_worked,
             'caught_flirt_signal': args.caught_flirt,
             'continued_user_self_display': args.continued_self_display,
         }

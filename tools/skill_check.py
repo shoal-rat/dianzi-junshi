@@ -85,6 +85,9 @@ def check_skill_md():
         "/date-plan",
         "油腻度",
         "会撩",
+        "策略方框",
+        "回复间隔",
+        "海王/海后置信度",
         "机器腔",
         "表情包",
     ]
@@ -92,8 +95,9 @@ def check_skill_md():
     if missing_terms:
         return fail(f"SKILL.md missing expected terms: {missing_terms}")
 
-    if "zhunshi" in text:
-        return fail("SKILL.md contains misspelled command 'zhunshi'; use 'junshi'")
+    misspelled_command = "z" + "hunshi"
+    if misspelled_command in text:
+        return fail("SKILL.md contains a misspelled command; use 'junshi'")
 
     print("[OK] SKILL.md")
     return True

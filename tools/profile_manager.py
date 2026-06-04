@@ -144,6 +144,17 @@ def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
             'confidence': '待观察',
             'trend': '待观察',
         },
+        'player_confidence': {
+            'score': None,
+            'level': '待观察',
+            'confidence': '待观察',
+            'trend': '待观察',
+        },
+        'cadence_strategy': {
+            'preferred_reply_interval': '',
+            'pause_advice': '',
+            'last_pushpull_action': '',
+        },
         'micro_info': {
             'mbti': '',
             'astrology_attitude': '',
