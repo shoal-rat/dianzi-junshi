@@ -123,17 +123,11 @@
 
 **第 2 步，把电子军师装成 Claude Skill。**
 
-- Windows：
-
+  进入claude code后，复制以下命令
   ```powershell
-  irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
+  帮我把这个skill安装好claude code，让我可以开关：https://github.com/shoal-rat/dianzi-junshi下的skill
   ```
 
-- Mac：
-
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
-  ```
 
 **第 3 步，开聊。** 输入 `claude` 回车，直接说「帮我追个人」。它会建档，然后你把微信截图丢进去。
 
@@ -141,16 +135,10 @@
 
 ### 路线 B · Codex
 
-在 Codex 里，一行命令克隆到技能目录：
+在 Codex 里，复制以下命令：
 
 ```powershell
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.codex\\skills\dianzi-junshi"
-```
-
-Mac / Linux 用：
-
-```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.agents/skills/dianzi-junshi"
+  帮我把这个skill安装好codex，让我可以开关：https://github.com/shoal-rat/dianzi-junshi下的skill
 ```
 
 更多见 [platforms/codex.md](platforms/codex.md)。
