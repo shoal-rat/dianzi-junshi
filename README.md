@@ -144,7 +144,7 @@
 在 Codex 里，一行命令克隆到技能目录：
 
 ```powershell
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
+git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.codex\\skills\dianzi-junshi"
 ```
 
 Mac / Linux 用：
