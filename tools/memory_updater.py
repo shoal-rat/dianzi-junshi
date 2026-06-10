@@ -77,6 +77,7 @@ def show_memory(slug: str):
     """Display the full memory layer for a partner."""
     profile_path = PARTNERS_DIR / slug / "profile.md"
     meta_path = PARTNERS_DIR / slug / "meta.json"
+    image_observations_path = PARTNERS_DIR / slug / "materials" / "image_observations.jsonl"
 
     if not profile_path.exists():
         print(f"Profile not found: {profile_path}")
@@ -86,6 +87,8 @@ def show_memory(slug: str):
 
     name = slug
     stage_info = ""
+    analysis_version = ""
+    interest = {}
     if meta_path.exists():
         with open(meta_path, encoding="utf-8") as f:
             meta = json.load(f)
@@ -93,11 +96,27 @@ def show_memory(slug: str):
         stage = meta.get("stage", "?")
         stage_name = meta.get("stage_name", "")
         stage_info = f"阶段 {stage}（{stage_name}）"
+        analysis_version = meta.get("analysis_version", "未知")
+        interest = meta.get("interest", {})
+
+    image_total, image_reviewed = _image_observation_counts(image_observations_path)
 
     print(f"\n{'━' * 50}")
     print(f"{name} 的学习记忆档案")
     if stage_info:
         print(f"   {stage_info}")
+    if analysis_version:
+        print(f"   分析版本：{analysis_version}")
+    if interest:
+        print(
+            "   兴趣四维："
+            f"聊天甜度 {interest.get('chat_sweetness', '待观察')} · "
+            f"主动性 {interest.get('initiative', '待观察')} · "
+            f"关系承诺 {interest.get('relationship_commitment', '待观察')} · "
+            f"见面/行动兑现 {interest.get('action_fulfillment', '待观察')}"
+        )
+    if image_total:
+        print(f"   图片留痕：{image_reviewed}/{image_total} 已复核")
     print(f"{'━' * 50}\n")
 
     # Extract and print memory sections
@@ -125,6 +144,25 @@ def show_memory(slug: str):
     print(f"{'━' * 50}")
     print("使用 /memory delete [N] 删除某条错误记忆")
     print(f"{'━' * 50}\n")
+
+
+def _image_observation_counts(path: Path) -> tuple[int, int]:
+    """Count image observation records and reviewed records."""
+    if not path.exists():
+        return 0, 0
+    total = 0
+    reviewed = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        total += 1
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if record.get("review_status") == "reviewed":
+            reviewed += 1
+    return total, reviewed
 
 
 def _extract_section(content: str, section_name: str) -> str:

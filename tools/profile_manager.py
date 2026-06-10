@@ -92,9 +92,17 @@ def show_partner(base_dir, slug):
     print(f"\n创建时间：{meta.get('created_at', '')}")
     print(f"最后更新：{meta.get('updated_at', '')}")
     print(f"版本：{meta.get('version', 'v1')}")
+    print(f"分析版本：{meta.get('analysis_version', '未知')}")
     print(f"当前阶段：{meta.get('stage_name', '未知')}（{meta.get('stage', '未知')}）")
     print(f"油腻上限：{meta.get('oiliness_cap', '未知')}/5")
     print(f"反舔狗模式：{'开启' if meta.get('anti_simp_mode') else '关闭'}")
+    interest = meta.get('interest', {})
+    if interest:
+        print("兴趣四维：")
+        print(f"  聊天甜度：{interest.get('chat_sweetness', '待观察')}")
+        print(f"  主动性：{interest.get('initiative', '待观察')}")
+        print(f"  关系承诺：{interest.get('relationship_commitment', '待观察')}")
+        print(f"  见面/行动兑现：{interest.get('action_fulfillment', '待观察')}")
     print(f"纠正次数：{meta.get('corrections_count', 0)}")
 
     # Show session count
@@ -110,6 +118,8 @@ def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
     history_dir = os.path.join(partner_dir, 'history')
     versions_dir = os.path.join(partner_dir, 'versions')
     materials_dir = os.path.join(partner_dir, 'materials')
+    analysis_path = os.path.join(versions_dir, 'analysis_v1.md')
+    image_observations_path = os.path.join(materials_dir, 'image_observations.jsonl')
 
     for d in [partner_dir, history_dir, versions_dir, materials_dir]:
         os.makedirs(d, exist_ok=True)
@@ -123,6 +133,7 @@ def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
         'created_at': utc_now_iso(),
         'updated_at': utc_now_iso(),
         'version': 'v1',
+        'analysis_version': 'versions/analysis_v1.md',
         'stage': stage,
         'stage_name': stage_name,
         'oiliness_cap': oiliness_cap,
@@ -141,8 +152,14 @@ def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
         },
         'interest': {
             'score': None,
+            'overall_score': None,
+            'chat_sweetness': None,
+            'initiative': None,
+            'relationship_commitment': None,
+            'action_fulfillment': None,
             'confidence': '待观察',
             'trend': '待观察',
+            'stage_calibration': '待观察',
         },
         'player_confidence': {
             'score': None,
@@ -181,6 +198,30 @@ def init_partner(base_dir, slug, name, stage=1, anti_simp_mode=False):
     if not os.path.exists(meta_path):
         with open(meta_path, 'w', encoding='utf-8') as f:
             json.dump(meta, f, ensure_ascii=False, indent=2)
+
+    if not os.path.exists(analysis_path):
+        with open(analysis_path, 'w', encoding='utf-8') as f:
+            f.write(
+                f"# analysis_v1 - {name}\n\n"
+                f"生成时间：{utc_now_iso()}\n"
+                "材料范围：建档初始化，暂无材料。\n"
+                "上一版本：无\n\n"
+                "## 一句话结论\n\n"
+                "待观察。代号只是标签，关系阶段需要根据聊天、承诺、见面和行动兑现独立校准。\n\n"
+                "## 四维兴趣分\n\n"
+                "| 维度 | 分数 | 证据 | 解释 |\n"
+                "|------|------|------|------|\n"
+                "| 聊天甜度 | 待观察 | 暂无 | 待材料补充 |\n"
+                "| 主动性 | 待观察 | 暂无 | 待材料补充 |\n"
+                "| 关系承诺 | 待观察 | 暂无 | 待材料补充 |\n"
+                "| 见面/行动兑现 | 待观察 | 暂无 | 待材料补充 |\n\n"
+                "## 下一步验证点\n\n"
+                "- 等用户提供聊天记录、截图或后续反馈后更新本分析版本。\n"
+            )
+
+    if not os.path.exists(image_observations_path):
+        with open(image_observations_path, 'w', encoding='utf-8') as f:
+            f.write('')
 
     print(f"已创建目录结构：{partner_dir}")
     return partner_dir
