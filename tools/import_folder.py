@@ -15,6 +15,7 @@ from pathlib import Path
 IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.heic', '.heif'}
 TEXT_EXTS = {'.txt', '.md', '.csv', '.json', '.log'}
 DOC_EXTS = {'.docx', '.doc', '.pdf', '.rtf'}
+IMAGE_CATEGORIES = {'moments_image', 'appearance_image', 'screenshot', 'image_unknown'}
 
 KEYWORDS = {
     'chat_text': ('chat', 'wechat', '微信', '聊天', '记录', '对话', 'qq', 'message', 'messages'),
@@ -106,9 +107,49 @@ def build_manifest(root, items):
         'next_steps': [
             'Use chat_text files with tools/wechat_parser.py or direct analysis.',
             'Use a multimodal model for moments_image, appearance_image, screenshot, and image_unknown files.',
+            'Update image_observations.jsonl once per image with initiator, receiver_response, counter-question, invite, action fulfillment, cooling signals, visible evidence, and confidence.',
             'Read notes/document files when the platform supports their format; otherwise ask the user to export text.',
         ],
     }
+
+
+def image_observation_record(item, index):
+    return {
+        'image_id': f"img_{index:04d}",
+        'path': item['path'],
+        'name': item['name'],
+        'category': item['category'],
+        'modified_at': item['modified_at'],
+        'review_status': 'pending_multimodal_review',
+        'visible_context': '',
+        'initiator': 'unknown',
+        'receiver_response': 'unknown',
+        'has_counter_question': None,
+        'has_invite': None,
+        'invite_detail': '',
+        'action_fulfillment': 'unknown',
+        'warming_signals': [],
+        'cooling_signals': [],
+        'commitment_signals': [],
+        'visible_evidence': [],
+        'stage_evidence': '',
+        'confidence': 'low',
+        'notes': '',
+    }
+
+
+def write_image_observations(manifest, output_json):
+    obs_path = Path(output_json).with_name('image_observations.jsonl')
+    image_items = [
+        item for item in manifest['files']
+        if item['category'] in IMAGE_CATEGORIES
+    ]
+    lines = [
+        json.dumps(image_observation_record(item, index), ensure_ascii=False)
+        for index, item in enumerate(image_items, start=1)
+    ]
+    obs_path.write_text('\n'.join(lines) + ('\n' if lines else ''), encoding='utf-8')
+    return obs_path
 
 
 def write_markdown(manifest, output_json):
@@ -132,8 +173,10 @@ def write_markdown(manifest, output_json):
         '## 建议处理顺序',
         '',
         '1. 先处理 `chat_text`，建立聊天节奏、兴趣度和口头禅基线。',
-        '2. 再用多模态模型处理 `moments_image` / `appearance_image`，提取朋友圈展示面、外貌妆容和审美偏好。',
+        '2. 再用多模态模型处理 `moments_image` / `appearance_image` / `screenshot`，并逐张更新 `image_observations.jsonl`。',
         '3. 再读取 `notes` / `document` 补充用户描述。',
+        '',
+        f"图片观察记录：`{manifest.get('image_observations_file', '')}`",
         '',
         '## 文件列表',
         '',
@@ -158,6 +201,8 @@ def main():
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
+    obs_path = write_image_observations(manifest, output)
+    manifest['image_observations_file'] = str(obs_path)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     md_path = write_markdown(manifest, output)
 
@@ -167,6 +212,7 @@ def main():
         print(f"  {category}: {count}")
     print(f"JSON: {output}")
     print(f"Markdown: {md_path}")
+    print(f"Image observations: {obs_path}")
 
 
 if __name__ == '__main__':

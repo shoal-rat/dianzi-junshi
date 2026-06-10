@@ -39,7 +39,7 @@ It breaks the message into literal meaning, emotional state, and what they may a
 
 ![Interest score with evidence, plus anti-simp stop-loss](assets/demo-interest.svg)
 
-Initiating, remembering your details, catching your jokes, and agreeing to meet push the score up. Endless "haha," vague plans, and showing up only when they need help push it down. Anti-simp mode tells you when a thread is not worth more effort.
+It does not collapse everything into one vague score. It splits interest into four dimensions: chat sweetness, initiative, relationship commitment, and meet-up/action follow-through. Initiating, remembering your details, catching your jokes, and agreeing to meet push the score up. Endless "haha," vague plans, and showing up only when they need help push it down. Anti-simp mode tells you when a thread is not worth more effort.
 
 ### 3. Anti-Haiwang/Haihou mode
 
@@ -61,7 +61,7 @@ Direct, slow-burn, aesthetic/ritual, social butterfly, high-option player type: 
 
 ### 5. Reads Moments and social screenshots
 
-Moments feeds are mostly visual. It looks at makeup, outfit, filters, framing, comments, captions, stickers, and interaction patterns to infer openers, date ideas, gift hints, and what not to touch.
+Moments feeds are mostly visual. It looks at makeup, outfit, filters, framing, comments, captions, stickers, and interaction patterns to infer openers, date ideas, gift hints, and what not to touch. Batch image imports get one structured record per image: who initiated, who caught the ball, whether there was a counter-question, whether there was an invite, and whether the signal cooled down.
 
 ### 6. Keeps date replies and private reminders apart
 
@@ -73,7 +73,7 @@ The sendable reply stays separate from user-only reminders: when to book, whethe
 
 ![On open it asks who you're talking to; pick someone or start a new profile](assets/demo-switch.svg)
 
-Each person gets a separate profile: stage, chat habits, what worked, Haiwang/Haihou confidence, Moments read, taboos, verbal habits, and sticker preferences. New windows can continue from the same file.
+Each person gets a separate profile: stage, chat habits, what worked, Haiwang/Haihou confidence, Moments read, taboos, verbal habits, and sticker preferences. New windows can continue from the same file. Profile names are labels, not relationship facts; full reviews keep `analysis_vN.md` files with evidence, scores, and next steps.
 
 ## What The Output Looks Like
 
