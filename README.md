@@ -129,7 +129,7 @@
 
   进入claude code后，复制以下命令
   ```powershell
-  帮我把这个skill安装好claude code，让我可以开关：https://github.com/shoal-rat/dianzi-junshi下的skill
+  帮我把这个skill安装到claude code，让我可以开关：https://github.com/shoal-rat/dianzi-junshi
   ```
 
 
@@ -142,7 +142,7 @@
 在 Codex 里，复制以下命令：
 
 ```powershell
-  帮我把这个skill安装好codex，让我可以开关：https://github.com/shoal-rat/dianzi-junshi下的skill
+  帮我把这个skill安装到codex，让我可以开关：https://github.com/shoal-rat/dianzi-junshi
 ```
 
 更多见 [platforms/codex.md](platforms/codex.md)。
