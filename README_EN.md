@@ -59,6 +59,8 @@ When the confidence score gets high, it changes the game:
 
 Direct, slow-burn, aesthetic/ritual, social butterfly, high-option player type: it reads the chat and Moments evidence, then picks a playbook and push-pull intensity. Pursuing men and pursuing women get calibrated against common social scripts, without forcing everything through gender.
 
+It also models a layer of **personality baseline** underneath behavior: whether the other person responds more to an edgier, harder-to-read vibe or to a gentle, reassuring one, plus what they like, dislike, and treat as off-limits. Then, within a side of yourself you actually have, it dials up the channel they respond to — not a fake persona. See a line you like on a short video or in the comments and want to use it? Paste it in and it calibrates the line to the current stage, their vibe, and your oiliness cap so it sounds like you (it never copies any creator's wording verbatim).
+
 ### 5. Reads Moments and social screenshots
 
 Moments feeds are mostly visual. It looks at makeup, outfit, filters, framing, comments, captions, stickers, and interaction patterns to infer openers, date ideas, gift hints, and what not to touch. Batch image imports get one structured record per image: who initiated, who caught the ball, whether there was a counter-question, whether there was an invite, and whether the signal cooled down.
@@ -68,6 +70,8 @@ Moments feeds are mostly visual. It looks at makeup, outfit, filters, framing, c
 ![Left column to send, right column for your eyes only](assets/demo-dateplan.svg)
 
 The sendable reply stays separate from user-only reminders: when to book, whether to bring flowers, what to order, and how to follow up. That way you do not accidentally paste "remember to book the table."
+
+The reminders also include an **in-person experience design**: building one or two moments that break the usual routine — built around what they already like or have hinted they want to try — so the date is more memorable. The guardrail is hard-coded: only lean in when the other person is genuinely enjoying it, back off the moment they hesitate, and always put their real wishes and safety above "making progress." It will never coach you to push someone somewhere they don't want to go.
 
 ### 7. Remembers each person separately
 
