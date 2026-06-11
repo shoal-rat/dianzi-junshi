@@ -71,7 +71,7 @@ Moments feeds are mostly visual. It looks at makeup, outfit, filters, framing, c
 
 The sendable reply stays separate from user-only reminders: when to book, whether to bring flowers, what to order, and how to follow up. That way you do not accidentally paste "remember to book the table."
 
-The reminders also include an **in-person experience design**: building one or two moments that break the usual routine — built around what they already like or have hinted they want to try — so the date is more memorable. The guardrail is hard-coded: only lean in when the other person is genuinely enjoying it, back off the moment they hesitate, and always put their real wishes and safety above "making progress." It will never coach you to push someone somewhere they don't want to go.
+The reminders also include an **in-person experience design**: building one or two moments that break the usual routine — built around what they already like or have hinted they want to try — so the date is more memorable. Read the room: lean in when they're enjoying it, change pace when they're not.
 
 ### 7. Remembers each person separately
 
