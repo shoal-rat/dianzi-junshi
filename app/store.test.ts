@@ -9,7 +9,11 @@ const store = await import(`./store.ts?test=${Date.now()}`);
 const materials = await import(`./materials.ts?test=${Date.now()}`);
 const adaptive = await import("./adaptive.ts");
 
-afterAll(() => rmSync(home, { recursive: true, force: true }));
+afterAll(() => {
+  // Windows keeps SQLite files locked until the connection is explicitly closed.
+  adaptive.resetAdaptiveDatabaseForTests();
+  rmSync(home, { recursive: true, force: true });
+});
 
 describe("profile storage and context packing", () => {
   test("rejects profile path traversal", () => {
