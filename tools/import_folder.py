@@ -17,10 +17,27 @@ TEXT_EXTS = {'.txt', '.md', '.csv', '.json', '.log'}
 DOC_EXTS = {'.docx', '.doc', '.pdf', '.rtf'}
 IMAGE_CATEGORIES = {'moments_image', 'appearance_image', 'screenshot', 'image_unknown'}
 
+# 本工具会输出的全部分类（manifest 头部的分类说明与此保持一致）：
+# chat_text / notes / text_other / moments_image / appearance_image
+# / screenshot / image_unknown / document / unknown
+CATEGORY_LEGEND = {
+    'chat_text': '聊天记录文本（微信/QQ 导出等）',
+    'notes': '用户笔记/画像/备注',
+    'text_other': '其他文本（无法从文件名判断用途）',
+    'moments_image': '朋友圈/社交动态截图',
+    'appearance_image': '本人照片/穿搭/妆容',
+    'screenshot': '疑似聊天或朋友圈截图，由多模态模型进一步判断',
+    'image_unknown': '未知图片（需多模态查看）',
+    'document': '文档（docx/pdf 等）',
+    'unknown': '无法分类',
+}
+
 KEYWORDS = {
     'chat_text': ('chat', 'wechat', '微信', '聊天', '记录', '对话', 'qq', 'message', 'messages'),
     'moments_image': ('朋友圈', 'moments', '动态', '小红书', '微博', 'redbook', 'xiaohongshu', 'post'),
     'appearance_image': ('自拍', '照片', '头像', '穿搭', '妆', '妆容', 'makeup', 'outfit', 'selfie', 'photo'),
+    'screenshot': ('screenshot', 'screen shot', 'screen_shot', 'screen-shot', 'screencap',
+                   '截图', '截屏', '微信图片'),
     'notes': ('note', 'notes', '备注', '画像', 'profile', '印象', '偏好'),
 }
 
@@ -49,7 +66,9 @@ def classify(path):
             return 'moments_image'
         if has_keyword(path, 'appearance_image'):
             return 'appearance_image'
-        if has_keyword(path, 'chat_text') or has_keyword(path, 'moments_image'):
+        # 文件名带截图特征（Screenshot_xxx / 截图 / 微信图片…）：
+        # 可能是聊天截图也可能是朋友圈截图，先归入 screenshot，交给多模态模型判断
+        if has_keyword(path, 'screenshot') or has_keyword(path, 'chat_text'):
             return 'screenshot'
         return 'image_unknown'
 
@@ -102,6 +121,7 @@ def build_manifest(root, items):
         'generated_at': utc_now_iso(),
         'root': str(root),
         'total_files': len(items),
+        'category_legend': dict(CATEGORY_LEGEND),
         'counts': dict(Counter(item['category'] for item in items)),
         'files': items,
         'next_steps': [
@@ -160,6 +180,16 @@ def write_markdown(manifest, output_json):
         f"文件夹：`{manifest['root']}`",
         f"生成时间：{manifest['generated_at']}",
         f"文件总数：{manifest['total_files']}",
+        '',
+        '## 分类说明',
+        '',
+    ]
+
+    # 头部先列出本工具会输出的全部分类，避免读清单的人漏看某类
+    for category, desc in CATEGORY_LEGEND.items():
+        lines.append(f"- `{category}`：{desc}")
+
+    lines += [
         '',
         '## 分类统计',
         '',

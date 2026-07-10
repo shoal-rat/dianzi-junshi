@@ -142,7 +142,7 @@ def show_memory(slug: str):
         print()
 
     print(f"{'━' * 50}")
-    print("使用 /memory delete [N] 删除某条错误记忆")
+    print("如需删除某条错误记忆：直接编辑 profile.md，删除对应表格行")
     print(f"{'━' * 50}\n")
 
 

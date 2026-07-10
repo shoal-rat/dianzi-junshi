@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" font-family="'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#0B1F33" flood-opacity="0.10"/>
+    </filter>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="470" fill="#FFFFFF"/>
+  <rect x="12" y="12" width="876" height="446" rx="22" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#cardShadow)"/>
+
+  <!-- header -->
+  <circle cx="48" cy="50" r="14" fill="url(#brand)"/>
+  <path d="M41 50 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="56" font-size="21" font-weight="700" fill="#111827">梗协议</text>
+  <text x="852" y="56" font-size="14" fill="#9AA3AF" text-anchor="end">看得懂字面 ≠ 懂梗</text>
+  <line x1="36" y1="80" x2="864" y2="80" stroke="#EEF0F2" stroke-width="1"/>
+
+  <!-- incoming message -->
+  <circle cx="62" cy="136" r="15" fill="#D7B98E"/>
+  <text x="62" y="141" font-size="13" fill="#5B4A33" text-anchor="middle" font-weight="700">雨</text>
+  <rect x="86" y="116" width="238" height="40" rx="13" fill="#FFFFFF" stroke="#ECECEC"/>
+  <text x="100" y="141" font-size="14.5" fill="#1F2937">你这个人真的很city诶</text>
+
+  <!-- step 1: grep glossary -->
+  <rect x="36" y="188" width="262" height="132" rx="14" fill="#F7F9FB" stroke="#E6E8EB"/>
+  <text x="56" y="216" font-size="14.5" font-weight="700" fill="#111827">① 先查本地梗词典</text>
+  <rect x="56" y="230" width="222" height="26" rx="6" fill="#0F172A"/>
+  <text x="66" y="248" font-size="12" fill="#7DD3C0" font-family="Menlo,Consolas,monospace">grep city references/glossary.md</text>
+  <text x="56" y="282" font-size="13" fill="#6B7280">词典按月份标校验时间</text>
+  <text x="56" y="304" font-size="13" fill="#6B7280">超 12 个月要用时先复核</text>
+
+  <!-- step 2: entry -->
+  <rect x="318" y="188" width="262" height="132" rx="14" fill="#FFFDF4" stroke="#EFE3BE"/>
+  <text x="338" y="216" font-size="14.5" font-weight="700" fill="#8A6D1A">② 命中：按条目读</text>
+  <text x="338" y="244" font-size="13.5" fill="#374151">city不city · 2024 顶流</text>
+  <rect x="338" y="256" width="92" height="22" rx="11" fill="#F7ECC9"/>
+  <text x="384" y="271" font-size="12" font-weight="600" fill="#8A6D1A" text-anchor="middle">状态：陈旧</text>
+  <text x="338" y="300" font-size="13" fill="#6B7280">ta 用了 → 可以接（镜像安全）</text>
+  <text x="338" y="318" font-size="13" fill="#6B7280">自己别再主动用，梗有半衰期</text>
+
+  <!-- step 3: unknown path -->
+  <rect x="600" y="188" width="264" height="132" rx="14" fill="#F3F7FE" stroke="#D6E3F7"/>
+  <text x="620" y="216" font-size="14.5" font-weight="700" fill="#1D4ED8">③ 没命中：上网查证</text>
+  <text x="620" y="244" font-size="13" fill="#374151">搜「XX 什么梗」近一年结果</text>
+  <text x="620" y="266" font-size="13" fill="#374151">两个来源一致才采用</text>
+  <text x="620" y="288" font-size="13" fill="#374151">写回词典（带日期），下次秒查</text>
+  <text x="620" y="310" font-size="13" fill="#6B7280">查不到就接语气不接字面，直说</text>
+
+  <!-- arrows between -->
+  <path d="M300 254 h14 M314 254 l-5 -5 M314 254 l-5 5" fill="none" stroke="#9AA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M582 254 h14 M596 254 l-5 -5 M596 254 l-5 5" fill="none" stroke="#9AA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- bottom: usage rules -->
+  <rect x="36" y="346" width="828" height="84" rx="16" fill="#F0FBF7" stroke="#BFE8D9"/>
+  <text x="56" y="376" font-size="14" font-weight="700" fill="#0F766E">用梗三问</text>
+  <text x="150" y="376" font-size="13.5" fill="#374151">ta 用过吗（用过=预授权）→ 词典里还鲜活吗 → 用户本人平时玩梗吗</text>
+  <text x="56" y="408" font-size="13.5" fill="#374151">红线：永不解释梗 · 一条消息最多一个梗 · 过气黑名单永不用（泰裤辣 / 栓Q / YYDS…）</text>
+</svg>

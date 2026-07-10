@@ -24,6 +24,32 @@ def utc_now_iso():
     return utc_now().isoformat().replace('+00:00', 'Z')
 
 
+# 效果标记的规范口径是 非常好/好/中性/较差/没效果；
+# 早期版本记过 good/great/效果好 等取值，这里统一归一，保持向后兼容。
+OUTCOME_MAP = {
+    # 文档口径（规范取值）
+    '非常好': 'positive',
+    '好': 'positive',
+    '中性': 'neutral',
+    '较差': 'negative',
+    '没效果': 'negative',
+    # 旧版英文/口语取值（向后兼容）
+    'good': 'positive',
+    'great': 'positive',
+    '效果好': 'positive',
+    '很好用': 'positive',
+    'neutral': 'neutral',
+    'bad': 'negative',
+    'failed': 'negative',
+    '效果差': 'negative',
+}
+
+
+def normalize_outcome(outcome):
+    """把 outcome 归一为 positive/neutral/negative；未知或未标记按 neutral 处理。"""
+    return OUTCOME_MAP.get(str(outcome).strip(), 'neutral')
+
+
 def log_session(base_dir, slug, session_data):
     """Save a reply session to the history directory."""
     history_dir = os.path.join(base_dir, slug, 'history')
@@ -118,9 +144,10 @@ def get_effective_patterns(base_dir, slug):
                 'intensity_3': 0,
                 'flirt_caught': 0,
             }
-        if outcome in ('good', 'great', '效果好', '很好用'):
+        sentiment = normalize_outcome(outcome)
+        if sentiment == 'positive':
             strategy_results[strategy]['good'] += 1
-        elif outcome in ('bad', 'failed', '没效果', '效果差'):
+        elif sentiment == 'negative':
             strategy_results[strategy]['bad'] += 1
         else:
             strategy_results[strategy]['neutral'] += 1
@@ -195,7 +222,8 @@ def main():
     parser.add_argument('--message-type', default='', help='Detected message type')
     parser.add_argument('--chosen', default='', help='Which option was chosen (e.g. "方案2")')
     parser.add_argument('--strategy', default='', help='Strategy name of chosen option')
-    parser.add_argument('--outcome', default='', help='How it went: good/bad/neutral')
+    parser.add_argument('--outcome', default='',
+                        help='效果标记：非常好/好/中性/较差/没效果（兼容旧值 good/bad/neutral 等）')
     parser.add_argument('--interest-delta', default='', help='Interest score change, e.g. +1, 0, -2')
     parser.add_argument('--player-confidence-delta', default='',
                         help='Haiwang/Haihou confidence change, e.g. +10, 0, -10')

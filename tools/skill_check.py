@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 """
-Lightweight project sanity checks for dianzi-junshi.
-Uses only the Python standard library.
+dianzi-junshi v2 结构检查。
+
+只做结构校验，不耦合具体措辞：
+  1. SKILL.md 存在，frontmatter 有 name: dianzi-junshi，description 短于 1024 字符
+  2. v2 必需的 references/ 与 tools/ 文件齐全
+  3. 旧的 prompts/ 目录已删除（还在 = 迁移未完成，直接失败）
+  4. SKILL.md 与 references/*.md 不含 emoji 字符
+  5. SKILL.md 里提到的 references/*.md 都真实存在
+  6. 超过 100 行的 references/*.md 在前 15 行内给出目录（TOC）
+
+用法：python3 tools/skill_check.py
+退出码：0 = 全部通过，1 = 有失败项
 """
 
 import re
@@ -10,35 +20,31 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
 REQUIRED_FILES = [
     "SKILL.md",
-    "agents/openai.yaml",
-    "prompts/folder_importer.md",
-    "prompts/analysis_version.md",
-    "prompts/message_analyzer.md",
-    "prompts/interest_detector.md",
-    "prompts/reply_generator.md",
-    "prompts/human_voice.md",
-    "prompts/moments_analyzer.md",
-    "prompts/date_planner.md",
-    "references/evidence_frameworks.md",
-    "references/pursuit_playbooks.md",
-    "references/player_tactics_intel.md",
-    "references/sticker_pack_guide.md",
-    "platforms/codex.md",
+    "references/voice.md",
+    "references/memes.md",
+    "references/glossary.md",
+    "references/reading.md",
+    "references/strategy.md",
+    "references/partner.md",
+    "references/memory.md",
+    "references/dating.md",
+    "tools/voice_lint.py",
+    "tools/wechat_parser.py",
+    "tools/import_folder.py",
+    "tools/session_log.py",
+    "tools/profile_manager.py",
+    "tools/memory_updater.py",
 ]
 
-MACHINE_TONE_BANNED = [
-    "AI 小作文",
-    "不像 AI",
-    "作为一个",
-    "总的来说",
-    "综上所述",
-    "需要注意的是",
-    "值得注意的是",
-    "在这个场景下，我们可以看出",
-    "希望这些建议",
-]
+SKILL_NAME = "dianzi-junshi"
+DESCRIPTION_MAX = 1024      # description 必须短于该值
+TOC_SCAN_LINES = 15         # 目录必须出现在前多少行内
+TOC_REQUIRED_OVER = 100     # 超过多少行的 references 文件才要求目录
+REFS_MENTION_RE = re.compile(r"references/[A-Za-z0-9_\-./]+\.md")
+TOC_ANCHOR_RE = re.compile(r"^\s*[-*+]\s*\[[^\]]+\]\(#")   # - [xx](#yy) 式内部锚点
 
 
 def fail(message):
@@ -61,99 +67,46 @@ def parse_frontmatter(text):
 
 
 def check_skill_md():
-    skill_path = ROOT / "SKILL.md"
-    text = skill_path.read_text(encoding="utf-8")
+    """SKILL.md 存在 + frontmatter 结构合规。"""
+    path = ROOT / "SKILL.md"
+    if not path.exists():
+        return fail("SKILL.md 不存在")
+
+    text = path.read_text(encoding="utf-8")
     frontmatter = parse_frontmatter(text)
     if frontmatter is None:
-        return fail("SKILL.md missing YAML frontmatter")
-
-    unexpected = set(frontmatter) - {"name", "description"}
-    if unexpected:
-        return fail(f"Unexpected SKILL.md frontmatter keys: {sorted(unexpected)}")
+        return fail("SKILL.md 缺少 YAML frontmatter")
 
     name = frontmatter.get("name", "")
-    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", name):
-        return fail(f"Skill name must be hyphen-case ASCII: {name!r}")
+    if name != SKILL_NAME:
+        return fail(f"SKILL.md frontmatter name 应为 {SKILL_NAME!r}，实际是 {name!r}")
 
     description = frontmatter.get("description", "")
-    if not description or len(description) > 1024:
-        return fail("Skill description missing or too long")
+    if not description:
+        return fail("SKILL.md frontmatter 缺少 description")
+    if len(description) >= DESCRIPTION_MAX:
+        return fail(f"SKILL.md description 过长：{len(description)} 字符（须短于 {DESCRIPTION_MAX}）")
 
-    required_terms = [
-        "/junshi",
-        "/interest",
-        "/anti-simp",
-        "/moments",
-        "/import-folder",
-        "/date-plan",
-        "油腻度",
-        "会撩",
-        "策略方框",
-        "回复间隔",
-        "海王/海后置信度",
-        "追法类型",
-        "拉扯强度",
-        "近期海王/海后套路",
-        "阶段校准",
-        "聊天甜度",
-        "见面/行动兑现",
-        "analysis_v1.md",
-        "image_observations.jsonl",
-        "机器腔",
-        "表情包",
-    ]
-    missing_terms = [term for term in required_terms if term not in text]
-    if missing_terms:
-        return fail(f"SKILL.md missing expected terms: {missing_terms}")
-
-    misspelled_command = "z" + "hunshi"
-    if misspelled_command in text:
-        return fail("SKILL.md contains a misspelled command; use 'junshi'")
-
-    print("[OK] SKILL.md")
+    print("[OK] SKILL.md frontmatter")
     return True
 
 
 def check_required_files():
+    """v2 必需文件齐全。"""
     ok = True
     for rel_path in REQUIRED_FILES:
-        path = ROOT / rel_path
-        if not path.exists():
-            ok = fail(f"Missing required file: {rel_path}") and ok
+        if not (ROOT / rel_path).exists():
+            ok = fail(f"缺少必需文件：{rel_path}") and ok
     if ok:
-        print("[OK] Required files")
+        print("[OK] 必需文件齐全")
     return ok
 
 
-def check_openai_yaml():
-    path = ROOT / "agents" / "openai.yaml"
-    text = path.read_text(encoding="utf-8")
-    for term in ("display_name", "short_description", "$dianzi-junshi"):
-        if term not in text:
-            return fail(f"agents/openai.yaml missing {term}")
-    print("[OK] agents/openai.yaml")
-    return True
-
-
-def check_machine_tone():
-    targets = [
-        "README.md",
-        "README_EN.md",
-        "SKILL.md",
-        "prompts/reply_generator.md",
-        "prompts/style_calibrator.md",
-    ]
-    problems = []
-    for rel_path in targets:
-        text = (ROOT / rel_path).read_text(encoding="utf-8")
-        for phrase in MACHINE_TONE_BANNED:
-            if phrase in text:
-                problems.append(f"{rel_path}: {phrase}")
-
-    if problems:
-        return fail("Machine-tone phrases found: " + "; ".join(problems))
-
-    print("[OK] Machine-tone scan")
+def check_no_prompts_dir():
+    """v1 的 prompts/ 目录必须已删除。"""
+    if (ROOT / "prompts").exists():
+        return fail("prompts/ 目录仍然存在：v1 -> v2 迁移未完成，内容应并入 SKILL.md / references/")
+    print("[OK] 无残留 prompts/ 目录")
     return True
 
 
@@ -164,47 +117,97 @@ def contains_raw_visual_symbol(char):
     return (0x1F000 <= codepoint <= 0x1FAFF) or (0x2600 <= codepoint <= 0x27BF)
 
 
-def check_no_raw_visual_symbols():
-    targets = [
-        "README.md",
-        "README_EN.md",
-        "SKILL.md",
-        "prompts",
-        "platforms",
-        "references",
-        "tools",
-    ]
+def _emoji_scan_targets():
+    targets = []
+    skill_md = ROOT / "SKILL.md"
+    if skill_md.exists():
+        targets.append(skill_md)
+    refs_dir = ROOT / "references"
+    if refs_dir.is_dir():
+        targets.extend(sorted(refs_dir.glob("*.md")))
+    return targets
+
+
+def check_no_emoji():
+    """SKILL.md 与 references/*.md 不得包含 emoji。"""
     problems = []
-    for rel_path in targets:
-        path = ROOT / rel_path
-        files = [path] if path.is_file() else [p for p in path.rglob("*") if p.is_file()]
-        for file_path in files:
-            try:
-                text = file_path.read_text(encoding="utf-8")
-            except UnicodeDecodeError:
-                continue
-            for line_no, line in enumerate(text.splitlines(), 1):
-                if any(contains_raw_visual_symbol(ch) for ch in line):
-                    problems.append(f"{file_path.relative_to(ROOT)}:{line_no}")
+    for file_path in _emoji_scan_targets():
+        try:
+            text = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for line_no, line in enumerate(text.splitlines(), 1):
+            if any(contains_raw_visual_symbol(ch) for ch in line):
+                problems.append(f"{file_path.relative_to(ROOT)}:{line_no}")
 
     if problems:
-        return fail("Raw visual symbols found; use text labels or sticker-pack type notes: " + "; ".join(problems[:20]))
+        return fail("发现 emoji 字符（应改用文字标签）：" + "; ".join(problems[:20]))
 
-    print("[OK] Raw visual symbol scan")
+    print("[OK] emoji 扫描")
+    return True
+
+
+def check_skill_reference_mentions():
+    """SKILL.md 里提到的 references/*.md 必须在磁盘上存在。"""
+    path = ROOT / "SKILL.md"
+    if not path.exists():
+        return fail("SKILL.md 不存在，无法核对 references 引用")
+
+    text = path.read_text(encoding="utf-8")
+    mentioned = sorted(set(REFS_MENTION_RE.findall(text)))
+    missing = [rel for rel in mentioned if not (ROOT / rel).exists()]
+    if missing:
+        return fail("SKILL.md 引用了不存在的文件：" + ", ".join(missing))
+
+    print(f"[OK] SKILL.md 引用的 references 文件（共 {len(mentioned)} 个）都存在")
+    return True
+
+
+def _has_toc(lines):
+    """前 TOC_SCAN_LINES 行内出现「目录」或内部锚点列表即视为有 TOC。"""
+    for line in lines[:TOC_SCAN_LINES]:
+        if "目录" in line or TOC_ANCHOR_RE.match(line):
+            return True
+    return False
+
+
+def check_reference_tocs():
+    """超过 100 行的 references/*.md 必须以目录开头。"""
+    refs_dir = ROOT / "references"
+    if not refs_dir.is_dir():
+        print("[OK] references 目录尚不存在，跳过 TOC 检查")
+        return True
+
+    problems = []
+    for file_path in sorted(refs_dir.glob("*.md")):
+        lines = file_path.read_text(encoding="utf-8").splitlines()
+        if len(lines) > TOC_REQUIRED_OVER and not _has_toc(lines):
+            problems.append(f"{file_path.relative_to(ROOT)}（{len(lines)} 行）")
+
+    if problems:
+        return fail(
+            f"以下 references 文件超过 {TOC_REQUIRED_OVER} 行但前 {TOC_SCAN_LINES} 行内没有目录："
+            + "; ".join(problems)
+        )
+
+    print("[OK] references 长文件均有目录")
     return True
 
 
 def main():
     checks = [
-        check_required_files(),
         check_skill_md(),
-        check_openai_yaml(),
-        check_machine_tone(),
-        check_no_raw_visual_symbols(),
+        check_required_files(),
+        check_no_prompts_dir(),
+        check_no_emoji(),
+        check_skill_reference_mentions(),
+        check_reference_tocs(),
     ]
-    if not all(checks):
+    failed = checks.count(False)
+    if failed:
+        print(f"\n结果：{failed}/{len(checks)} 项检查未通过")
         sys.exit(1)
-    print("[OK] Project sanity checks passed")
+    print(f"\n结果：{len(checks)} 项结构检查全部通过")
 
 
 if __name__ == "__main__":

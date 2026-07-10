@@ -4,7 +4,8 @@ Codex 支持 Agent Skills。这个仓库已经按 Codex 可识别的结构提供
 
 - `SKILL.md`：技能入口，包含 `name: dianzi-junshi` 和触发描述。
 - `agents/openai.yaml`：Codex App 的展示名、简介和默认调用提示。
-- `prompts/` 与 `references/`：按需加载的细分指令和分析框架。
+- `references/`：按需加载的 8 个细分模块（语感门禁、梗协议、梗词典、局势解读、节奏打法、对象档案、记忆引擎、约会）。
+- `tools/`：确定性脚本（回复语感检查、聊天解析、批量导入、反馈统计等）。
 
 ## 安装到用户级 Codex
 

@@ -1,98 +1,107 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 430" width="1040" height="430" font-family="'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans CJK SC',sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" width="900" height="620" font-family="'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans CJK SC',sans-serif">
   <defs>
-    <filter id="hs" x="-4%" y="-4%" width="108%" height="116%">
-      <feDropShadow dx="0" dy="4" stdDeviation="9" flood-color="#0B1F33" flood-opacity="0.08"/>
+    <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#0B1F33" flood-opacity="0.10"/>
     </filter>
-    <linearGradient id="hb" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0F766E"/>
       <stop offset="1" stop-color="#0D9488"/>
     </linearGradient>
   </defs>
-  <rect x="0" y="0" width="1040" height="430" fill="#FFFFFF"/>
+
+  <rect x="0" y="0" width="900" height="620" fill="#FFFFFF"/>
+  <rect x="12" y="12" width="876" height="596" rx="22" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#cardShadow)"/>
 
   <!-- header -->
-  <circle cx="44" cy="46" r="13" fill="url(#hb)"/>
-  <path d="M37.5 46 l4.5 4.5 l8.5 -9.5" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="66" y="52" font-size="20" font-weight="700" fill="#111827">电子军师</text>
-  <text x="1016" y="52" font-size="14" fill="#9AA3AF" text-anchor="end">它每次都这么想</text>
-  <line x1="32" y1="74" x2="1008" y2="74" stroke="#EEF0F2" stroke-width="1"/>
+  <circle cx="48" cy="50" r="14" fill="url(#brand)"/>
+  <path d="M41 50 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="56" font-size="21" font-weight="700" fill="#111827">它每次都这么想</text>
+  <text x="852" y="56" font-size="14" fill="#9AA3AF" text-anchor="end">一条链 · 三个循环</text>
+  <line x1="36" y1="80" x2="864" y2="80" stroke="#EEF0F2" stroke-width="1"/>
 
-  <!-- input card -->
-  <rect x="24" y="100" width="110" height="144" rx="14" fill="#F4F6F9" stroke="#E6E8EB"/>
-  <text x="79" y="128" font-size="13.5" font-weight="700" fill="#6B7280" text-anchor="middle">你丢进来</text>
-  <rect x="43" y="144" width="72" height="22" rx="11" fill="#FFFFFF" stroke="#E2E5E9"/>
-  <text x="79" y="159" font-size="12" fill="#4B5563" text-anchor="middle">微信截图</text>
-  <rect x="43" y="172" width="72" height="22" rx="11" fill="#FFFFFF" stroke="#E2E5E9"/>
-  <text x="79" y="187" font-size="12" fill="#4B5563" text-anchor="middle">聊天记录</text>
-  <rect x="43" y="200" width="72" height="22" rx="11" fill="#FFFFFF" stroke="#E2E5E9"/>
-  <text x="79" y="215" font-size="12" fill="#4B5563" text-anchor="middle">朋友圈</text>
+  <!-- input -->
+  <rect x="36" y="104" width="180" height="128" rx="14" fill="#F4F6F9" stroke="#E6E8EB"/>
+  <text x="56" y="134" font-size="14.5" font-weight="700" fill="#111827">你丢进来</text>
+  <text x="56" y="162" font-size="13.5" fill="#4B5563">微信截图</text>
+  <text x="56" y="186" font-size="13.5" fill="#4B5563">聊天记录 / 朋友圈</text>
+  <text x="56" y="210" font-size="13.5" fill="#4B5563">「这条怎么回」</text>
 
-  <!-- step cards -->
-  <g>
-    <rect x="152" y="100" width="170" height="144" rx="14" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#hs)"/>
-    <circle cx="178" cy="130" r="14" fill="url(#hb)"/><text x="178" y="135" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
-    <text x="200" y="135" font-size="15" font-weight="700" fill="#111827">读懂场景</text>
-    <text x="170" y="166" font-size="12.5" fill="#6B7280">调出 ta 的档案</text>
-    <text x="170" y="188" font-size="12.5" fill="#6B7280">看现在几点</text>
-    <text x="170" y="210" font-size="12.5" fill="#6B7280">先摘原文，不瞎猜</text>
-  </g>
-  <g>
-    <rect x="340" y="100" width="170" height="144" rx="14" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#hs)"/>
-    <circle cx="366" cy="130" r="14" fill="url(#hb)"/><text x="366" y="135" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
-    <text x="388" y="135" font-size="15" font-weight="700" fill="#111827">三层解读</text>
-    <text x="358" y="166" font-size="12.5" fill="#6B7280">表面说了啥</text>
-    <text x="358" y="188" font-size="12.5" fill="#6B7280">是什么情绪</text>
-    <text x="358" y="210" font-size="12.5" fill="#6B7280">真正想要啥</text>
-  </g>
-  <g>
-    <rect x="528" y="100" width="170" height="144" rx="14" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#hs)"/>
-    <circle cx="554" cy="130" r="14" fill="url(#hb)"/><text x="554" y="135" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
-    <text x="576" y="135" font-size="15" font-weight="700" fill="#111827">盘算分寸</text>
-    <text x="546" y="166" font-size="12.5" fill="#6B7280">有没有意思</text>
-    <text x="546" y="188" font-size="12.5" fill="#6B7280">是不是套路</text>
-    <text x="546" y="210" font-size="12.5" fill="#6B7280">这阶段能多油</text>
-  </g>
-  <g>
-    <rect x="716" y="100" width="170" height="144" rx="14" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#hs)"/>
-    <circle cx="742" cy="130" r="14" fill="url(#hb)"/><text x="742" y="135" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">4</text>
-    <text x="764" y="135" font-size="15" font-weight="700" fill="#111827">给你话</text>
-    <text x="734" y="166" font-size="12.5" fill="#6B7280">三条能发的回复</text>
-    <text x="734" y="188" font-size="12.5" fill="#6B7280">再过一遍</text>
-    <text x="734" y="210" font-size="12.5" fill="#6B7280">像不像真人发的</text>
-  </g>
+  <!-- step 1 -->
+  <rect x="248" y="104" width="188" height="128" rx="14" fill="#F0FBF7" stroke="#BFE8D9"/>
+  <circle cx="274" cy="132" r="12" fill="#0F766E"/>
+  <text x="274" y="137" font-size="13" fill="#FFFFFF" text-anchor="middle" font-weight="700">1</text>
+  <text x="294" y="137" font-size="14.5" font-weight="700" fill="#0F766E">先扫梗</text>
+  <text x="268" y="166" font-size="13" fill="#374151">整句可能就是个梗</text>
+  <text x="268" y="188" font-size="13" fill="#374151">查词典 → 不认识就上网</text>
+  <text x="268" y="210" font-size="13" fill="#6B7280">查到写回词典（循环①）</text>
 
-  <!-- output card -->
-  <rect x="904" y="100" width="112" height="144" rx="14" fill="#F3FBF6" stroke="#DCEFE4"/>
-  <text x="960" y="128" font-size="13.5" font-weight="700" fill="#0F766E" text-anchor="middle">你拿到</text>
-  <text x="960" y="166" font-size="14" fill="#16321A" text-anchor="middle">三条回复</text>
-  <text x="960" y="192" font-size="14" fill="#16321A" text-anchor="middle">＋ 旁白提醒</text>
+  <!-- step 2 -->
+  <rect x="468" y="104" width="188" height="128" rx="14" fill="#F7F9FB" stroke="#E6E8EB"/>
+  <circle cx="494" cy="132" r="12" fill="#334155"/>
+  <text x="494" y="137" font-size="13" fill="#FFFFFF" text-anchor="middle" font-weight="700">2</text>
+  <text x="514" y="137" font-size="14.5" font-weight="700" fill="#111827">读局</text>
+  <text x="488" y="166" font-size="13" fill="#374151">表面 / 情绪 / 真正想要</text>
+  <text x="488" y="188" font-size="13" fill="#374151">四维兴趣分 · 玩家信号</text>
+  <text x="488" y="210" font-size="13" fill="#6B7280">证据和推断分开写</text>
 
-  <!-- chevrons -->
-  <g fill="none" stroke="#0D9488" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7">
-    <path d="M138 165 l8 7 l-8 7"/>
-    <path d="M326 165 l8 7 l-8 7"/>
-    <path d="M514 165 l8 7 l-8 7"/>
-    <path d="M702 165 l8 7 l-8 7"/>
-    <path d="M890 165 l8 7 l-8 7"/>
-  </g>
+  <!-- step 3 -->
+  <rect x="688" y="104" width="176" height="128" rx="14" fill="#F7F9FB" stroke="#E6E8EB"/>
+  <circle cx="714" cy="132" r="12" fill="#334155"/>
+  <text x="714" y="137" font-size="13" fill="#FFFFFF" text-anchor="middle" font-weight="700">3</text>
+  <text x="734" y="137" font-size="14.5" font-weight="700" fill="#111827">定打法</text>
+  <text x="708" y="166" font-size="13" fill="#374151">阶段 → 油腻度上限</text>
+  <text x="708" y="188" font-size="13" fill="#374151">拉扯强度 · 痞/乖气质</text>
+  <text x="708" y="210" font-size="13" fill="#6B7280">该收就收，该进才进</text>
 
-  <!-- memory box -->
-  <rect x="24" y="302" width="992" height="68" rx="14" fill="#F0F7F6" stroke="#CFE3E0"/>
-  <ellipse cx="58" cy="324" rx="13" ry="4.5" fill="#0D9488"/>
-  <rect x="45" y="324" width="26" height="24" fill="#0F766E"/>
-  <ellipse cx="58" cy="348" rx="13" ry="4.5" fill="#0F766E"/>
-  <ellipse cx="58" cy="324" rx="13" ry="4.5" fill="#0D9488"/>
-  <text x="86" y="330" font-size="14.5" font-weight="700" fill="#0F766E">长期记忆 · 每个对象一份档案</text>
-  <text x="86" y="354" font-size="12.5" fill="#5A6B68">阶段、说话习惯、哪招对 ta 管用都存着；你给反馈或纠正，它就更新。</text>
+  <!-- arrows row1 -->
+  <path d="M220 168 h20 M240 168 l-6 -6 M240 168 l-6 6" fill="none" stroke="#9AA3AF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M440 168 h20 M460 168 l-6 -6 M460 168 l-6 6" fill="none" stroke="#9AA3AF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M660 168 h20 M680 168 l-6 -6 M680 168 l-6 6" fill="none" stroke="#9AA3AF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- loop arrows -->
-  <path d="M237 300 L237 250" fill="none" stroke="#0F766E" stroke-width="1.8" stroke-dasharray="4 4"/>
-  <path d="M232 256 L237 249 L242 256" fill="none" stroke="#0F766E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="248" y="278" font-size="11.5" fill="#0F766E">开工先载入档案</text>
+  <!-- down arrow -->
+  <path d="M776 232 v22 M776 254 l-6 -6 M776 254 l6 -6" fill="none" stroke="#9AA3AF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <path d="M960 248 L960 300" fill="none" stroke="#9AA3AF" stroke-width="1.8" stroke-dasharray="4 4"/>
-  <path d="M955 294 L960 301 L965 294" fill="none" stroke="#9AA3AF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="948" y="278" font-size="11.5" fill="#6B7280" text-anchor="end">你发完，反馈写回</text>
+  <!-- step 4 -->
+  <rect x="688" y="266" width="176" height="128" rx="14" fill="#F7F9FB" stroke="#E6E8EB"/>
+  <circle cx="714" cy="294" r="12" fill="#334155"/>
+  <text x="714" y="299" font-size="13" fill="#FFFFFF" text-anchor="middle" font-weight="700">4</text>
+  <text x="734" y="299" font-size="14.5" font-weight="700" fill="#111827">起草三版</text>
+  <text x="708" y="328" font-size="13" fill="#374151">稳妥 / 会撩 / 按场景</text>
+  <text x="708" y="350" font-size="13" fill="#374151">用对 ta 验证过的招</text>
+  <text x="708" y="372" font-size="13" fill="#6B7280">避开无效模式表</text>
 
-  <text x="520" y="402" font-size="13" fill="#6B7280" text-anchor="middle">越用越准，换个窗口也记得 ta</text>
+  <!-- step 5: voice gate -->
+  <rect x="248" y="266" width="408" height="128" rx="14" fill="#FFF9EF" stroke="#F0DFC0"/>
+  <circle cx="274" cy="294" r="12" fill="#B45309"/>
+  <text x="274" y="299" font-size="13" fill="#FFFFFF" text-anchor="middle" font-weight="700">5</text>
+  <text x="294" y="299" font-size="14.5" font-weight="700" fill="#B45309">人话门禁（循环②，最多修 2 轮）</text>
+  <text x="268" y="328" font-size="13" fill="#374151">tools/voice_lint.py：句号、禁词、过气梗、长度，机器说了算</text>
+  <text x="268" y="350" font-size="13" fill="#374151">自检清单：像不像随手打的、像不像用户本人、梗新不新</text>
+  <text x="268" y="372" font-size="13" fill="#6B7280">挂了改，改完重跑；实在过不了就标注卡在哪，交用户定夺</text>
+  <path d="M680 330 h-14 M666 330 l6 -6 M666 330 l6 6" fill="none" stroke="#9AA3AF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- output -->
+  <rect x="36" y="266" width="180" height="128" rx="14" fill="#F0FBF7" stroke="#BFE8D9"/>
+  <text x="56" y="296" font-size="14.5" font-weight="700" fill="#0F766E">你拿到</text>
+  <text x="56" y="324" font-size="13.5" fill="#374151">三条能直接发的回复</text>
+  <text x="56" y="348" font-size="13.5" fill="#374151">策略框 · 旁白提醒</text>
+  <text x="56" y="372" font-size="13.5" fill="#6B7280">（两者永远分开放）</text>
+  <path d="M240 330 h-14 M226 330 l6 -6 M226 330 l6 6" fill="none" stroke="#9AA3AF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- memory loop strip -->
+  <rect x="36" y="428" width="828" height="156" rx="16" fill="#F7F9FB" stroke="#E6E8EB"/>
+  <text x="56" y="460" font-size="15" font-weight="700" fill="#111827">循环③ · 反馈写回记忆，越用越准</text>
+  <rect x="56" y="480" width="236" height="80" rx="12" fill="#FFFFFF" stroke="#E6E8EB"/>
+  <text x="74" y="508" font-size="13.5" font-weight="600" fill="#374151">你回来反馈</text>
+  <text x="74" y="532" font-size="12.5" fill="#6B7280">实发版本 · ta 多久回 · 回了啥</text>
+  <rect x="316" y="480" width="256" height="80" rx="12" fill="#FFFFFF" stroke="#E6E8EB"/>
+  <text x="334" y="508" font-size="13.5" font-weight="600" fill="#374151">先记事件，再升规则</text>
+  <text x="334" y="532" font-size="12.5" fill="#6B7280">2-3 次一致才算数；聊死的原句</text>
+  <text x="334" y="550" font-size="12.5" fill="#6B7280">一次就进「再也不这样」清单</text>
+  <rect x="596" y="480" width="248" height="80" rx="12" fill="#FFFFFF" stroke="#E6E8EB"/>
+  <text x="614" y="508" font-size="13.5" font-weight="600" fill="#374151">档案会自己减肥</text>
+  <text x="614" y="532" font-size="12.5" fill="#6B7280">记忆压缩：留结论、折过程、归档原始</text>
+  <text x="614" y="550" font-size="12.5" fill="#6B7280">换窗口也记得 ta</text>
+  <path d="M292 520 h16 M308 520 l-6 -6 M308 520 l-6 6" fill="none" stroke="#9AA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M572 520 h16 M588 520 l-6 -6 M588 520 l-6 6" fill="none" stroke="#9AA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
