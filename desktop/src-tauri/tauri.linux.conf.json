@@ -1,3 +1,6 @@
 {
-  "productName": "Dianzi Junshi"
+  "productName": "Dianzi Junshi",
+  "bundle": {
+    "resources": ["resources/backend/*"]
+  }
 }
