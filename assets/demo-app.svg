@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" font-family="'PingFang SC','Microsoft YaHei','Hiragino Sans GB','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#0B1F33" flood-opacity="0.10"/>
+    </filter>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="560" fill="#FFFFFF"/>
+  <rect x="12" y="12" width="876" height="536" rx="22" fill="#FFFFFF" stroke="#E6E8EB" filter="url(#cardShadow)"/>
+
+  <!-- window chrome -->
+  <circle cx="40" cy="40" r="6" fill="#F0625B"/>
+  <circle cx="60" cy="40" r="6" fill="#F5BD4F"/>
+  <circle cx="80" cy="40" r="6" fill="#61C554"/>
+  <text x="450" y="45" font-size="13" fill="#9AA3AF" text-anchor="middle">电子军师 · 桌面 App</text>
+  <line x1="12" y1="64" x2="888" y2="64" stroke="#EEF0F2" stroke-width="1"/>
+
+  <!-- LEFT: partner list -->
+  <rect x="12" y="64" width="196" height="484" fill="#FBFCFD"/>
+  <circle cx="40" cy="94" r="12" fill="url(#brand)"/>
+  <path d="M34 94 l4 4 l8 -9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="60" y="99" font-size="15" font-weight="700" fill="#111827">电子军师</text>
+  <rect x="28" y="116" width="164" height="34" rx="9" fill="url(#brand)"/>
+  <text x="110" y="138" font-size="13" font-weight="600" fill="#fff" text-anchor="middle">新建对象</text>
+  <!-- partner item active -->
+  <rect x="24" y="162" width="172" height="46" rx="10" fill="#E7F1EF" stroke="#BFE0D9"/>
+  <circle cx="46" cy="185" r="14" fill="#D7B98E"/>
+  <text x="46" y="190" font-size="12" font-weight="700" fill="#5B4A33" text-anchor="middle">小</text>
+  <text x="68" y="181" font-size="13" font-weight="600" fill="#111827">小雨</text>
+  <text x="68" y="197" font-size="10.5" fill="#6B7280">暧昧期 · 油上限 1.5/5</text>
+  <!-- partner item -->
+  <circle cx="46" cy="235" r="14" fill="#D7B98E"/>
+  <text x="46" y="240" font-size="12" font-weight="700" fill="#5B4A33" text-anchor="middle">阿</text>
+  <text x="68" y="231" font-size="13" font-weight="600" fill="#374151">阿强</text>
+  <text x="68" y="247" font-size="10.5" fill="#9AA3AF">追求期 · 油上限 2/5</text>
+  <!-- provider pill -->
+  <rect x="24" y="504" width="172" height="30" rx="15" fill="#EAF3F1" stroke="#CDE6E0"/>
+  <circle cx="40" cy="519" r="4" fill="#0D9488"/>
+  <text x="52" y="523" font-size="11" fill="#0F766E">DeepSeek · deepseek-chat</text>
+
+  <!-- MIDDLE: chat -->
+  <rect x="208" y="64" width="416" height="484" fill="#F4F6F9"/>
+  <text x="230" y="90" font-size="14" font-weight="700" fill="#111827">小雨</text>
+  <text x="230" y="106" font-size="10.5" fill="#6B7280">暧昧期 · 油腻度上限 1.5/5</text>
+  <rect x="500" y="78" width="70" height="22" rx="6" fill="#FFF" stroke="#E2E5E9"/>
+  <text x="535" y="93" font-size="10.5" fill="#6B7280" text-anchor="middle">1 暧昧期</text>
+  <line x1="208" y1="118" x2="624" y2="118" stroke="#E9EBEE" stroke-width="1"/>
+
+  <!-- ta bubble -->
+  <circle cx="230" cy="150" r="13" fill="#D7B98E"/>
+  <text x="230" y="155" font-size="11" font-weight="700" fill="#5B4A33" text-anchor="middle">小</text>
+  <rect x="250" y="136" width="196" height="30" rx="8" fill="#FFF" stroke="#ECECEC"/>
+  <text x="263" y="155" font-size="12.5" fill="#1F2937">那咋了 我就是爱睡懒觉</text>
+
+  <!-- junshi card -->
+  <rect x="230" y="184" width="376" height="336" rx="12" fill="#FFF" stroke="#E6E8EB"/>
+  <text x="246" y="208" font-size="11.5" fill="#374151">「那咋了」是撒娇式嘴硬，不是生气，接梗别讲理</text>
+  <text x="246" y="234" font-size="12" font-weight="700" fill="#0F766E">方案1 · 稳妥（油0.5/5）</text>
+  <rect x="246" y="242" width="150" height="26" rx="13" fill="#95EC69"/>
+  <text x="258" y="259" font-size="12" fill="#16321A">没咋 羡慕的声音大了点</text>
+  <rect x="404" y="246" width="58" height="18" rx="9" fill="#DCF3EA"/>
+  <text x="433" y="259" font-size="9.5" font-weight="600" fill="#0F766E" text-anchor="middle">门禁 PASS</text>
+
+  <text x="246" y="292" font-size="12" font-weight="700" fill="#B45309">方案2 · 会撩（油1.5/5）</text>
+  <rect x="246" y="300" width="108" height="26" rx="13" fill="#95EC69"/>
+  <text x="258" y="317" font-size="12" fill="#16321A">挺好 记住了</text>
+  <rect x="246" y="330" width="188" height="26" rx="13" fill="#95EC69"/>
+  <text x="258" y="347" font-size="12" fill="#16321A">以后找你玩只敢约下午场</text>
+  <rect x="442" y="304" width="58" height="18" rx="9" fill="#DCF3EA"/>
+  <text x="471" y="317" font-size="9.5" font-weight="600" fill="#0F766E" text-anchor="middle">门禁 PASS</text>
+
+  <text x="246" y="380" font-size="12" font-weight="700" fill="#1D4ED8">方案3 · 整活（油1/5）</text>
+  <rect x="246" y="388" width="150" height="26" rx="13" fill="#95EC69"/>
+  <text x="258" y="405" font-size="12" fill="#16321A">那咋了 我也爱赖床</text>
+  <rect x="246" y="418" width="150" height="26" rx="13" fill="#95EC69"/>
+  <text x="258" y="435" font-size="12" fill="#16321A">咱俩谁也别笑话谁</text>
+
+  <text x="246" y="470" font-size="11.5" fill="#374151">推荐 3：镜像她的梗永远安全，同频感最强</text>
+  <text x="246" y="492" font-size="11.5" fill="#9AA3AF">别这样回：讲睡懒觉对身体不好 —— 一句话杀死一个梗</text>
+
+  <!-- input -->
+  <rect x="230" y="528" width="300" height="12" rx="6" fill="#FFF" stroke="#E2E5E9"/>
+  <rect x="540" y="524" width="66" height="20" rx="10" fill="url(#brand)"/>
+  <text x="573" y="538" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">出方案</text>
+
+  <!-- RIGHT: panel -->
+  <rect x="624" y="64" width="264" height="484" fill="#FFFFFF"/>
+  <text x="646" y="92" font-size="14" font-weight="700" fill="#111827">军师面板</text>
+
+  <text x="646" y="120" font-size="11" fill="#6B7280">本次请求</text>
+  <rect x="646" y="128" width="120" height="20" rx="10" fill="#E7F1EF"/>
+  <text x="706" y="142" font-size="10.5" font-weight="600" fill="#0F766E" text-anchor="middle">车道 A · 日常/分享</text>
+  <rect x="646" y="154" width="66" height="18" rx="9" fill="#F0F2F4"/>
+  <text x="679" y="167" font-size="9.5" fill="#6B7280" text-anchor="middle">voice.md</text>
+  <rect x="718" y="154" width="66" height="18" rx="9" fill="#F0F2F4"/>
+  <text x="751" y="167" font-size="9.5" fill="#6B7280" text-anchor="middle">memes.md</text>
+  <rect x="646" y="180" width="222" height="52" rx="9" fill="#FBFCFD" stroke="#E6E8EB"/>
+  <text x="656" y="200" font-size="10.5" fill="#374151"><tspan fill="#0F766E" font-weight="700">「那咋了」</tspan> 对抗内耗式嘴硬</text>
+  <text x="656" y="218" font-size="10.5" fill="#6B7280">俏皮防御，不是生气（鲜活）</text>
+
+  <text x="646" y="256" font-size="11" fill="#6B7280">人话门禁</text>
+  <text x="646" y="280" font-size="11.5" fill="#374151">回复 1</text>
+  <rect x="700" y="270" width="46" height="16" rx="8" fill="#DCF3EA"/><text x="723" y="282" font-size="9.5" font-weight="600" fill="#0F766E" text-anchor="middle">PASS</text>
+  <text x="646" y="302" font-size="11.5" fill="#374151">回复 2</text>
+  <rect x="700" y="292" width="46" height="16" rx="8" fill="#DCF3EA"/><text x="723" y="304" font-size="9.5" font-weight="600" fill="#0F766E" text-anchor="middle">PASS</text>
+  <text x="646" y="324" font-size="11.5" fill="#374151">回复 3</text>
+  <rect x="700" y="314" width="46" height="16" rx="8" fill="#DCF3EA"/><text x="723" y="326" font-size="9.5" font-weight="600" fill="#0F766E" text-anchor="middle">PASS</text>
+
+  <line x1="646" y1="348" x2="868" y2="348" stroke="#EEF0F2"/>
+  <text x="646" y="372" font-size="10.5" fill="#9AA3AF">梗扫描 + 人话检查在本地完成，</text>
+  <text x="646" y="388" font-size="10.5" fill="#9AA3AF">不烧 token。</text>
+  <text x="646" y="410" font-size="10.5" fill="#9AA3AF">技能层 prompt 走缓存，连续用</text>
+  <text x="646" y="426" font-size="10.5" fill="#9AA3AF">省钱又更快。</text>
+  <text x="646" y="448" font-size="10.5" fill="#9AA3AF">数据只在本机，不上传仓库。</text>
+</svg>

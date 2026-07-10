@@ -87,7 +87,23 @@ Isolated profiles per partner; episode-before-rule learning (2-3 consistent epis
 
 Scan memes (loop 1: glossary → web → cache) → read the situation → pick the play (stage caps, pull intensity, persona channel) → draft three options → voice gate (loop 2: lint + checklist, max two revisions) → deliver → your feedback writes back to memory (loop 3: episodes before rules, periodic compaction).
 
-## Setup
+## Desktop App (Claude / DeepSeek / GLM)
+
+Prefer a WeChat-style window, or want to use DeepSeek or GLM (Zhipu) instead of Claude? Run the desktop app: partner list on the left, three send-ready replies in the middle, a strategist panel on the right showing the routed lane, loaded modules, meme scan, and voice-gate results live.
+
+![Desktop app: three-pane layout, WeChat-green bubbles, strategist panel](assets/demo-app.svg)
+
+```bash
+git clone https://github.com/shoal-rat/dianzi-junshi.git
+cd dianzi-junshi/app
+bun start          # install Bun first: curl -fsSL https://bun.sh/install | bash
+```
+
+Click the pill at the bottom-right to pick a provider and paste an API key (leave it as demo mode to preview the flow first). Supports **Claude, DeepSeek, GLM (Zhipu)**, and any OpenAI-compatible endpoint. Run `bun run build:app` for a double-click single-file executable.
+
+Engineering notes: meme scanning and the voice gate run deterministically on the local server (zero tokens); the skill layer is a stable prompt prefix served from cache (Claude prompt caching / DeepSeek prefix caching), so continuous use only pays for the delta; Bun runs zero-dependency and `--compile`s to one file; API keys and chats live only in `~/.dianzi-junshi`, never in the repo. See [app/README.md](app/README.md).
+
+## Setup (Claude Code)
 
 **Route A · Claude Code (recommended).** Install Claude Code, then paste into it:
 

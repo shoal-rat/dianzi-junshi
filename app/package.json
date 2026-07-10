@@ -1,0 +1,13 @@
+{
+  "name": "dianzi-junshi-app",
+  "version": "2.1.0",
+  "private": true,
+  "description": "电子军师本地 App：多供应商（Claude/DeepSeek/GLM）恋爱聊天军师，Bun 零依赖后端 + 内置 UI",
+  "type": "module",
+  "scripts": {
+    "start": "bun run server.ts --open",
+    "dev": "bun --watch run server.ts",
+    "build:app": "bun build --compile server.ts --outfile dist/dianzi-junshi-app",
+    "check": "bun build server.ts --target bun --outdir /tmp/dj-typecheck-out"
+  }
+}

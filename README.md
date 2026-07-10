@@ -128,7 +128,23 @@
 5. **人话门禁**：voice_lint 加自检清单，最多修两轮（循环二）。
 6. **反馈写回记忆**：先记事件再升规则，档案定期压缩（循环三）。
 
-## 安装与上手
+## 也有桌面 App（可接 DeepSeek / GLM）
+
+不想装 Claude Code、或者想用 DeepSeek、GLM（智谱）而不是 Claude 的，用桌面 App：一个像微信的窗口，左边对象列表、中间三条能发的回复、右边军师面板实时显示分诊车道、加载的模块、梗扫描结果和人话门禁结果。
+
+![桌面 App：三栏布局，微信绿气泡，右侧军师面板](assets/demo-app.svg)
+
+```bash
+git clone https://github.com/shoal-rat/dianzi-junshi.git
+cd dianzi-junshi/app
+bun start          # 需要先装 Bun：curl -fsSL https://bun.sh/install | bash
+```
+
+进去点右下角胶囊选供应商、填 API key 即可（不填就是演示模式，先看流程）。支持 **Claude、DeepSeek、GLM（智谱）** 和任意 OpenAI 兼容端点。想要双击就能开的单文件应用，跑 `bun run build:app`。
+
+工程上的几个考究：梗扫描和人话门禁都在本地服务端确定性完成（不烧 token）；技能层 prompt 作为稳定前缀走缓存（Claude 的 prompt caching / DeepSeek 前缀缓存），连续使用只为增量付费；Bun 零依赖运行 + `--compile` 打单文件；API key 和聊天记录只存本机 `~/.dianzi-junshi`，不进仓库。细节见 [app/README.md](app/README.md)。
+
+## 安装与上手（Claude Code）
 
 完全没用过也没关系，照着做。
 

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>电子军师</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230F766E'/%3E%3Cpath d='M9 16l5 5 9-11' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<div id="app">
+
+  <!-- 左栏：对象列表 -->
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <div class="brand-name">电子军师</div>
+    </div>
+    <button id="btn-new-partner" class="btn btn-primary btn-block">新建对象</button>
+    <div id="partner-list" class="partner-list"></div>
+    <div class="sidebar-foot">
+      <button id="btn-settings" class="provider-pill" title="设置模型供应商">
+        <span class="dot"></span><span id="provider-label">演示模式</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 中栏：聊天 -->
+  <main id="chat-col">
+    <header id="chat-header">
+      <button id="btn-sidebar" class="icon-btn" title="对象列表">☰</button>
+      <div class="chat-title">
+        <div id="chat-name">先建一个对象</div>
+        <div id="chat-sub" class="chat-sub"></div>
+      </div>
+      <div class="chat-actions">
+        <select id="stage-select" class="select" title="关系阶段"></select>
+        <label class="toggle" title="反舔狗模式：明显没戏时直接劝止损">
+          <input type="checkbox" id="anti-simp">
+          <span>反舔狗</span>
+        </label>
+        <button id="btn-panel" class="icon-btn" title="军师面板">≡</button>
+      </div>
+    </header>
+
+    <div id="messages" class="messages">
+      <div id="empty-hint" class="empty-hint">
+        <div class="empty-logo"></div>
+        <p>把 ta 发来的消息贴进下面，选好模式，军师给你能直接发的回复。</p>
+        <p class="muted">还没配 API key 时是演示模式——右下角设置里可接入 Claude、DeepSeek、GLM。</p>
+      </div>
+    </div>
+
+    <footer id="composer">
+      <div id="scan-chips" class="scan-chips" hidden></div>
+      <div class="mode-tabs" id="mode-tabs">
+        <button class="mode-tab active" data-mode="reply">这条怎么回</button>
+        <button class="mode-tab" data-mode="analyze">只分析</button>
+        <button class="mode-tab" data-mode="ask">我想说…行不行</button>
+        <button class="mode-tab" data-mode="interest">有没有戏</button>
+      </div>
+      <div class="composer-row">
+        <button id="btn-attach" class="icon-btn" title="附一张截图（支持粘贴）">图</button>
+        <input type="file" id="file-input" accept="image/*" hidden multiple>
+        <textarea id="input" rows="1" placeholder="贴 ta 发来的消息，或描述情况…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <button id="btn-send" class="btn btn-primary">出方案</button>
+      </div>
+      <div id="attach-strip" class="attach-strip" hidden></div>
+    </footer>
+  </main>
+
+  <!-- 右栏：军师面板 -->
+  <aside id="panel">
+    <h3>军师面板</h3>
+    <section class="panel-sec">
+      <h4>本次请求</h4>
+      <div id="panel-meta" class="panel-meta muted">发一条消息后，这里显示分诊车道、加载的模块和梗扫描结果。</div>
+    </section>
+    <section class="panel-sec">
+      <h4>人话门禁</h4>
+      <div id="panel-lint" class="panel-meta muted">每条可复制回复都会过 voice_lint。没过的会标红，可以一键修。</div>
+    </section>
+    <section class="panel-sec">
+      <h4>说明</h4>
+      <div class="panel-meta muted">
+        <p>梗扫描和人话检查在本地服务端完成，不烧 token。</p>
+        <p>技能层 prompt 走缓存（Claude 的 prompt caching / DeepSeek 前缀缓存），连续使用省钱且更快。</p>
+        <p>数据都存在本机 ~/.dianzi-junshi，不上传仓库。</p>
+      </div>
+    </section>
+  </aside>
+
+</div>
+
+<!-- 新建对象 -->
+<dialog id="dlg-partner">
+  <form method="dialog" class="dlg">
+    <h3>新建对象</h3>
+    <label class="field">
+      <span>代号（必填）</span>
+      <input id="np-name" type="text" placeholder="昵称、备注名、外号都行" autocomplete="off">
+    </label>
+    <label class="field">
+      <span>现在大概到哪一步</span>
+      <select id="np-stage" class="select"></select>
+    </label>
+    <label class="check">
+      <input type="checkbox" id="np-antisimp">
+      <span>开反舔狗模式：没戏时直接拉住你，不陪你自我感动</span>
+    </label>
+    <div class="dlg-actions">
+      <button value="cancel" class="btn">取消</button>
+      <button id="np-create" value="default" class="btn btn-primary">建档</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 设置 -->
+<dialog id="dlg-settings">
+  <form method="dialog" class="dlg dlg-wide">
+    <h3>模型供应商</h3>
+    <div id="provider-cards" class="provider-cards"></div>
+    <div id="provider-fields"></div>
+    <div class="dlg-actions">
+      <button value="cancel" class="btn">取消</button>
+      <button id="settings-save" value="default" class="btn btn-primary">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

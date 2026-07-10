@@ -13,6 +13,11 @@ build/
 *.egg
 .eggs/
 
+# App build artifacts & deps
+app/dist/
+node_modules/
+bun.lockb
+
 # Virtual environments
 venv/
 env/
@@ -32,3 +37,6 @@ desktop.ini
 
 # Logs
 *.log
+
+# Bun temp build files
+*.bun-build
