@@ -1,45 +1,73 @@
-# 安装速查
+# 安装电子军师桌面版
 
-完全没用过、想一步步来？看 [新手指南](docs/新手指南.md)。下面是给熟手的速查。
+## 最简单的方法
 
-## 1. 先有个 AI 客户端
+1. 打开 [最新 Release](https://github.com/shoal-rat/dianzi-junshi/releases/latest)。
+2. 下载自己电脑对应的文件。
+3. 双击安装，然后从开始菜单、应用程序或应用列表打开「电子军师」。
 
-装 Claude Code（推荐）：
+| 系统 | 选择 |
+| --- | --- |
+| Windows 10 / 11 | `*-setup.exe`；公司批量部署可选 MSI |
+| Apple Silicon Mac | `*_aarch64.dmg` |
+| Intel Mac | `*_x64.dmg` |
+| Ubuntu / Debian x64 | `*_amd64.deb` |
+| Linux ARM64 | `*_arm64.deb` 或 `*_aarch64.AppImage` |
+| 其他 Linux | AppImage |
 
-- Windows：`irm https://claude.ai/install.ps1 | iex`
-- macOS / Linux：`curl -fsSL https://claude.ai/install.sh | bash`
+安装包已经包含桌面窗口、本地后端和数据库。普通用户不要再克隆仓库，也不用安装 Bun、Rust、Node.js 或旧版 Skill。
 
-或者用 Codex（见 [platforms/codex.md](platforms/codex.md)）。
+## macOS 第一次打开
 
-## 2. 再装电子军师
+公开发布前，维护者应配置 Apple Developer 签名与 notarization。如果下载的是未 notarize 的测试包，macOS 可能阻止第一次打开：
 
-**Claude Code（装成技能，一行命令）**
+1. 打开「系统设置 → 隐私与安全性」。
+2. 找到被阻止的「电子军师」。
+3. 点「仍要打开」。
 
-- Windows：`irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex`
-- macOS / Linux：`curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash`
+不要从不可信的镜像站下载安装包。
 
-装进 `~/.claude/skills/dianzi-junshi`。不想跑脚本，手动 clone 也行：
+## Windows 第一次打开
+
+未签名的测试包可能触发 SmartScreen。公开 Release 应使用代码签名证书。若你在测试自己构建的版本，确认来源是本仓库的 GitHub Release 后再继续。
+
+## Linux
+
+DEB：
 
 ```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.claude/skills/dianzi-junshi"
+sudo apt install ./电子军师_*.deb
 ```
 
-**Codex（克隆到 Codex 技能目录）**
+AppImage：
+
+```bash
+chmod +x 电子军师_*.AppImage
+./电子军师_*.AppImage
+```
+
+## 可选的一键下载脚本
+
+macOS / Linux：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.sh | bash
+```
+
+Windows PowerShell：
 
 ```powershell
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
+irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
 ```
 
-（macOS / Linux 用 `$HOME/.agents/skills/dianzi-junshi`。）
+脚本只从 GitHub 最新 Release 下载适合当前系统的安装包。想看清每一步时，直接使用上面的手动下载方式更合适。
 
-装完如果客户端本来开着，关掉重开一次，新技能才认。
+## 连接 AI
 
-## 3. 开始用
+安装完成后，可以：
 
-进 Claude Code 或 Codex，说一句「帮我追个人」，回答几个小问题，然后把微信截图丢给它。之后想换对象就说「换人」或「新建」。
+- 使用电脑上已经登录的 Codex；
+- 使用电脑上已经登录的 Claude Code；
+- 在 App 里配置 Claude、DeepSeek、GLM 或兼容 OpenAI 的 API。
 
-## 前置
-
-- Claude Code 或 Codex。
-- 朋友圈、自拍它直接看图，Claude Code 和 Codex 都自带这个能力。
-- Python 3.8+ 可选，给文件夹分类用；工具只用标准库，不用额外装依赖。
+Codex 和 Claude Code 不是安装桌面 App 的前置条件。没有任何连接时，可以先用演示模式熟悉界面。

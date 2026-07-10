@@ -1,22 +1,12 @@
-# 电子军师 · Claude Code 一键安装（装成技能 / Skill，Windows / PowerShell）
-# 用法： irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1 | iex
-# 用 Codex 的看 platforms/codex.md。
-
+# Download and run the latest Windows desktop installer from the official GitHub Release.
 $ErrorActionPreference = 'Stop'
-$repo = 'https://github.com/shoal-rat/dianzi-junshi.git'
-$target = "$HOME\.claude\skills\dianzi-junshi"
+$release = Invoke-RestMethod -Headers @{ Accept = 'application/vnd.github+json' } -Uri 'https://api.github.com/repos/shoal-rat/dianzi-junshi/releases/latest'
+$asset = $release.assets | Where-Object { $_.name -match '(?i)(setup.*\.exe$|\.exe$)' } | Select-Object -First 1
+if (-not $asset) { throw '最新 Release 里还没有 Windows 安装程序。' }
 
-New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
-if (Test-Path "$target\.git") {
-  Write-Host "更新 $target"
-  git -C $target pull --ff-only
-} else {
-  Write-Host "把电子军师装成 Claude Code 技能：$target"
-  git clone $repo $target
-}
-
-Write-Host ""
-Write-Host "装好了！接下来三步："
-Write-Host "  1. 打开 Claude Code；要是它本来就开着，先关掉再打开（新技能要重启才认）。"
-Write-Host "  2. 进去说一句：帮我追个人"
-Write-Host "  3. 回答几个小问题，然后把微信截图丢给它就行。"
+$target = Join-Path $env:TEMP 'dianzi-junshi-setup.exe'
+Write-Host "正在下载 $($asset.name)…"
+Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $target
+Write-Host '下载完成，正在打开安装程序。'
+Start-Process -FilePath $target -Wait
+Write-Host '安装完成后，可以从开始菜单打开「电子军师」。'

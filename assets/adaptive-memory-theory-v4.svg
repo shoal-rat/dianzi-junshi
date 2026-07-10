@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+  <title id="title">电子军师自适应记忆与结果学习模型</title>
+  <desc id="desc">事件流进入短期与长期衰减轨道，经过变化检测、策略后验和混合检索，形成有证据权重的上下文。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#091310"/><stop offset="1" stop-color="#162923"/></linearGradient>
+    <linearGradient id="mint" x1="0" y1="0" x2="1"><stop stop-color="#83e8c8"/><stop offset="1" stop-color="#45aa8c"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1"><stop stop-color="#ffd98a"/><stop offset="1" stop-color="#d69b3e"/></linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#6da99a"/></marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="13" flood-color="#000" flood-opacity=".3"/></filter>
+  </defs>
+  <rect width="1400" height="760" rx="34" fill="url(#bg)"/>
+  <text x="54" y="58" fill="#f5f8f7" font-family="system-ui,-apple-system,sans-serif" font-size="29" font-weight="750">Adaptive Memory · 不覆盖过去，只让证据随时间重新分配权重</text>
+  <text x="54" y="91" fill="#94aaa4" font-family="system-ui,-apple-system,sans-serif" font-size="16">Event sourcing + dual-timescale decay + bounded Bayesian feedback + hybrid retrieval</text>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="130" width="250" height="250" rx="26" fill="#172923" stroke="#31534a"/>
+    <text x="80" y="169" fill="#83e8c8" font-family="system-ui,sans-serif" font-size="17" font-weight="700">01 · 原始事件流</text>
+    <g font-family="system-ui,sans-serif" font-size="15">
+      <rect x="80" y="194" width="198" height="41" rx="12" fill="#213b33"/><text x="98" y="220" fill="#eaf2ef">聊天与导入截图</text>
+      <rect x="80" y="247" width="198" height="41" rx="12" fill="#213b33"/><text x="98" y="273" fill="#eaf2ef">真实回复与延迟</text>
+      <rect x="80" y="300" width="198" height="55" rx="12" fill="#213b33"/><text x="98" y="324" fill="#eaf2ef">承诺是否兑现</text><text x="98" y="345" fill="#9fb4ae">细节是否记得</text>
+    </g>
+  </g>
+  <path d="M304 255h64" stroke="#6da99a" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="370" y="130" width="368" height="250" rx="26" fill="#172923" stroke="#31534a"/>
+    <text x="396" y="169" fill="#83e8c8" font-family="system-ui,sans-serif" font-size="17" font-weight="700">02 · 双时间尺度</text>
+    <line x1="407" y1="327" x2="699" y2="327" stroke="#46685f" stroke-width="2"/>
+    <line x1="407" y1="198" x2="407" y2="327" stroke="#46685f" stroke-width="2"/>
+    <path d="M407 203C445 246 483 293 699 322" fill="none" stroke="url(#gold)" stroke-width="5"/>
+    <path d="M407 203C472 218 567 250 699 285" fill="none" stroke="url(#mint)" stroke-width="5"/>
+    <text x="535" y="244" fill="#f0bf68" font-family="ui-monospace,monospace" font-size="15">short · τ=21d</text>
+    <text x="559" y="278" fill="#83e8c8" font-family="ui-monospace,monospace" font-size="15">long · τ=240d</text>
+    <text x="398" y="354" fill="#8fa69f" font-family="system-ui,sans-serif" font-size="14">越旧越轻，但不会删除原始观察</text>
+  </g>
+  <path d="M738 255h64" stroke="#6da99a" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="804" y="130" width="278" height="250" rx="26" fill="#172923" stroke="#31534a"/>
+    <text x="830" y="169" fill="#83e8c8" font-family="system-ui,sans-serif" font-size="17" font-weight="700">03 · 变化检测</text>
+    <circle cx="943" cy="254" r="72" fill="none" stroke="#29473f" stroke-width="18"/>
+    <path d="M943 182a72 72 0 0 1 69 92" fill="none" stroke="#f0bf68" stroke-width="18" stroke-linecap="round"/>
+    <text x="943" y="248" text-anchor="middle" fill="#fff" font-family="ui-monospace,monospace" font-size="18" font-weight="700">|mu_s - mu_l|</text>
+    <text x="943" y="277" text-anchor="middle" fill="#9db2ac" font-family="ui-monospace,monospace" font-size="15">&gt;= delta ?</text>
+    <text x="830" y="354" fill="#8fa69f" font-family="system-ui,sans-serif" font-size="14">样本不足时，门控保持关闭</text>
+  </g>
+  <path d="M1082 255h64" stroke="#6da99a" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="1148" y="130" width="198" height="250" rx="26" fill="#172923" stroke="#31534a"/>
+    <text x="1174" y="169" fill="#83e8c8" font-family="system-ui,sans-serif" font-size="17" font-weight="700">04 · 当前画像</text>
+    <g transform="translate(1177 196)">
+      <text y="13" fill="#a9bbb6" font-family="system-ui,sans-serif" font-size="14">主动性</text><rect x="0" y="24" width="140" height="9" rx="5" fill="#29473f"/><rect x="0" y="24" width="91" height="9" rx="5" fill="#78d9bc"/>
+      <text y="67" fill="#a9bbb6" font-family="system-ui,sans-serif" font-size="14">兑现度</text><rect x="0" y="78" width="140" height="9" rx="5" fill="#29473f"/><rect x="0" y="78" width="52" height="9" rx="5" fill="#f0bf68"/>
+      <text y="121" fill="#a9bbb6" font-family="system-ui,sans-serif" font-size="14">记忆关心</text><rect x="0" y="132" width="140" height="9" rx="5" fill="#29473f"/><rect x="0" y="132" width="112" height="9" rx="5" fill="#78d9bc"/>
+    </g>
+    <text x="1174" y="354" fill="#8fa69f" font-family="system-ui,sans-serif" font-size="14">带时间与置信度</text>
+  </g>
+
+  <path d="M179 380v80" stroke="#6da99a" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M1247 380v80" stroke="#6da99a" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="464" width="432" height="238" rx="26" fill="#172923" stroke="#31534a"/>
+    <text x="80" y="504" fill="#83e8c8" font-family="system-ui,sans-serif" font-size="17" font-weight="700">05 · 混合记忆检索</text>
+    <g font-family="ui-monospace,SFMono-Regular,monospace" font-size="15">
+      <text x="80" y="544" fill="#e7efec">R = 0.56 · semantic</text>
+      <text x="111" y="575" fill="#e7efec">+ 0.27 · lexical</text>
+      <text x="111" y="606" fill="#e7efec">+ 0.14 · importance</text>
+      <text x="111" y="637" fill="#e7efec">+ 0.03 · recency</text>
+    </g>
+    <rect x="304" y="535" width="146" height="107" rx="17" fill="#203932"/>
+    <circle cx="340" cy="570" r="8" fill="#78d9bc"/><circle cx="393" cy="556" r="8" fill="#f0bf68"/><circle cx="413" cy="607" r="8" fill="#78d9bc"/><circle cx="356" cy="616" r="8" fill="#9a7de0"/>
+    <path d="m340 570 53-14 20 51-57 9Zm0 0 16 46m37-60 20 51" fill="none" stroke="#52796d" stroke-width="3"/>
+    <text x="80" y="677" fill="#8fa69f" font-family="system-ui,sans-serif" font-size="14">向量失败时，自动切到精确余弦检索</text>
+  </g>
+
+  <path d="M486 583h66" stroke="#6da99a" stroke-width="4" marker-end="url(#arrow)"/>
+  <g filter="url(#shadow)">
+    <rect x="554" y="464" width="328" height="238" rx="26" fill="#172923" stroke="#31534a"/>
+    <text x="580" y="504" fill="#83e8c8" font-family="system-ui,sans-serif" font-size="17" font-weight="700">06 · 有界策略后验</text>
+    <text x="580" y="548" fill="#eef4f2" font-family="ui-monospace,monospace" font-size="17">p_k ~ Beta(alpha_k, beta_k)</text>
+    <g font-family="system-ui,sans-serif" font-size="14">
+      <text x="580" y="589" fill="#a9bbb6">短句</text><rect x="645" y="578" width="194" height="12" rx="6" fill="#29473f"/><rect x="645" y="578" width="137" height="12" rx="6" fill="#78d9bc"/>
+      <text x="580" y="624" fill="#a9bbb6">提问</text><rect x="645" y="613" width="194" height="12" rx="6" fill="#29473f"/><rect x="645" y="613" width="93" height="12" rx="6" fill="#f0bf68"/>
+      <text x="580" y="659" fill="#a9bbb6">邀约</text><rect x="645" y="648" width="194" height="12" rx="6" fill="#29473f"/><rect x="645" y="648" width="158" height="12" rx="6" fill="#78d9bc"/>
+    </g>
+    <text x="580" y="684" fill="#8fa69f" font-family="system-ui,sans-serif" font-size="14">少量反馈无法把倍率推到极端</text>
+  </g>
+
+  <path d="M882 583h66" stroke="#6da99a" stroke-width="4" marker-end="url(#arrow)"/>
+  <g filter="url(#shadow)">
+    <rect x="950" y="464" width="396" height="238" rx="26" fill="#172923" stroke="#31534a"/>
+    <text x="976" y="504" fill="#83e8c8" font-family="system-ui,sans-serif" font-size="17" font-weight="700">07 · 证据加权上下文</text>
+    <path d="M990 559h75l28 46h75l28-30h109" fill="none" stroke="#78d9bc" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="1093" cy="605" r="8" fill="#f0bf68"/><circle cx="1196" cy="575" r="8" fill="#f0bf68"/>
+    <text x="989" y="548" fill="#a9bbb6" font-family="system-ui,sans-serif" font-size="14">文字</text>
+    <text x="1080" y="634" fill="#a9bbb6" font-family="system-ui,sans-serif" font-size="14">行动</text>
+    <text x="1194" y="564" fill="#a9bbb6" font-family="system-ui,sans-serif" font-size="14">记忆</text>
+    <rect x="982" y="654" width="332" height="28" rx="14" fill="#213b33"/>
+    <text x="1148" y="674" text-anchor="middle" fill="#eef4f2" font-family="system-ui,sans-serif" font-size="14">最终提示：相关事实 + 当前变化 + 可靠权重</text>
+  </g>
+</svg>

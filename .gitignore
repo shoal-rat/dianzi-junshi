@@ -15,6 +15,9 @@ build/
 
 # App build artifacts & deps
 app/dist/
+desktop/src-tauri/target/
+desktop/src-tauri/binaries/
+desktop/src-tauri/resources/native/
 node_modules/
 bun.lockb
 

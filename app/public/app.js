@@ -2,6 +2,7 @@
 
 const $ = (sel) => document.querySelector(sel);
 const STAGES = ["初识期", "暧昧期", "追求期", "告白确认", "热恋初期", "稳定期", "磨合期", "危机期"];
+const STAGE_OPTIONS = ["刚认识 / 还不熟", "有点熟 / 还没确定", "正在主动了解", "准备确认关系", "刚在一起", "稳定相处", "最近在磨合", "关系有点紧张"];
 const OIL_CAPS = [0, 1.5, 2, 2.5, 3.5, 3, 1.5, 0.5];
 
 const state = {
@@ -11,6 +12,13 @@ const state = {
   settings: null,
   presets: null,
   attachments: [], // {mediaType, dataBase64, previewUrl}
+  profileAttachments: [],
+  localStatus: null,
+  activeMaterialJobId: null,
+  materialPollTimer: null,
+  materialProgressDismissed: false,
+  selectedReply: "",
+  adaptiveProfile: null,
   sending: false,
 };
 
@@ -19,7 +27,12 @@ const state = {
 // ---------------------------------------------------------------------------
 
 function esc(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function el(html) {
@@ -40,6 +53,36 @@ async function api(path, opts = {}) {
     throw new Error(msg);
   }
   return res.json();
+}
+
+let toastTimer = null;
+function toast(message) {
+  const node = $("#toast");
+  node.textContent = message;
+  node.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { node.hidden = true; }, 2600);
+}
+
+function showFormError(selector, message) {
+  const node = $(selector);
+  node.textContent = message;
+  node.hidden = !message;
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
 }
 
 /** 极简 markdown：先抽围栏，再处理行级语法。返回 DOM 节点数组。 */
@@ -89,13 +132,16 @@ function renderReplyBlock(text, lintResult, idx) {
   block.appendChild(stack);
 
   const tools = el(`<div class="reply-tools"></div>`);
-  const copyBtn = el(`<button class="mini-btn">复制</button>`);
+  const copyBtn = el(`<button class="mini-btn">复制这句</button>`);
   copyBtn.onclick = async () => {
-    await navigator.clipboard.writeText(block.dataset.text || text);
-    copyBtn.textContent = "已复制";
-    setTimeout(() => (copyBtn.textContent = "复制"), 1200);
+    await copyText(block.dataset.text || text);
+    copyBtn.textContent = "已复制，可以去粘贴了";
+    setTimeout(() => (copyBtn.textContent = "复制这句"), 1600);
   };
   tools.appendChild(copyBtn);
+  const feedbackBtn = el(`<button class="mini-btn feedback-btn">记录后来结果</button>`);
+  feedbackBtn.onclick = () => openFeedback(block.dataset.text || text);
+  tools.appendChild(feedbackBtn);
   block.dataset.text = text;
   block.appendChild(tools);
   if (lintResult) applyLint(block, lintResult);
@@ -106,14 +152,14 @@ function applyLint(block, lintResult) {
   const tools = block.querySelector(".reply-tools");
   tools.querySelectorAll(".chip, .fix-btn").forEach((n) => n.remove());
   if (lintResult.result === "PASS" && lintResult.warnCount === 0) {
-    tools.appendChild(el(`<span class="chip chip-pass" title="voice_lint 全绿">门禁 PASS</span>`));
+    tools.appendChild(el(`<span class="chip chip-pass">✓ 发送前检查通过</span>`));
   } else {
     for (const f of lintResult.findings) {
       const cls = f.level === "FAIL" ? "chip-fail" : "chip-warn";
       tools.appendChild(el(`<span class="chip ${cls}" title="${esc(f.hint)}">${f.level === "FAIL" ? "✕" : "!"} ${esc(f.check)}「${esc(f.text)}」</span>`));
     }
     if (lintResult.failCount > 0) {
-      const fixBtn = el(`<button class="mini-btn fix-btn">一键修</button>`);
+      const fixBtn = el(`<button class="mini-btn fix-btn">帮我改自然一点</button>`);
       fixBtn.onclick = () => reviseBlock(block, lintResult, fixBtn);
       tools.appendChild(fixBtn);
     }
@@ -122,7 +168,7 @@ function applyLint(block, lintResult) {
 
 async function reviseBlock(block, lintResult, btn) {
   btn.disabled = true;
-  btn.textContent = "修改中…";
+  btn.textContent = "正在改…";
   try {
     const partner = state.partners.find((p) => p.slug === state.slug);
     const data = await api("/api/revise", {
@@ -131,6 +177,7 @@ async function reviseBlock(block, lintResult, btn) {
         text: block.dataset.text,
         findings: lintResult.findings.map((f) => `${f.check}「${f.text}」：${f.hint}`),
         partnerName: partner?.name ?? "ta",
+        slug: state.slug,
       },
     });
     block.dataset.text = data.revised;
@@ -141,10 +188,10 @@ async function reviseBlock(block, lintResult, btn) {
     }
     applyLint(block, data.lint);
   } catch (e) {
-    alert(`一键修失败：${e.message}`);
+    toast(`没改成功：${e.message}`);
   } finally {
     btn.disabled = false;
-    btn.textContent = "一键修";
+    btn.textContent = "帮我改自然一点";
   }
 }
 
@@ -162,7 +209,7 @@ async function loadPartners(selectSlug) {
         <div class="partner-avatar">${esc(p.name.slice(0, 1))}</div>
         <div class="partner-info">
           <div class="partner-name">${esc(p.name)}</div>
-          <div class="partner-stage">${esc(p.stageName)} · 油上限 ${OIL_CAPS[p.stage]}/5</div>
+          <div class="partner-stage">${esc(STAGE_OPTIONS[p.stage] ?? p.stageName)}</div>
         </div>
       </div>`);
     item.onclick = () => selectPartner(p.slug);
@@ -170,6 +217,11 @@ async function loadPartners(selectSlug) {
   }
   if (selectSlug) await selectPartner(selectSlug);
   else if (!state.slug && state.partners.length) await selectPartner(state.partners[0].slug);
+  else if (!state.partners.length) {
+    state.slug = null;
+    $("#stage-select").disabled = true;
+    $("#anti-simp").disabled = true;
+  }
 }
 
 async function selectPartner(slug) {
@@ -178,11 +230,57 @@ async function selectPartner(slug) {
   const p = state.partners.find((x) => x.slug === slug);
   if (!p) return;
   $("#chat-name").textContent = p.name;
-  $("#chat-sub").textContent = `${p.stageName} · 油腻度上限 ${OIL_CAPS[p.stage]}/5`;
+  $("#chat-sub").textContent = `${STAGE_OPTIONS[p.stage] ?? p.stageName} · 我会按这个进度控制分寸`;
+  $("#stage-select").disabled = false;
+  $("#anti-simp").disabled = false;
   $("#stage-select").value = String(p.stage);
   $("#anti-simp").checked = p.antiSimp;
   $("#sidebar").classList.remove("open");
+  closeDrawers();
   await loadMessages(slug);
+  void loadAdaptiveProfile(slug);
+  void restoreMaterialProgress(slug);
+}
+
+async function loadAdaptiveProfile(slug) {
+  const wrap = $("#panel-adaptive");
+  try {
+    const profile = await api(`/api/partners/${encodeURIComponent(slug)}/adaptive-profile`);
+    state.adaptiveProfile = profile;
+    wrap.classList.remove("muted");
+    wrap.innerHTML = "";
+    if (!profile.feedbackCount) {
+      wrap.classList.add("muted");
+      wrap.textContent = "发出建议后，点「记录后来结果」。有了真实反馈，军师才会逐渐分清 ta 的短期变化和长期习惯。";
+      return;
+    }
+    wrap.appendChild(el(`<p>${esc(profile.summary)}</p>`));
+    const changing = profile.traits.filter((trait) => trait.changing && trait.confidence >= 0.3);
+    if (changing.length) wrap.appendChild(el(`<p class="adaptive-change">最近可能在变化：${esc(changing.map((x) => x.label).join("、"))}</p>`));
+    const learned = profile.strategies.filter((x) => x.confidence >= 0.18).sort((a, b) => b.multiplier - a.multiplier).slice(0, 3);
+    if (learned.length) {
+      const chips = el(`<div class="panel-chips"></div>`);
+      for (const item of learned) chips.appendChild(el(`<span class="chip chip-info">${esc(item.label)} · ${item.multiplier >= 1 ? "较合适" : "少一点"}</span>`));
+      wrap.appendChild(chips);
+    }
+    const evidence = profile.actionEvidenceWeight > profile.responseEvidenceWeight + 0.12
+      ? "目前更应该看 ta 有没有实际行动，不要只按聊天里的甜度判断。"
+      : "目前文字和行动的可信度接近，继续观察一致性。";
+    wrap.appendChild(el(`<p>${evidence}</p>`));
+  } catch {
+    wrap.textContent = "暂时读不到变化画像，不影响继续聊天。";
+  }
+}
+
+function openFeedback(replyText) {
+  if (!state.slug) return;
+  state.selectedReply = replyText;
+  $("#feedback-reply").textContent = replyText;
+  $("#feedback-response").value = "";
+  $("#feedback-delay").value = "6";
+  document.querySelectorAll("#feedback-form input[type=radio], #feedback-form input[type=checkbox]").forEach((input) => { input.checked = false; });
+  showFormError("#feedback-error", "");
+  $("#dlg-feedback").showModal();
 }
 
 async function loadMessages(slug) {
@@ -190,11 +288,16 @@ async function loadMessages(slug) {
   const wrap = $("#messages");
   wrap.innerHTML = "";
   if (!msgs.length) {
-    wrap.appendChild(el(`<div class="empty-hint"><div class="empty-logo"></div><p>把 ta 发来的消息贴进下面，军师给你能直接发的回复。</p></div>`));
+    wrap.appendChild(el(`<div class="welcome-card"><div class="welcome-mark">${esc((state.partners.find((p) => p.slug === slug)?.name ?? "ta").slice(0, 1))}</div><p class="eyebrow">档案建好了</p><h1>先贴一段聊天吧</h1><p>文字、截图都可以。只要告诉我「这是 ta 发的」还是「这是我想发的」，剩下的交给我。</p><p class="privacy-line">第一次不需要把所有背景都说完整，之后可以慢慢补</p></div>`));
     return;
   }
+  const contexts = msgs.filter((m) => m.mode === "context");
+  if (contexts.length) {
+    const imageCount = contexts.reduce((n, m) => n + (m.attachments?.length ?? 0), 0);
+    wrap.appendChild(el(`<div class="context-message">✓ 已带入创建档案时的 ${contexts.length} 段背景资料${imageCount ? `和 ${imageCount} 张截图` : ""}。原文保存在本机，需要时会自动找相关内容。</div>`));
+  }
   for (const m of msgs) {
-    if (m.role === "partner") appendTaMessage(m.text, m.ts);
+    if (m.role === "partner") appendTaMessage(m.text, m.ts, m.attachments, slug);
     else if (m.role === "junshi") {
       const card = appendJunshiCard();
       renderJunshiMarkdown(m.text, card.body, null);
@@ -215,19 +318,30 @@ function relintCard(container) {
   });
 }
 
-function appendTaMessage(text, ts) {
+function appendTaMessage(text, ts, attachments = [], slug = state.slug) {
   const wrap = $("#messages");
   $("#empty-hint")?.remove();
   wrap.querySelector(".empty-hint")?.remove();
   const p = state.partners.find((x) => x.slug === state.slug);
-  wrap.appendChild(el(`
+  const node = el(`
     <div class="msg msg-ta">
       <div class="avatar">${esc((p?.name ?? "ta").slice(0, 1))}</div>
       <div class="msg-body">
         <div class="msg-meta">ta 发来 · ${ts ? new Date(ts).toLocaleString() : "刚刚"}</div>
         <div class="ta-bubble">${esc(text)}</div>
       </div>
-    </div>`));
+    </div>`);
+  if (attachments.length) {
+    const images = el(`<div class="message-images"></div>`);
+    for (const a of attachments) {
+      const src = a.previewUrl || `/api/partners/${encodeURIComponent(slug)}/imports/${encodeURIComponent(a.fileName)}`;
+      const img = el(`<img src="${esc(src)}" alt="${esc(a.name || "聊天截图")}">`);
+      img.onclick = () => window.open(src, "_blank", "noopener");
+      images.appendChild(img);
+    }
+    node.querySelector(".msg-body").appendChild(images);
+  }
+  wrap.appendChild(node);
   wrap.scrollTop = wrap.scrollHeight;
 }
 
@@ -251,16 +365,26 @@ function appendJunshiCard() {
 // 发送 + SSE
 // ---------------------------------------------------------------------------
 
+function friendlyError(error) {
+  const message = String(error?.message || error || "");
+  if (/login|登录|auth|credential/i.test(message)) return `${message} 登录好后不用重启本页，直接再试一次。`;
+  if (/API key|401|unauthorized/i.test(message)) return "这个 API 连接还没填好 Key。点左下角的 AI 连接检查一下，或者改用已登录的 Codex / Claude Code。";
+  if (/fetch|network|连接|ECONN/i.test(message)) return "这次没连上 AI。网络恢复后再点一次，你刚才的文字和截图还在。";
+  return message || "这次没有成功。你刚才的内容还在，可以直接再试一次。";
+}
+
 async function send() {
   if (state.sending) return;
   const input = $("#input");
   const text = input.value.trim();
   if (!text && !state.attachments.length) return;
-  if (!state.slug) { $("#dlg-partner").showModal(); return; }
+  if (!state.slug) { openPartnerDialog(); return; }
 
   state.sending = true;
   $("#btn-send").disabled = true;
-  appendTaMessage(text || "[图片]");
+  $("#btn-send").textContent = "正在读…";
+  const sentAttachments = [...state.attachments];
+  appendTaMessage(text || `[截图 ×${sentAttachments.length}]`, null, sentAttachments);
   input.value = "";
   autoGrow(input);
   $("#scan-chips").hidden = true;
@@ -270,6 +394,7 @@ async function send() {
 
   let raw = "";
   let lintBlocks = null;
+  let completed = false;
   let pendingRender = false;
   const scheduleRender = () => {
     if (pendingRender) return;
@@ -291,11 +416,14 @@ async function send() {
         slug: state.slug,
         mode: state.mode,
         text,
-        images: state.attachments.map((a) => ({ mediaType: a.mediaType, dataBase64: a.dataBase64 })),
+        images: sentAttachments.map((a) => ({ name: a.name, mediaType: a.mediaType, dataBase64: a.dataBase64 })),
       }),
     });
-    if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
-    clearAttachments();
+    if (!res.ok || !res.body) {
+      let detail = `HTTP ${res.status}`;
+      try { detail = (await res.json()).error || detail; } catch {}
+      throw new Error(detail);
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -315,37 +443,52 @@ async function send() {
           if (event === "meta") renderPanelMeta(data);
           else if (event === "delta") { raw += data.text; scheduleRender(); }
           else if (event === "lint") { lintBlocks = data.blocks; renderPanelLint(data.blocks); scheduleRender(); }
+          else if (event === "done") completed = true;
           else if (event === "error") throw new Error(data.message);
         }
       }
     }
     renderJunshiMarkdown(raw, card.body, lintBlocks);
+    if (completed) clearAttachments();
   } catch (e) {
     card.body.classList.add("error-card");
-    card.body.innerHTML = `<p>出错了：${esc(String(e.message || e))}</p><p class="muted">检查右下角设置里的供应商和 API key；演示模式不需要 key。</p>`;
+    card.body.innerHTML = `<p><b>这次没接上</b></p><p>${esc(friendlyError(e))}</p>`;
+    if (!input.value && text) { input.value = text; autoGrow(input); }
   } finally {
     state.sending = false;
     $("#btn-send").disabled = false;
+    updateModeCopy();
     $("#messages").scrollTop = $("#messages").scrollHeight;
   }
 }
 
 function renderPanelMeta(meta) {
-  const laneNames = { A: "日常/分享", B: "情绪事件", C: "试探/冲突", D: "邀约/见面", F: "低兴趣/拉扯" };
+  const laneNames = { A: "日常聊天或分享", B: "对方在表达情绪", C: "有试探、误会或冲突", D: "涉及邀约或见面", F: "互动偏冷，需要先观察" };
   const wrap = $("#panel-meta");
   wrap.classList.remove("muted");
   wrap.innerHTML = "";
   const chips = el(`<div class="panel-chips"></div>`);
-  chips.appendChild(el(`<span class="chip chip-info">车道 ${meta.lane} · ${laneNames[meta.lane] ?? ""}</span>`));
-  chips.appendChild(el(`<span class="chip chip-plain">${esc(meta.provider)} · ${esc(meta.model ?? "")}</span>`));
-  for (const f of meta.loaded) chips.appendChild(el(`<span class="chip chip-plain">${esc(f)}.md</span>`));
+  chips.appendChild(el(`<span class="chip chip-info">理解为：${laneNames[meta.lane] ?? "普通聊天"}</span>`));
+  const providerName = state.presets?.[meta.provider]?.label ?? meta.provider;
+  chips.appendChild(el(`<span class="chip chip-plain">由 ${esc(providerName.replace(/（.*?）/g, "").trim())} 帮你看</span>`));
   wrap.appendChild(chips);
+  if (meta.context) {
+    const c = meta.context;
+    wrap.appendChild(el(`<p>这次参考了最近 ${c.recent} 条记录${c.relevant ? `，还找回 ${c.relevant} 条相关旧内容` : ""}。${c.omitted ? `其余 ${c.omitted} 条原文仍保存在本机。` : ""}</p>`));
+    if (c.materialsIndexed) {
+      wrap.appendChild(el(`<p>素材记忆库里有 ${c.materialsIndexed} 张已整理截图；这次按语义向量、人物和事件线索找回 ${c.materialsRetrieved} 张。</p>`));
+    }
+    if (c.feedbackCount) {
+      const comparison = c.actionEvidenceWeight > c.responseEvidenceWeight + 0.12 ? "这次会更重视实际行动" : "这次会同时参考表达和行动";
+      wrap.appendChild(el(`<p>已经参考 ${c.feedbackCount} 次真实后续反馈；${comparison}。变化画像会随时间衰减，不会把一次结果当成永久性格。</p>`));
+    }
+  }
   if (meta.scan?.length) {
     for (const h of meta.scan) {
-      wrap.appendChild(el(`<div class="scan-item"><b>「${esc(h.matched)}」</b> ${esc(h.meaning)}${h.tone ? ` · ${esc(h.tone)}` : ""} <span class="muted">（${esc(h.status)}）</span></div>`));
+      wrap.appendChild(el(`<div class="scan-item"><b>「${esc(h.matched)}」</b><br>${esc(h.meaning)}${h.tone ? ` · ${esc(h.tone)}` : ""}</div>`));
     }
   } else {
-    wrap.appendChild(el(`<p class="muted">梗词典未命中（不代表没梗）。</p>`));
+    wrap.appendChild(el(`<p class="muted">没有发现需要单独解释的网络用语；如果语气有歧义，回复里会说明。</p>`));
   }
 }
 
@@ -353,11 +496,11 @@ function renderPanelLint(blocks) {
   const wrap = $("#panel-lint");
   wrap.classList.remove("muted");
   wrap.innerHTML = "";
-  if (!blocks.length) { wrap.innerHTML = `<p class="muted">这次输出里没有可复制回复。</p>`; return; }
+  if (!blocks.length) { wrap.innerHTML = `<p class="muted">这次是分析，没有生成要发给 ta 的话。</p>`; return; }
   blocks.forEach((b, i) => {
     const cls = b.result === "PASS" ? (b.warnCount ? "chip-warn" : "chip-pass") : "chip-fail";
-    const label = b.result === "PASS" ? (b.warnCount ? `PASS（${b.warnCount} 提醒）` : "PASS") : `FAIL ×${b.failCount}`;
-    wrap.appendChild(el(`<p>回复 ${i + 1}：<span class="chip ${cls}">${label}</span></p>`));
+    const label = b.result === "PASS" ? (b.warnCount ? `${b.warnCount} 个小提醒` : "读起来比较自然") : `${b.failCount} 处建议先改`;
+    wrap.appendChild(el(`<p>第 ${i + 1} 个说法：<span class="chip ${cls}">${label}</span></p>`));
   });
 }
 
@@ -389,16 +532,37 @@ function scheduleScan() {
 // 附件
 // ---------------------------------------------------------------------------
 
-function addAttachment(file) {
-  if (!file.type.startsWith("image/")) return;
+function addImageFile(file, target, onChange) {
+  if (!file || !["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type)) {
+    toast("请选择 PNG、JPG、WebP 或 GIF 图片");
+    return;
+  }
   const reader = new FileReader();
   reader.onload = () => {
     const dataUrl = String(reader.result);
     const b64 = dataUrl.split(",")[1];
-    state.attachments.push({ mediaType: file.type, dataBase64: b64, previewUrl: dataUrl });
-    renderAttachments();
+    target.push({ name: file.name, mediaType: file.type, dataBase64: b64, previewUrl: dataUrl });
+    onChange();
   };
   reader.readAsDataURL(file);
+}
+
+function addAttachment(file) {
+  addImageFile(file, state.attachments, renderAttachments);
+}
+
+function addProfileAttachment(file) {
+  if (!file || !["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type)) {
+    toast("不是支持的图片，已跳过");
+    return;
+  }
+  state.profileAttachments.push({
+    file,
+    name: file.name,
+    mediaType: file.type,
+    previewUrl: URL.createObjectURL(file),
+  });
+  renderProfileAttachments();
 }
 
 function renderAttachments() {
@@ -417,29 +581,242 @@ function clearAttachments() {
   renderAttachments();
 }
 
+function renderProfileAttachments() {
+  const strip = $("#np-file-list");
+  strip.innerHTML = "";
+  strip.hidden = state.profileAttachments.length === 0;
+  if (state.profileAttachments.length) {
+    strip.appendChild(el(`<div class="import-count">已选择 ${state.profileAttachments.length} 张。点「建好并开始」后会逐个上传、逐张整理，进度可以随时收起。</div>`));
+  }
+  state.profileAttachments.slice(0, 12).forEach((a, i) => {
+    const t = el(`<div class="attach-thumb"><img src="${a.previewUrl}" alt="${esc(a.name)}"><button type="button" title="移除">×</button></div>`);
+    t.querySelector("button").onclick = () => {
+      const [removed] = state.profileAttachments.splice(i, 1);
+      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+      renderProfileAttachments();
+    };
+    strip.appendChild(t);
+  });
+  if (state.profileAttachments.length > 12) {
+    strip.appendChild(el(`<div class="attach-thumb"><div class="more-files">＋${state.profileAttachments.length - 12}</div></div>`));
+  }
+}
+
+function clearProfileAttachments() {
+  for (const item of state.profileAttachments) if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  state.profileAttachments = [];
+  renderProfileAttachments();
+}
+
+// ---------------------------------------------------------------------------
+// 批量素材：逐个流式上传，后台逐张分析，任务可在关闭弹窗后继续
+// ---------------------------------------------------------------------------
+
+function renderMaterialProgress({ percent, title, count, detail, actionLabel = "", action = null }) {
+  const wrap = $("#material-progress");
+  if (state.materialProgressDismissed) return;
+  wrap.hidden = false;
+  $("#material-progress-title").textContent = title;
+  $("#material-progress-count").textContent = count;
+  $("#material-progress-detail").textContent = detail;
+  const value = Math.max(0, Math.min(100, Number(percent) || 0));
+  $("#material-progress-bar").style.width = `${value}%`;
+  wrap.querySelector("[role=progressbar]").setAttribute("aria-valuenow", String(Math.round(value)));
+  const actionBtn = $("#material-progress-action");
+  actionBtn.hidden = !actionLabel;
+  actionBtn.textContent = actionLabel;
+  actionBtn.onclick = action;
+}
+
+function scheduleMaterialPoll(slug, jobId, delay = 900) {
+  clearTimeout(state.materialPollTimer);
+  state.materialPollTimer = setTimeout(() => pollMaterialJob(slug, jobId), delay);
+}
+
+async function pollMaterialJob(slug, jobId) {
+  try {
+    const job = await api(`/api/partners/${encodeURIComponent(slug)}/material-jobs/${jobId}`);
+    state.activeMaterialJobId = job.id;
+    const processed = job.completed + job.failed;
+    const percent = 45 + (job.total ? (processed / job.total) * 55 : 0);
+    if (job.status === "waiting-for-ai") {
+      renderMaterialProgress({
+        percent: 45,
+        title: "截图已经保存在本机",
+        count: `${job.total} 张等待整理`,
+        detail: job.message,
+        actionLabel: "选择 AI 连接",
+        action: () => openSettings().catch((e) => toast(friendlyError(e))),
+      });
+      scheduleMaterialPoll(slug, jobId, 3000);
+      return;
+    }
+    if (job.status === "partial") {
+      renderMaterialProgress({
+        percent: 100,
+        title: "这批资料已整理完",
+        count: `${job.completed} 张成功 · ${job.failed} 张待重试`,
+        detail: job.message,
+        actionLabel: "重试失败项",
+        action: async () => {
+          await api(`/api/partners/${encodeURIComponent(slug)}/material-jobs/${job.id}/resume`, {
+            method: "POST", body: { retryFailed: true },
+          });
+          state.materialProgressDismissed = false;
+          scheduleMaterialPoll(slug, job.id, 250);
+        },
+      });
+      return;
+    }
+    if (job.status === "complete") {
+      renderMaterialProgress({
+        percent: 100,
+        title: "过往截图整理好了",
+        count: `${job.completed} / ${job.total} 张`,
+        detail: "长期记忆索引已更新。以后即使是很久以前的内容，也会按语义和人物线索找回。",
+      });
+      setTimeout(() => { if (state.activeMaterialJobId === job.id) $("#material-progress").hidden = true; }, 7000);
+      if (state.slug === slug) await loadMessages(slug);
+      return;
+    }
+    renderMaterialProgress({
+      percent,
+      title: "AI 正在逐张整理截图",
+      count: `${processed} / ${job.total} 张${job.current ? ` · ${job.current}` : ""}`,
+      detail: "每张图都会生成可回指的摘要、事实、人物、时间和语义向量。原图不会删除。",
+    });
+    scheduleMaterialPoll(slug, jobId);
+  } catch (error) {
+    renderMaterialProgress({
+      percent: 45,
+      title: "暂时读不到整理进度",
+      count: "后台任务可能仍在继续",
+      detail: friendlyError(error),
+    });
+    scheduleMaterialPoll(slug, jobId, 3000);
+  }
+}
+
+async function uploadMaterialBatch(slug, selectedFiles) {
+  if (!selectedFiles.length) return;
+  state.materialProgressDismissed = false;
+  const uploaded = [];
+  const failed = [];
+  for (let i = 0; i < selectedFiles.length; i++) {
+    const item = selectedFiles[i];
+    renderMaterialProgress({
+      percent: (i / selectedFiles.length) * 45,
+      title: "正在把截图逐个保存到本机",
+      count: `${i} / ${selectedFiles.length} 张 · ${item.name}`,
+      detail: "不把整批图片塞进内存；每个文件落盘后再处理下一个。这个进度可以收起。",
+    });
+    try {
+      const res = await fetch(`/api/partners/${encodeURIComponent(slug)}/materials/upload`, {
+        method: "POST",
+        headers: { "content-type": item.mediaType, "x-file-name": encodeURIComponent(item.name) },
+        body: item.file,
+      });
+      if (!res.ok) {
+        let message = `HTTP ${res.status}`;
+        try { message = (await res.json()).error || message; } catch {}
+        throw new Error(message);
+      }
+      uploaded.push(await res.json());
+    } catch (error) {
+      failed.push({ name: item.name, error: friendlyError(error) });
+    }
+  }
+  if (!uploaded.length) {
+    renderMaterialProgress({
+      percent: 100, title: "这批截图没有上传成功", count: `${failed.length} 张失败`,
+      detail: failed[0]?.error || "请检查磁盘空间后再试。",
+    });
+    return;
+  }
+  renderMaterialProgress({
+    percent: 45,
+    title: "截图已保存，准备逐张理解",
+    count: `${uploaded.length} 张已上传${failed.length ? ` · ${failed.length} 张上传失败` : ""}`,
+    detail: "后台会一次只交给 AI 一张，避免超出上下文并保持进度可恢复。",
+  });
+  try {
+    const job = await api(`/api/partners/${encodeURIComponent(slug)}/material-jobs`, {
+      method: "POST", body: { attachments: uploaded },
+    });
+    state.activeMaterialJobId = job.id;
+    scheduleMaterialPoll(slug, job.id, 250);
+  } catch (error) {
+    renderMaterialProgress({
+      percent: 45,
+      title: "截图已经保存在本机",
+      count: `${uploaded.length} 张等待建立任务`,
+      detail: `后台任务暂时没有建立：${friendlyError(error)}。重新打开档案后可以再次导入，不会影响已有资料。`,
+    });
+  }
+}
+
+async function restoreMaterialProgress(slug) {
+  try {
+    const job = await api(`/api/partners/${encodeURIComponent(slug)}/material-jobs/latest`);
+    if (!job || job.status === "complete") return;
+    state.materialProgressDismissed = false;
+    state.activeMaterialJobId = job.id;
+    await pollMaterialJob(slug, job.id);
+  } catch { /* no previous job */ }
+}
+
 // ---------------------------------------------------------------------------
 // 设置
 // ---------------------------------------------------------------------------
 
 async function openSettings() {
-  const data = await api("/api/settings");
+  showFormError("#settings-error", "");
+  const [data, local] = await Promise.all([
+    api("/api/settings"),
+    api("/api/providers/local").catch(() => null),
+  ]);
   state.settings = data;
   state.presets = data.presets;
+  state.localStatus = local;
+  renderLocalStatus();
   renderProviderCards(data.provider);
   $("#dlg-settings").showModal();
+}
+
+function renderLocalStatus() {
+  const note = $("#local-provider-note");
+  if (!state.localStatus) { note.textContent = "暂时没能检查电脑上的 AI，可以稍后重试，或使用 API 连接。"; return; }
+  const labels = [["codex", "Codex"], ["claude-code", "Claude Code"]].map(([key, label]) => {
+    const s = state.localStatus[key];
+    if (!s?.installed) return `${label} 未安装`;
+    if (!s.authenticated) return `${label} 已安装、还没登录`;
+    return `${label} 已登录`;
+  });
+  note.textContent = `这台电脑：${labels.join(" · ")}`;
 }
 
 function renderProviderCards(activeKey) {
   const cards = $("#provider-cards");
   cards.innerHTML = "";
-  const order = ["demo", "claude", "deepseek", "glm", "custom"];
+  const order = ["codex", "claude-code", "demo", "claude", "deepseek", "glm", "custom"];
+  const descriptions = {
+    codex: "复用 ChatGPT / Codex 登录，不填 Key",
+    "claude-code": "复用 Claude 账号登录，不填 Key",
+    demo: "不联网，只看看界面和流程",
+    claude: "使用 Anthropic API Key",
+    deepseek: "使用 DeepSeek API Key",
+    glm: "使用智谱 API Key",
+    custom: "连接兼容 OpenAI 格式的服务",
+  };
   for (const key of order) {
     const preset = state.presets[key];
     if (!preset) continue;
+    const local = state.localStatus?.[key];
+    const ready = local?.installed && local?.authenticated;
     const c = el(`<button type="button" class="provider-card ${key === activeKey ? "active" : ""}" data-key="${key}">
-      ${esc(preset.label)}<small>${key === "demo" ? "不用 key，先体验" : esc(preset.defaultModel || "自填模型名")}</small>
+      <span class="status-dot ${ready ? "ready" : ""}"></span><b>${esc(preset.label)}</b><small>${esc(descriptions[key] ?? "")}</small>
     </button>`);
-    c.onclick = () => { renderProviderCards(key); renderProviderFields(key); };
+    c.onclick = () => { renderProviderCards(key); };
     cards.appendChild(c);
   }
   renderProviderFields(activeKey);
@@ -451,12 +828,30 @@ function renderProviderFields(key) {
   const preset = state.presets[key];
   const saved = state.settings.providers[key] ?? {};
   if (key === "demo") {
-    wrap.innerHTML = `<p class="muted" style="font-size:12.5px">演示模式不联网，回复是内置示例，方便先看界面和流程。</p>`;
+    wrap.innerHTML = `<p><b>演示模式不会读取你的真实内容。</b></p><p class="muted">它只播放一段内置例子，适合先熟悉按钮。准备正式使用时，再换成 Codex、Claude Code 或 API。</p>`;
     return;
   }
-  const modelOptions = preset.models.map((m) => `<option value="${m}" ${saved.model === m ? "selected" : ""}>${m}</option>`).join("");
+  if (preset.local) {
+    const status = state.localStatus?.[key];
+    const name = key === "codex" ? "Codex" : "Claude Code";
+    if (!status?.installed) {
+      wrap.innerHTML = `<p><b>还没有在这台电脑上找到 ${name}</b></p><p class="muted">先安装 ${name}，登录一次，再回到这里重新打开设置。App 不会读取或保存你的账号密码。</p>`;
+      return;
+    }
+    if (!status.authenticated) {
+      wrap.innerHTML = `<p><b>${name} 已安装，但还没有登录</b></p><p class="muted">在终端运行 <code>${key === "codex" ? "codex login" : "claude auth login"}</code> 完成登录，然后重新打开这里。</p>`;
+      return;
+    }
+    const choices = key === "claude-code"
+      ? `<select id="sf-model" class="select"><option value="">跟随 Claude Code 默认设置</option>${preset.models.filter(Boolean).map((m) => `<option value="${esc(m)}" ${saved.model === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>`
+      : `<input id="sf-model" type="text" placeholder="留空就跟随 Codex 默认设置" value="${esc(saved.model ?? "")}">`;
+    wrap.innerHTML = `<p><b>可以直接使用。</b> ${esc(status.version ?? "")}</p><p class="muted">它会沿用 ${name} 的现有登录。每次请求在只读环境里运行；截图只开放读取，不允许它改文件。</p><label class="field"><span>模型 <i>可选</i></span>${choices}</label>`;
+    return;
+  }
+  const modelOptions = preset.models.map((m) => `<option value="${esc(m)}" ${saved.model === m ? "selected" : ""}>${esc(m)}</option>`).join("");
   wrap.innerHTML = `
-    <label class="field"><span>API Key${preset.keyUrl ? `（<a href="${preset.keyUrl}" target="_blank">去获取</a>）` : ""}</span>
+    <p class="muted">这是给熟悉 API 的用户准备的高级连接。Key 只保存在本机配置里。</p>
+    <label class="field"><span>API Key${preset.keyUrl ? ` · <a href="${preset.keyUrl}" target="_blank" rel="noopener">去服务商后台获取</a>` : ""}</span>
       <input id="sf-key" type="password" placeholder="sk-…" value="${esc(saved.apiKey ?? "")}"></label>
     <label class="field"><span>模型</span>
       ${preset.models.length
@@ -472,7 +867,11 @@ function renderProviderFields(key) {
 async function saveSettings() {
   const key = $("#provider-fields").dataset.key;
   const patch = { provider: key, providers: {} };
-  if (key !== "demo") {
+  if (state.presets[key]?.local && key !== "demo") {
+    const status = state.localStatus?.[key];
+    if (!status?.installed || !status.authenticated) throw new Error("这个连接还没准备好。先完成安装和登录，再回来选择它。");
+    patch.providers[key] = { model: $("#sf-model")?.value?.trim() || undefined };
+  } else if (key !== "demo") {
     patch.providers[key] = {
       apiKey: $("#sf-key")?.value?.trim() || undefined,
       model: $("#sf-model")?.value?.trim() || undefined,
@@ -489,7 +888,8 @@ async function refreshProviderPill() {
   state.presets = s.presets;
   const label = s.presets[s.provider]?.label ?? s.provider;
   const model = s.providers[s.provider]?.model;
-  $("#provider-label").textContent = s.provider === "demo" ? "演示模式（点此配置模型）" : `${label} · ${model ?? ""}`;
+  $("#provider-label").textContent = s.provider === "demo" ? "演示模式 · 还没正式连接" : `${label}${model ? ` · ${model}` : ""}`;
+  $("#btn-settings .dot").classList.toggle("offline", s.provider === "demo");
 }
 
 // ---------------------------------------------------------------------------
@@ -501,13 +901,58 @@ function autoGrow(ta) {
   ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
 }
 
+function closeDrawers() {
+  $("#sidebar").classList.remove("open");
+  $("#panel").classList.remove("open");
+  $("#drawer-backdrop").hidden = true;
+}
+
+function openDrawer(id) {
+  closeDrawers();
+  $(id).classList.add("open");
+  $("#drawer-backdrop").hidden = false;
+}
+
+function makeDialogDismissible(dialog) {
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    dialog.close();
+  });
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+}
+
+function updateModeCopy() {
+  const sendLabels = { reply: "帮我想想", analyze: "帮我读懂", ask: "帮我看看", interest: "帮我判断" };
+  const placeholders = {
+    reply: "把 ta 发来的话贴在这里…",
+    analyze: "贴上 ta 的消息或描述当时的情况…",
+    ask: "写下你准备发的话，我帮你看看…",
+    interest: "贴几段最近的聊天，或说说 ta 最近做了什么…",
+  };
+  if (!state.sending) $("#btn-send").textContent = sendLabels[state.mode];
+  $("#input").placeholder = placeholders[state.mode];
+}
+
+function openPartnerDialog() {
+  $("#np-name").value = "";
+  $("#np-stage").value = "1";
+  $("#np-antisimp").checked = false;
+  $("#np-context").value = "";
+  clearProfileAttachments();
+  showFormError("#np-error", "");
+  $("#dlg-partner").showModal();
+  setTimeout(() => $("#np-name").focus(), 30);
+}
+
 function bind() {
   // 阶段下拉
   const stageSel = $("#stage-select");
   const npStage = $("#np-stage");
   STAGES.forEach((name, i) => {
-    stageSel.appendChild(el(`<option value="${i}">${i} ${name}</option>`));
-    npStage.appendChild(el(`<option value="${i}" ${i === 1 ? "selected" : ""}>${i} ${name}（油上限 ${OIL_CAPS[i]}/5）</option>`));
+    stageSel.appendChild(el(`<option value="${i}">${STAGE_OPTIONS[i]}</option>`));
+    npStage.appendChild(el(`<option value="${i}" ${i === 1 ? "selected" : ""}>${STAGE_OPTIONS[i]}</option>`));
   });
   stageSel.onchange = async () => {
     if (!state.slug) return;
@@ -520,17 +965,58 @@ function bind() {
     await loadPartners(state.slug);
   };
 
-  // 新建对象
-  $("#btn-new-partner").onclick = () => { $("#np-name").value = ""; $("#dlg-partner").showModal(); };
-  $("#np-create").onclick = async (e) => {
+  // 新建聊天档案 + 首次资料导入
+  $("#btn-new-partner").onclick = openPartnerDialog;
+  $("#empty-create").onclick = openPartnerDialog;
+  $("#np-close").onclick = () => $("#dlg-partner").close();
+  $("#np-cancel").onclick = () => $("#dlg-partner").close();
+  $("#dlg-partner form").onsubmit = async (e) => {
+    e.preventDefault();
     const name = $("#np-name").value.trim();
-    if (!name) { e.preventDefault(); $("#np-name").focus(); return; }
-    const meta = await api("/api/partners", {
-      method: "POST",
-      body: { name, stage: Number($("#np-stage").value), antiSimp: $("#np-antisimp").checked },
-    });
-    await loadPartners(meta.slug);
+    if (!name) { showFormError("#np-error", "先写一个称呼，昵称或代号都可以。"); $("#np-name").focus(); return; }
+    const btn = $("#np-create");
+    btn.disabled = true;
+    btn.textContent = "正在建档…";
+    showFormError("#np-error", "");
+    const selectedFiles = [...state.profileAttachments];
+    try {
+      const meta = await api("/api/partners", {
+        method: "POST",
+        body: {
+          name,
+          stage: Number($("#np-stage").value),
+          antiSimp: $("#np-antisimp").checked,
+          backgroundText: $("#np-context").value,
+          images: [],
+        },
+      });
+      $("#dlg-partner").close();
+      await loadPartners(meta.slug);
+      if (selectedFiles.length) {
+        toast(`档案建好了，开始在后台整理 ${selectedFiles.length} 张截图`);
+        void uploadMaterialBatch(meta.slug, selectedFiles);
+      } else {
+        toast(meta.imported?.textLength ? "档案建好了，过往文字也带进来了" : "档案建好了，可以开始贴聊天了");
+      }
+      clearProfileAttachments();
+    } catch (err) {
+      showFormError("#np-error", friendlyError(err));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "建好并开始";
+    }
   };
+  const dropzone = $("#np-dropzone");
+  dropzone.onclick = () => $("#np-file-input").click();
+  dropzone.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#np-file-input").click(); } };
+  dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add("dragging"); };
+  dropzone.ondragleave = () => dropzone.classList.remove("dragging");
+  dropzone.ondrop = (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dragging");
+    for (const file of e.dataTransfer?.files ?? []) addProfileAttachment(file);
+  };
+  $("#np-file-input").onchange = (e) => { for (const file of e.target.files) addProfileAttachment(file); e.target.value = ""; };
 
   // 模式
   $("#mode-tabs").addEventListener("click", (e) => {
@@ -538,13 +1024,8 @@ function bind() {
     if (!btn) return;
     state.mode = btn.dataset.mode;
     document.querySelectorAll(".mode-tab").forEach((n) => n.classList.toggle("active", n === btn));
-    $("#btn-send").textContent = { reply: "出方案", analyze: "分析", ask: "评估", interest: "判断" }[state.mode];
-    $("#input").placeholder = {
-      reply: "贴 ta 发来的消息，或描述情况…（Enter 发送，Shift+Enter 换行）",
-      analyze: "贴 ta 的消息，只做解读不给回复",
-      ask: "写下你想发的话，军师告诉你行不行、怎么改",
-      interest: "描述最近的互动，或贴几段聊天，军师给四维兴趣判断",
-    }[state.mode];
+    document.querySelectorAll(".mode-tab").forEach((n) => n.setAttribute("aria-selected", String(n === btn)));
+    updateModeCopy();
   });
 
   // 输入
@@ -563,18 +1044,98 @@ function bind() {
   $("#file-input").onchange = (e) => { for (const f of e.target.files) addAttachment(f); e.target.value = ""; };
 
   // 设置
-  $("#btn-settings").onclick = openSettings;
-  $("#settings-save").onclick = async () => { await saveSettings(); };
+  $("#btn-settings").onclick = () => openSettings().catch((e) => toast(friendlyError(e)));
+  $("#settings-close").onclick = () => $("#dlg-settings").close();
+  $("#settings-cancel").onclick = () => $("#dlg-settings").close();
+  $("#dlg-settings form").onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = $("#settings-save");
+    btn.disabled = true;
+    btn.textContent = "正在连接…";
+    showFormError("#settings-error", "");
+    try {
+      await saveSettings();
+      $("#dlg-settings").close();
+      toast("AI 连接已切换");
+      if (state.activeMaterialJobId && state.slug) scheduleMaterialPoll(state.slug, state.activeMaterialJobId, 250);
+    } catch (err) {
+      showFormError("#settings-error", friendlyError(err));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "使用这个连接";
+    }
+  };
 
-  // 移动端抽屉
-  $("#btn-sidebar").onclick = () => $("#sidebar").classList.toggle("open");
-  $("#btn-panel").onclick = () => $("#panel").classList.toggle("open");
+  // 实际结果反馈：把真实后续变成有时间权重的学习信号
+  $("#feedback-close").onclick = () => $("#dlg-feedback").close();
+  $("#feedback-cancel").onclick = () => $("#dlg-feedback").close();
+  $("#feedback-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const outcome = document.querySelector("#feedback-form input[name=outcome]:checked")?.value;
+    if (!outcome) { showFormError("#feedback-error", "先选一下 ta 后来的反应。"); return; }
+    const btn = $("#feedback-save");
+    btn.disabled = true;
+    btn.textContent = "正在记下…";
+    try {
+      const checked = (name) => Boolean(document.querySelector(`#feedback-form input[name=${name}]`)?.checked);
+      await api(`/api/partners/${encodeURIComponent(state.slug)}/feedback`, {
+        method: "POST",
+        body: {
+          replyText: state.selectedReply,
+          partnerResponse: $("#feedback-response").value,
+          outcome,
+          responseDelayHours: Number($("#feedback-delay").value),
+          signals: {
+            continued: checked("continued") || undefined,
+            initiated: checked("initiated") || undefined,
+            followedThrough: checked("followedThrough") || undefined,
+            brokePromise: checked("brokePromise") || undefined,
+            rememberedDetail: checked("rememberedDetail") || undefined,
+            forgotDetail: checked("forgotDetail") || undefined,
+          },
+        },
+      });
+      $("#dlg-feedback").close();
+      toast("记下了。它会和以后几次结果一起慢慢校准，不会因为一次反馈就定性。");
+      await loadAdaptiveProfile(state.slug);
+      await loadMessages(state.slug);
+    } catch (error) {
+      showFormError("#feedback-error", friendlyError(error));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "记下这次结果";
+    }
+  };
+
+  // 所有浮层都可以通过关闭按钮、背景或 Esc 退出
+  makeDialogDismissible($("#dlg-partner"));
+  makeDialogDismissible($("#dlg-settings"));
+  makeDialogDismissible($("#dlg-feedback"));
+  $("#btn-sidebar").onclick = () => openDrawer("#sidebar");
+  $("#btn-panel").onclick = () => openDrawer("#panel");
+  $("#panel-close").onclick = closeDrawers;
+  $("#drawer-backdrop").onclick = closeDrawers;
+  $("#material-progress-close").onclick = () => {
+    state.materialProgressDismissed = true;
+    $("#material-progress").hidden = true;
+  };
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeDrawers();
+    for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
+  });
 }
 
 async function main() {
-  bind();
-  await refreshProviderPill();
-  await loadPartners();
+  try {
+    bind();
+    updateModeCopy();
+    await refreshProviderPill();
+    await loadPartners();
+    if (!state.partners.length) setTimeout(openPartnerDialog, 180);
+  } catch (e) {
+    toast(`页面没有准备好：${friendlyError(e)}`);
+  }
 }
 
 main();

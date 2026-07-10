@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">三个桌面平台，一个下载页面</title>
+  <desc id="desc">Windows、macOS 和 Linux 安装包均由 GitHub Release 提供。</desc>
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#10201c"/><stop offset="1" stop-color="#182e28"/></linearGradient></defs>
+  <rect width="1200" height="300" rx="30" fill="url(#g)"/>
+  <text x="60" y="58" fill="#f4f8f6" font-family="system-ui,-apple-system,sans-serif" font-size="27" font-weight="700">一个下载页面，覆盖三种电脑</text>
+  <text x="60" y="88" fill="#9db4ad" font-family="system-ui,-apple-system,sans-serif" font-size="16">安装包带着 App 和本地后端一起走，普通用户不需要配置开发环境</text>
+  <g transform="translate(60 122)">
+    <rect width="328" height="124" rx="22" fill="#1d332d" stroke="#365b50"/>
+    <g transform="translate(30 29)" fill="#73d5b7"><path d="M0 5 29 1v28H0zm35-5 34-5v34H35zM0 35h29v28L0 59zm35 0h34v34l-34-5z"/></g>
+    <text x="126" y="54" fill="#fff" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Windows</text>
+    <text x="126" y="82" fill="#a8bbb5" font-family="system-ui,sans-serif" font-size="15">Setup.exe · MSI</text>
+  </g>
+  <g transform="translate(436 122)">
+    <rect width="328" height="124" rx="22" fill="#1d332d" stroke="#365b50"/>
+    <path d="M67 33c-11 1-21 12-21 27 0 18 12 36 22 36 6 0 9-4 16-4 7 0 9 4 16 4 10 0 20-16 21-31-13-5-15-23-3-30-7-9-18-10-22-10-7 0-13 5-17 5-4 0-7-3-12-3Zm29-25c-1 8-6 15-14 19-1-8 4-16 14-19Z" fill="#73d5b7"/>
+    <text x="126" y="54" fill="#fff" font-family="system-ui,sans-serif" font-size="22" font-weight="700">macOS</text>
+    <text x="126" y="82" fill="#a8bbb5" font-family="system-ui,sans-serif" font-size="15">Apple Silicon · Intel DMG</text>
+  </g>
+  <g transform="translate(812 122)">
+    <rect width="328" height="124" rx="22" fill="#1d332d" stroke="#365b50"/>
+    <g transform="translate(47 23)"><ellipse cx="31" cy="39" rx="27" ry="36" fill="#73d5b7"/><ellipse cx="31" cy="44" rx="18" ry="24" fill="#10201c"/><circle cx="22" cy="29" r="4" fill="#fff"/><circle cx="40" cy="29" r="4" fill="#fff"/><path d="m25 38 6 5 7-5" fill="none" stroke="#f0c36b" stroke-width="4" stroke-linecap="round"/></g>
+    <text x="126" y="54" fill="#fff" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Linux</text>
+    <text x="126" y="82" fill="#a8bbb5" font-family="system-ui,sans-serif" font-size="15">AppImage · DEB</text>
+  </g>
+</svg>
