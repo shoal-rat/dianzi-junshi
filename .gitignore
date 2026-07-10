@@ -17,7 +17,9 @@ build/
 app/dist/
 desktop/src-tauri/target/
 desktop/src-tauri/binaries/
+desktop/src-tauri/gen/
 desktop/src-tauri/resources/native/
+desktop/src-tauri/resources/backend/
 node_modules/
 bun.lockb
 

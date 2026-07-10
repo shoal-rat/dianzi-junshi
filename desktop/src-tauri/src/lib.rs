@@ -71,6 +71,16 @@ pub fn run() {
                 let _ = native_dirs;
                 sidecar.env("DJ_DISABLE_SQLITE_VEC", "1")
             };
+            #[cfg(target_os = "linux")]
+            let sidecar = sidecar
+                .env(
+                    "DJ_BACKEND_ARCHIVE",
+                    resources
+                        .join("resources/backend/dianzi-junshi-server.gz")
+                        .to_string_lossy()
+                        .to_string(),
+                )
+                .env("DJ_DISABLE_SQLITE_VEC", "1");
             let (_events, child) = sidecar.spawn()?;
             app.manage(BackendProcess(Mutex::new(Some(child))));
 

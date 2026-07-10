@@ -95,4 +95,5 @@ jobs:
           releaseBody: Download the installer for your system below. Windows users can choose Setup.exe, macOS users choose the matching DMG, and Linux users can choose AppImage or DEB.
           releaseDraft: true
           prerelease: false
+          releaseAssetNamePattern: Dianzi-Junshi_[version]_[platform]_[arch]_[bundle][ext]
           args: ${{ matrix.args }}
