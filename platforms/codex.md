@@ -1,85 +1,38 @@
-# Codex 使用指南
+# 在桌面 App 里使用 Codex
 
-Codex 支持 Agent Skills。这个仓库已经按 Codex 可识别的结构提供：
+电子军师 v4 不再安装成 Codex Skill。Codex 是桌面 App 可以选择的一种本机 AI 连接。
 
-- `SKILL.md`：技能入口，包含 `name: dianzi-junshi` 和触发描述。
-- `agents/openai.yaml`：Codex App 的展示名、简介和默认调用提示。
-- `references/`：按需加载的 8 个细分模块（语感门禁、梗协议、梗词典、局势解读、节奏打法、对象档案、记忆引擎、约会）。
-- `tools/`：确定性脚本（回复语感检查、聊天解析、批量导入、反馈统计等）。
+## 第一次准备
 
-## 安装到用户级 Codex
+1. 按 [OpenAI 官方说明](https://developers.openai.com/codex/cli/) 安装 Codex CLI。
+2. 在终端运行：
 
-一行命令，克隆到 Codex 的用户技能目录。
+   ```bash
+   codex login
+   ```
 
-Windows（PowerShell）：
+3. 打开电子军师，点左下角「AI 连接」。
+4. 看到「Codex 已登录」后选择 Codex。
 
-```powershell
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME\.agents\skills\dianzi-junshi"
+App 只运行 `codex login status` 检查状态，不会读取账号密码。实际请求使用：
+
+```text
+codex exec --json --ephemeral --sandbox read-only
 ```
 
-macOS / Linux：
+每次都是临时会话。电子军师自己的 SQLite 负责长期记忆和上下文选择；Codex 只读取这次需要分析的内容。涉及旧截图时，App 仅把当前档案中相关图片的只读路径交给 Codex。
+
+## 不用 API Key 的含义
+
+不需要在电子军师里再粘贴 API Key，但仍会使用 Codex 账号对应的套餐额度、组织规则和使用限制。额度不足时，App 会显示 Codex 返回的真实错误，而不是笼统地说“连接失败”。
+
+## 找不到 Codex
+
+桌面程序有时拿不到终端配置里的自定义 `PATH`。先确认：
 
 ```bash
-git clone https://github.com/shoal-rat/dianzi-junshi.git "$HOME/.agents/skills/dianzi-junshi"
+codex --version
+codex login status
 ```
 
-重启 Codex 后，最省事的用法是直接贴截图、说人话：
-
-```text
-帮我追个人，先建个档
-（贴一张微信截图）这条我该怎么回
-```
-
-想显式点名也行：
-
-```text
-Use $dianzi-junshi to analyze this message and draft three replies: "你最近忙什么呢"
-```
-
-```text
-Use $dianzi-junshi to judge whether ta is interested based on this chat log. Anti-simp mode is on.
-```
-
-```text
-Use $dianzi-junshi to analyze this Moments screenshot and suggest low-oiliness flirting openers.
-```
-
-```text
-Use $dianzi-junshi to import and classify this folder: C:\Users\me\Desktop\ta-materials
-```
-
-```text
-Use $dianzi-junshi to plan this accepted date. Keep user-only reminders separate from copyable replies.
-```
-
-也可以直接说：
-
-```text
-帮我分析 ta 这句话是什么意思，并给三个回复方案。
-```
-
-Codex 会根据 `SKILL.md` 的 `description` 决定是否隐式调用。
-
-## 安装到仓库级 Codex
-
-如果你想让某个项目自带这个技能：
-
-```powershell
-New-Item -ItemType Directory -Force ".agents\skills" | Out-Null
-git clone https://github.com/shoal-rat/dianzi-junshi.git ".agents\skills\dianzi-junshi"
-```
-
-注意：Codex 会扫描 `.agents/skills`，不是任意项目根目录。把本仓库直接当工作目录打开时，仍建议复制到 `.agents/skills/dianzi-junshi` 或 `$HOME/.agents/skills/dianzi-junshi`。
-
-## 档案存哪
-
-Claude Code 和 Codex 能读写本地 `partners/`，所以适合存长期档案。每个对象一个文件夹，互不干扰；`partners/` 已被 `.gitignore` 忽略，不会默认提交。
-
-## 常用能力
-
-- `/reply`：三层解读 + 稳妥版/会撩版/展示自己版回复。
-- `/import-folder [路径]`：自动扫描并分类聊天记录、朋友圈截图、照片和笔记。
-- `/interest`：兴趣度 `0-10` 分、证据和下一步策略。
-- `/anti-simp on`：明显没戏时直接劝止损。
-- `/moments`：用多模态模型分析朋友圈/社交动态截图、妆容穿搭、评论互动和低油腻撩法。
-- `/date-plan`：邀约/约会回复 + 单独旁白提醒。
+如果终端能找到、App 仍找不到，重新启动 App。macOS 上通过 Homebrew 或官方安装方式放在标准位置通常最省事。

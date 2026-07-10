@@ -113,7 +113,7 @@
   <line x1="646" y1="348" x2="868" y2="348" stroke="#EEF0F2"/>
   <text x="646" y="372" font-size="10.5" fill="#9AA3AF">梗扫描 + 人话检查在本地完成，</text>
   <text x="646" y="388" font-size="10.5" fill="#9AA3AF">不烧 token。</text>
-  <text x="646" y="410" font-size="10.5" fill="#9AA3AF">技能层 prompt 走缓存，连续用</text>
+  <text x="646" y="410" font-size="10.5" fill="#9AA3AF">稳定提示词走缓存，连续使用更快</text>
   <text x="646" y="426" font-size="10.5" fill="#9AA3AF">省钱又更快。</text>
   <text x="646" y="448" font-size="10.5" fill="#9AA3AF">数据只在本机，不上传仓库。</text>
 </svg>

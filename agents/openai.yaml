@@ -1,8 +1,0 @@
-interface:
-  display_name: "电子军师"
-  short_description: "Chinese dating chat strategist"
-  brand_color: "#0F766E"
-  default_prompt: "Use $dianzi-junshi to calibrate the real relationship stage, score four-dimensional interest, and draft a low-oiliness reply."
-
-policy:
-  allow_implicit_invocation: true

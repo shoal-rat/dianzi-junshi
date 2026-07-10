@@ -1,0 +1,15 @@
+{
+  "name": "dianzi-junshi-desktop",
+  "version": "4.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:sidecar": "bun run scripts/build-sidecar.ts",
+    "tauri": "tauri",
+    "dev": "bun run build:sidecar && tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}

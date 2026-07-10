@@ -1,0 +1,106 @@
+name: Build desktop installers
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  installers:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            platform: macos-latest
+            target: aarch64-apple-darwin
+            bun_target: bun-darwin-arm64
+            vec_package: sqlite-vec-darwin-arm64
+            args: --target aarch64-apple-darwin --bundles dmg
+          - name: macOS Intel
+            platform: macos-latest
+            target: x86_64-apple-darwin
+            bun_target: bun-darwin-x64
+            vec_package: sqlite-vec-darwin-x64
+            args: --target x86_64-apple-darwin --bundles dmg
+          - name: Windows x64
+            platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            bun_target: bun-windows-x64
+            vec_package: sqlite-vec-windows-x64
+            args: --bundles nsis,msi
+          - name: Linux x64
+            platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bun_target: bun-linux-x64
+            vec_package: sqlite-vec-linux-x64
+            args: --bundles appimage,deb
+          - name: Linux ARM64
+            platform: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            bun_target: bun-linux-arm64
+            vec_package: sqlite-vec-linux-arm64
+            args: --bundles appimage,deb
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux desktop libraries
+        if: startsWith(matrix.platform, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libsqlite3-dev
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri -> target
+
+      - name: Install backend dependencies
+        working-directory: app
+        run: bun install --frozen-lockfile
+
+      - name: Ensure target sqlite-vec library is available
+        working-directory: app
+        run: npm install --no-save --force ${{ matrix.vec_package }}@0.1.9
+
+      - name: Install desktop build tools
+        working-directory: desktop
+        run: bun install --frozen-lockfile
+
+      - name: Verify backend before packaging
+        working-directory: app
+        run: bun run verify
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: desktop
+          tagName: v__VERSION__
+          releaseName: 电子军师 v__VERSION__
+          releaseBody: Download the installer for your system below. Windows users can choose Setup.exe, macOS users choose the matching DMG, and Linux users can choose AppImage or DEB.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

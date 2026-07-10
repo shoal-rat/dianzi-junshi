@@ -3,131 +3,272 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>电子军师</title>
-<link rel="stylesheet" href="/style.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230F766E'/%3E%3Cpath d='M9 16l5 5 9-11' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="color-scheme" content="light dark">
+<title>电子军师 · 先读懂，再回复</title>
+  <link rel="stylesheet" href="/style.css?v=4.0.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='9' fill='%23177766'/%3E%3Cpath d='M9 16l4.5 4.5L23 10.5' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
 <body>
 <div id="app">
 
-  <!-- 左栏：对象列表 -->
-  <aside id="sidebar">
+  <aside id="sidebar" aria-label="聊天档案">
     <div class="brand">
-      <div class="brand-logo"></div>
-      <div class="brand-name">电子军师</div>
+      <div class="brand-logo" aria-hidden="true"></div>
+      <div>
+        <div class="brand-name">电子军师</div>
+        <div class="brand-sub">先读懂，再回复</div>
+      </div>
     </div>
-    <button id="btn-new-partner" class="btn btn-primary btn-block">新建对象</button>
+    <button id="btn-new-partner" class="btn btn-primary btn-block">＋ 新建聊天档案</button>
+    <div class="sidebar-label">最近聊过</div>
     <div id="partner-list" class="partner-list"></div>
     <div class="sidebar-foot">
-      <button id="btn-settings" class="provider-pill" title="设置模型供应商">
-        <span class="dot"></span><span id="provider-label">演示模式</span>
+      <button id="btn-settings" class="provider-pill" title="更换 AI 连接">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="provider-copy">
+          <span id="provider-label">正在检查连接…</span>
+          <small>点这里更换</small>
+        </span>
       </button>
     </div>
   </aside>
 
-  <!-- 中栏：聊天 -->
   <main id="chat-col">
     <header id="chat-header">
-      <button id="btn-sidebar" class="icon-btn" title="对象列表">☰</button>
+      <button id="btn-sidebar" class="icon-btn" title="打开聊天档案" aria-label="打开聊天档案">☰</button>
       <div class="chat-title">
-        <div id="chat-name">先建一个对象</div>
-        <div id="chat-sub" class="chat-sub"></div>
+        <div id="chat-name">还没有聊天档案</div>
+        <div id="chat-sub" class="chat-sub">先告诉我你在和谁聊</div>
       </div>
       <div class="chat-actions">
-        <select id="stage-select" class="select" title="关系阶段"></select>
-        <label class="toggle" title="反舔狗模式：明显没戏时直接劝止损">
-          <input type="checkbox" id="anti-simp">
-          <span>反舔狗</span>
+        <label class="compact-field">
+          <span>关系进度</span>
+          <select id="stage-select" class="select" title="关系进度" disabled></select>
         </label>
-        <button id="btn-panel" class="icon-btn" title="军师面板">≡</button>
+        <label class="toggle" title="明显没戏时，像朋友一样直接提醒你">
+          <input type="checkbox" id="anti-simp" disabled>
+          <span>清醒提醒</span>
+        </label>
+        <button id="btn-panel" class="icon-btn" title="看看这次判断依据" aria-label="看看这次判断依据">ⓘ</button>
       </div>
     </header>
 
-    <div id="messages" class="messages">
-      <div id="empty-hint" class="empty-hint">
-        <div class="empty-logo"></div>
-        <p>把 ta 发来的消息贴进下面，选好模式，军师给你能直接发的回复。</p>
-        <p class="muted">还没配 API key 时是演示模式——右下角设置里可接入 Claude、DeepSeek、GLM。</p>
+    <section id="material-progress" class="material-progress" aria-live="polite" hidden>
+      <div class="material-progress-head">
+        <div>
+          <b id="material-progress-title">正在导入过往截图</b>
+          <span id="material-progress-count">准备中…</span>
+        </div>
+        <div class="material-progress-buttons">
+          <button id="material-progress-action" class="mini-btn" type="button" hidden>选择 AI 连接</button>
+          <button id="material-progress-close" class="icon-btn" type="button" aria-label="收起导入进度">×</button>
+        </div>
+      </div>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span id="material-progress-bar"></span>
+      </div>
+      <p id="material-progress-detail">文件会先逐个保存到本机，再由 AI 一张张整理。你可以收起这里，后台会继续。</p>
+    </section>
+
+    <div id="messages" class="messages" aria-live="polite">
+      <div id="empty-hint" class="welcome-card">
+        <div class="welcome-mark">军</div>
+        <p class="eyebrow">不用学提示词</p>
+        <h1>把聊天交给我看看</h1>
+        <p>贴文字或截图，我会先读懂语气，再给你几种能直接发的说法。拿不准时，也会老实告诉你。</p>
+        <div class="welcome-steps">
+          <span><b>1</b> 建一个档案</span>
+          <span><b>2</b> 贴聊天内容</span>
+          <span><b>3</b> 选一句发出去</span>
+        </div>
+        <button id="empty-create" class="btn btn-primary">开始建档</button>
+        <p class="privacy-line">资料默认只保存在这台电脑上</p>
       </div>
     </div>
 
     <footer id="composer">
       <div id="scan-chips" class="scan-chips" hidden></div>
-      <div class="mode-tabs" id="mode-tabs">
-        <button class="mode-tab active" data-mode="reply">这条怎么回</button>
-        <button class="mode-tab" data-mode="analyze">只分析</button>
-        <button class="mode-tab" data-mode="ask">我想说…行不行</button>
-        <button class="mode-tab" data-mode="interest">有没有戏</button>
+      <div class="mode-tabs" id="mode-tabs" role="tablist" aria-label="想让军师做什么">
+        <button class="mode-tab active" data-mode="reply" role="tab" aria-selected="true"><b>怎么回</b><small>给我能直接发的话</small></button>
+        <button class="mode-tab" data-mode="analyze" role="tab" aria-selected="false"><b>读懂 ta</b><small>只分析，不替我回</small></button>
+        <button class="mode-tab" data-mode="ask" role="tab" aria-selected="false"><b>帮我改</b><small>看看我想发的合不合适</small></button>
+        <button class="mode-tab" data-mode="interest" role="tab" aria-selected="false"><b>有没有戏</b><small>看行动，不只看甜话</small></button>
       </div>
-      <div class="composer-row">
-        <button id="btn-attach" class="icon-btn" title="附一张截图（支持粘贴）">图</button>
-        <input type="file" id="file-input" accept="image/*" hidden multiple>
-        <textarea id="input" rows="1" placeholder="贴 ta 发来的消息，或描述情况…（Enter 发送，Shift+Enter 换行）"></textarea>
-        <button id="btn-send" class="btn btn-primary">出方案</button>
+      <div class="composer-shell">
+        <textarea id="input" rows="1" aria-label="聊天内容" placeholder="把 ta 发来的话贴在这里…"></textarea>
+        <div class="composer-actions">
+          <button id="btn-attach" class="attach-btn" title="上传聊天截图">＋ 加截图</button>
+          <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/gif" hidden multiple>
+          <span class="composer-tip">Enter 发送 · Shift + Enter 换行</span>
+          <button id="btn-send" class="btn btn-primary send-btn">帮我想想</button>
+        </div>
+        <div id="attach-strip" class="attach-strip" hidden></div>
       </div>
-      <div id="attach-strip" class="attach-strip" hidden></div>
     </footer>
   </main>
 
-  <!-- 右栏：军师面板 -->
-  <aside id="panel">
-    <h3>军师面板</h3>
+  <aside id="panel" aria-label="本次判断依据">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">看得见的判断</p>
+        <h3>这次它注意到的</h3>
+      </div>
+      <button id="panel-close" class="icon-btn" aria-label="关闭">×</button>
+    </div>
     <section class="panel-sec">
-      <h4>本次请求</h4>
-      <div id="panel-meta" class="panel-meta muted">发一条消息后，这里显示分诊车道、加载的模块和梗扫描结果。</div>
+      <h4>聊天重点</h4>
+      <div id="panel-meta" class="panel-meta muted">发来内容后，这里会用简单的话告诉你：它按什么场景理解、参考了哪些过往资料。</div>
     </section>
     <section class="panel-sec">
-      <h4>人话门禁</h4>
-      <div id="panel-lint" class="panel-meta muted">每条可复制回复都会过 voice_lint。没过的会标红，可以一键修。</div>
+      <h4>发送前检查</h4>
+      <div id="panel-lint" class="panel-meta muted">每条建议都会检查是不是太长、太正式、像说教，发现问题可以直接改。</div>
     </section>
     <section class="panel-sec">
-      <h4>说明</h4>
-      <div class="panel-meta muted">
-        <p>梗扫描和人话检查在本地服务端完成，不烧 token。</p>
-        <p>技能层 prompt 走缓存（Claude 的 prompt caching / DeepSeek 前缀缓存），连续使用省钱且更快。</p>
-        <p>数据都存在本机 ~/.dianzi-junshi，不上传仓库。</p>
+      <h4>ta 最近有没有变化</h4>
+      <div id="panel-adaptive" class="panel-meta muted">发出建议后，点「记录后来结果」。有了真实反馈，军师才会逐渐分清短期变化和长期习惯。</div>
+    </section>
+    <section class="panel-sec soft-panel">
+      <h4>你的资料怎么处理</h4>
+      <div class="panel-meta">
+        <p>聊天记录和截图保存在本机。</p>
+        <p>记录变多后，原文不会删；每次只挑最近和最相关的内容给 AI，减少等待和重复消耗。</p>
       </div>
     </section>
   </aside>
 
 </div>
 
-<!-- 新建对象 -->
 <dialog id="dlg-partner">
-  <form method="dialog" class="dlg">
-    <h3>新建对象</h3>
-    <label class="field">
-      <span>代号（必填）</span>
-      <input id="np-name" type="text" placeholder="昵称、备注名、外号都行" autocomplete="off">
-    </label>
-    <label class="field">
-      <span>现在大概到哪一步</span>
-      <select id="np-stage" class="select"></select>
-    </label>
-    <label class="check">
-      <input type="checkbox" id="np-antisimp">
-      <span>开反舔狗模式：没戏时直接拉住你，不陪你自我感动</span>
-    </label>
-    <div class="dlg-actions">
-      <button value="cancel" class="btn">取消</button>
-      <button id="np-create" value="default" class="btn btn-primary">建档</button>
+  <form class="dlg dlg-profile" novalidate>
+    <div class="dlg-head">
+      <div>
+        <p class="eyebrow">大约一分钟</p>
+        <h3>新建聊天档案</h3>
+        <p>只填称呼也能开始。以前的聊天、朋友圈或其他平台资料，可以现在一起带进来。</p>
+      </div>
+      <button id="np-close" type="button" class="icon-btn" aria-label="关闭">×</button>
+    </div>
+    <div class="profile-grid">
+      <div>
+        <label class="field">
+          <span>怎么称呼 ta <em>必填</em></span>
+          <input id="np-name" type="text" placeholder="昵称、备注名或代号都可以" autocomplete="off" maxlength="60">
+          <small>只会作为这个档案的名字，不会判断你们是什么关系</small>
+        </label>
+        <label class="field">
+          <span>现在大概到哪一步</span>
+          <select id="np-stage" class="select"></select>
+          <small>拿不准就选「有点熟，但还没确定」</small>
+        </label>
+        <label class="check check-card">
+          <input type="checkbox" id="np-antisimp">
+          <span><b>打开清醒提醒</b><small>如果对方长期不行动、只吊着你，我会更直接地提醒你</small></span>
+        </label>
+      </div>
+      <div class="context-import">
+        <label class="field">
+          <span>带入以前的文字 <i>可选</i></span>
+          <textarea id="np-context" rows="6" placeholder="可以粘贴以前的聊天、朋友圈文字、你记得的重要细节，或其他平台上的互动…"></textarea>
+          <small>内容很多也没关系，原文会保留在本机，需要时再找相关片段</small>
+        </label>
+        <div id="np-dropzone" class="dropzone" tabindex="0" role="button" aria-label="上传过往截图">
+          <input type="file" id="np-file-input" accept="image/png,image/jpeg,image/webp,image/gif" hidden multiple>
+          <div class="drop-icon">▧</div>
+          <div><b>批量加入过往截图</b><small>微信、朋友圈、小红书或其他平台都可以<br>数量不限；后台会逐张整理，不会一次塞进模型</small></div>
+        </div>
+        <div id="np-file-list" class="import-file-list" hidden></div>
+      </div>
+    </div>
+    <div id="np-error" class="form-error" role="alert" hidden></div>
+    <div class="dlg-actions between">
+      <span class="privacy-line">🔒 默认只保存在这台电脑上</span>
+      <div>
+        <button id="np-cancel" type="button" class="btn">稍后再说</button>
+        <button id="np-create" type="submit" class="btn btn-primary">建好并开始</button>
+      </div>
     </div>
   </form>
 </dialog>
 
-<!-- 设置 -->
 <dialog id="dlg-settings">
-  <form method="dialog" class="dlg dlg-wide">
-    <h3>模型供应商</h3>
+  <form class="dlg dlg-settings" novalidate>
+    <div class="dlg-head">
+      <div>
+        <p class="eyebrow">AI 连接</p>
+        <h3>选一个你已经在用的 AI</h3>
+        <p>最省事的是使用电脑上已登录的 Codex 或 Claude Code，不用再填 API Key。</p>
+      </div>
+      <button id="settings-close" type="button" class="icon-btn" aria-label="关闭">×</button>
+    </div>
+    <div id="local-provider-note" class="connection-note">正在检查这台电脑…</div>
     <div id="provider-cards" class="provider-cards"></div>
-    <div id="provider-fields"></div>
+    <div id="provider-fields" class="provider-fields"></div>
+    <div id="settings-error" class="form-error" role="alert" hidden></div>
     <div class="dlg-actions">
-      <button value="cancel" class="btn">取消</button>
-      <button id="settings-save" value="default" class="btn btn-primary">保存</button>
+      <button id="settings-cancel" type="button" class="btn">取消</button>
+      <button id="settings-save" type="submit" class="btn btn-primary">使用这个连接</button>
     </div>
   </form>
 </dialog>
 
-<script type="module" src="/app.js"></script>
+<dialog id="dlg-feedback">
+  <form id="feedback-form" class="dlg dlg-feedback" novalidate>
+    <div class="dlg-head">
+      <div>
+        <p class="eyebrow">让判断跟着现实更新</p>
+        <h3>ta 后来怎么反应？</h3>
+        <p>真实结果比猜测更有用。一次反馈不会给 ta 定性，只有反复出现的变化才会提高权重。</p>
+      </div>
+      <button id="feedback-close" type="button" class="icon-btn" aria-label="关闭">×</button>
+    </div>
+    <div class="feedback-sent">
+      <span>你当时发的是</span>
+      <div id="feedback-reply"></div>
+    </div>
+    <fieldset class="feedback-outcomes">
+      <legend>后来大概是哪种情况？</legend>
+      <label><input type="radio" name="outcome" value="positive"><span><b>聊得更好了</b><small>ta 接住了，也愿意继续</small></span></label>
+      <label><input type="radio" name="outcome" value="neutral"><span><b>普通回复</b><small>回了，但没有明显推进</small></span></label>
+      <label><input type="radio" name="outcome" value="negative"><span><b>变冷或尴尬</b><small>明显没接住这句话</small></span></label>
+      <label><input type="radio" name="outcome" value="no_reply"><span><b>一直没回</b><small>这次没有收到回复</small></span></label>
+    </fieldset>
+    <div class="feedback-grid">
+      <label class="field">
+        <span>ta 实际回了什么 <i>可选</i></span>
+        <textarea id="feedback-response" rows="4" placeholder="可以把后来的回复贴在这里…"></textarea>
+      </label>
+      <label class="field">
+        <span>大约多久回复</span>
+        <select id="feedback-delay">
+          <option value="0.2">几分钟</option>
+          <option value="1">一小时内</option>
+          <option value="6" selected>当天</option>
+          <option value="24">第二天</option>
+          <option value="72">几天后</option>
+          <option value="168">一周左右</option>
+        </select>
+      </label>
+    </div>
+    <fieldset class="feedback-signals">
+      <legend>如果有这些情况，可以顺手勾上</legend>
+      <label><input type="checkbox" name="continued"><span>愿意继续聊</span></label>
+      <label><input type="checkbox" name="initiated"><span>ta 主动推进了</span></label>
+      <label><input type="checkbox" name="followedThrough"><span>说到做到了</span></label>
+      <label><input type="checkbox" name="brokePromise"><span>答应了但没做到</span></label>
+      <label><input type="checkbox" name="rememberedDetail"><span>记得以前的细节</span></label>
+      <label><input type="checkbox" name="forgotDetail"><span>忘了说过的事</span></label>
+    </fieldset>
+    <div id="feedback-error" class="form-error" role="alert" hidden></div>
+    <div class="dlg-actions">
+      <button id="feedback-cancel" type="button" class="btn">先不记</button>
+      <button id="feedback-save" type="submit" class="btn btn-primary">记下这次结果</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<button id="drawer-backdrop" class="drawer-backdrop" type="button" aria-label="关闭侧边页面" hidden></button>
+
+<script type="module" src="/app.js?v=4.0.0"></script>
 </body>
 </html>

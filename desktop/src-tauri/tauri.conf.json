@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "电子军师",
+  "version": "4.0.0",
+  "identifier": "com.shoalrat.dianzi-junshi",
+  "build": {
+    "beforeBuildCommand": "bun run build:sidecar",
+    "frontendDist": "../shell"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self' http://127.0.0.1:*; connect-src 'self' http://127.0.0.1:*; img-src 'self' data: blob: http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "externalBin": ["binaries/dianzi-junshi-server"],
+    "resources": ["resources/native/*"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Lifestyle",
+    "shortDescription": "先读懂，再回复",
+    "longDescription": "本地优先的聊天理解与回复助手，支持批量截图和随时间变化的长期记忆。",
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": "-"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}
