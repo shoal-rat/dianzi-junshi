@@ -142,7 +142,7 @@ async function handleChat(req: Request): Promise<Response> {
   ];
   const pipelineInput = {
     profileSlug: slug, partnerName: partner.name, stage: partner.stage,
-    antiSimp: partner.antiSimp, mode, planningMode,
+    antiSimp: partner.antiSimp, boldness: partner.boldness ?? .5, mode, planningMode,
     text: text?.trim() || "（只发了图片）", evidence,
   };
   const decision = await runDecisionPipeline(pipelineInput, {
@@ -341,14 +341,14 @@ const server = Bun.serve({
         }
       }
       if (path === "/api/partners") {
-        const { name, stage = 1, antiSimp = false, backgroundText = "", images = [] } = await req.json();
+        const { name, stage = 1, antiSimp = false, boldness = .5, backgroundText = "", images = [] } = await req.json();
         if (typeof name !== "string" || !name.trim()) return json({ error: "先给 ta 起个代号" }, 400);
         try {
           validatePartnerImport(String(backgroundText), images as IncomingImage[]);
         } catch (e: any) {
           return json({ error: String(e?.message ?? e) }, 400);
         }
-        const meta = createPartner(name, Number(stage), Boolean(antiSimp));
+        const meta = createPartner(name, Number(stage), Boolean(antiSimp), Number(boldness));
         const imported = importPartnerContext(meta.slug, String(backgroundText), images as IncomingImage[]);
         return json({ ...meta, stageName: stageInfo(meta.stage).name, imported });
       }

@@ -4,7 +4,7 @@
 
 A local-first desktop assistant for understanding Chinese dating chats and drafting natural replies.
 
-[![Release](https://img.shields.io/badge/release-v5.1.0-177766)](docs/releases/v5.1.0.md)
+[![Release](https://img.shields.io/badge/release-v5.2.0-177766)](docs/releases/v5.2.0.md)
 [![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-177766)](#download)
 [![中文](https://img.shields.io/badge/中文-README-red)](README.md)
 
@@ -61,9 +61,11 @@ bun install
 bun run build
 ```
 
-Pushing a `v*` tag runs the cross-platform release workflow and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v5.1.0 notes](docs/releases/v5.1.0.md).
+Pushing a `v*` tag runs the cross-platform release workflow and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v5.2.0 notes](docs/releases/v5.2.0.md).
 
-Version 5 added an event-sourced decision pipeline with temporal beliefs, competing hypotheses, decision-oriented retrieval, independent critics, uncertainty-aware abstention, linked outcome learning, replay, and offline evaluation. Version 5.1 replaces the static simulation table with a learned generative world model: regime-switching linear-Gaussian latent dynamics, a calibrated response head (structural softmax shrunk against decayed Dirichlet–multinomial outcome counts), diagonal-Kalman belief updates on imagined responses, finite-horizon belief-space rollouts, an exactly-computed expected value of information for clarifying questions, and online learning gated by predictive log-loss against base rates. Evidence retrieval is now hybrid (Okapi BM25 ⊕ feature-hashed embeddings ⊕ Reciprocal Rank Fusion), and structured LLM calls use API-level constrained decoding with prompt-repair only as a fallback. The full mathematical specification is in the README theory appendix; release details in the [v5.1.0 notes](docs/releases/v5.1.0.md).
+Version 5 added an event-sourced decision pipeline with temporal beliefs, competing hypotheses, decision-oriented retrieval, independent critics, uncertainty-aware abstention, linked outcome learning, replay, and offline evaluation. Version 5.1 replaced the static simulation table with a learned generative world model: regime-switching linear-Gaussian latent dynamics, a calibrated response head (structural softmax shrunk against decayed Dirichlet–multinomial outcome counts), diagonal-Kalman belief updates on imagined responses, finite-horizon belief-space rollouts, an exactly-computed expected value of information for clarifying questions, and online learning gated by predictive log-loss against base rates. Evidence retrieval is hybrid (Okapi BM25 ⊕ feature-hashed embeddings ⊕ Reciprocal Rank Fusion), and structured LLM calls use API-level constrained decoding with prompt-repair only as a fallback.
+
+Version 5.2 adds an interactive decision-network visualization — the layered dataflow the engine actually computed each round (beliefs → regime hypotheses → action features → predicted state → response distribution → outputs), with clickable nodes exposing activations, parameters and contribution weights — plus two header sliders that control the engine directly: thinking depth (rollout horizon and regime branching) and boldness (a scalar that reshapes the objective: risk penalty, advance bonuses, clarifying-question cost and the abstention bar), persisted per chat profile. The full mathematical specification is in the README theory appendix; release details in the [v5.2.0 notes](docs/releases/v5.2.0.md).
 
 ## License
 

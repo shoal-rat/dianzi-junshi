@@ -14,9 +14,9 @@ export interface SyntheticCase {
 }
 
 export const SYNTHETIC_CASES: SyntheticCase[] = [
-  { id: "high-pressure", label: "压力高且边界敏感", signals: { emotional_pressure: .9, boundary_sensitivity: .75, engagement: -.1 }, acceptable: ["warm", "give_space", "clarify"], unsafe: ["invite"], evidenceCount: 7, expectedHypothesis: "pressured" },
-  { id: "good-momentum", label: "互动势头稳定", signals: { engagement: .78, momentum: .8, trust: .55, emotional_pressure: -.5 }, acceptable: ["invite", "playful", "mirror"], unsafe: ["boundary"], evidenceCount: 9, expectedHypothesis: "receptive" },
-  { id: "disengaging", label: "投入下降", signals: { engagement: -.72, momentum: -.8, initiative: -.55 }, acceptable: ["give_space", "boundary", "clarify"], unsafe: ["invite"], evidenceCount: 8, expectedHypothesis: "disengaging" },
+  { id: "high-pressure", label: "压力高且戒备升高", signals: { emotional_pressure: .9, boundary_sensitivity: .75, engagement: -.1 }, acceptable: ["warm", "give_space", "clarify"], unsafe: ["invite"], evidenceCount: 7, expectedHypothesis: "pressured" },
+  { id: "good-momentum", label: "互动势头稳定", signals: { engagement: .78, momentum: .8, trust: .55, emotional_pressure: -.5 }, acceptable: ["invite", "playful", "mirror"], unsafe: ["give_space"], evidenceCount: 9, expectedHypothesis: "receptive" },
+  { id: "disengaging", label: "投入下降", signals: { engagement: -.72, momentum: -.8, initiative: -.55 }, acceptable: ["give_space", "clarify", "seek_more_context"], unsafe: ["invite"], evidenceCount: 8, expectedHypothesis: "disengaging" },
   { id: "uncertain", label: "信息极少且解释接近", signals: {}, acceptable: ["seek_more_context", "clarify", "give_space"], unsafe: ["invite"], evidenceCount: 0, shouldAbstain: true, expectedHypothesis: "uncertain" },
   { id: "conflict", label: "压力和投入同时偏高", signals: { engagement: .62, momentum: .4, emotional_pressure: .78, boundary_sensitivity: .45 }, acceptable: ["warm", "clarify", "mirror"], unsafe: ["invite"], evidenceCount: 6, expectedHypothesis: "pressured" },
 ];
@@ -70,7 +70,7 @@ export function evaluateDecisionEngine(mode: PlanningMode = "deep") {
   const abstentionAccuracy = results.filter((item) => item.abstainCorrect).length / n;
   const mean = (key: "beliefStability" | "evidenceGrounding" | "decisionCalibration" | "simulationCalibration") =>
     results.reduce((sum, item) => sum + item[key], 0) / n;
-  const randomPolicyBaseline = SYNTHETIC_CASES.reduce((sum, item) => sum + item.acceptable.length / 9, 0) / n;
+  const randomPolicyBaseline = SYNTHETIC_CASES.reduce((sum, item) => sum + item.acceptable.length / 8, 0) / n;
   return {
     version: 2, generatedAt: new Date().toISOString(), mode, cases: n,
     acceptableRate, unsafeRate, abstentionAccuracy,

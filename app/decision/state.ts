@@ -56,6 +56,15 @@ function softmax(values: number[]): number[] {
   return exp.map((value) => value / total);
 }
 
+/** Linear scoring weights of each regime over the belief dimensions. Exported
+ * so the decision-network trace can draw the exact belief→regime edges. */
+export const REGIME_SCORING: Record<string, Partial<Record<BeliefDimension, number>>> = {
+  receptive: { engagement: 1.2, momentum: .8, trust: .4 },
+  uncertain: { consistency: -.4, engagement: .25 },
+  pressured: { emotional_pressure: 1.25, boundary_sensitivity: .65, engagement: -.35 },
+  disengaging: { engagement: -1.05, momentum: -.8, trust: -.35 },
+};
+
 export function buildHypotheses(states: BeliefState[]): StateHypothesis[] {
   const engagement = belief(states, "engagement");
   const trust = belief(states, "trust");
@@ -63,14 +72,19 @@ export function buildHypotheses(states: BeliefState[]): StateHypothesis[] {
   const boundary = belief(states, "boundary_sensitivity");
   const momentum = belief(states, "momentum");
   const consistency = belief(states, "consistency");
+  const w = REGIME_SCORING;
   const raw = [
-    { id: "receptive", label: "愿意继续互动", score: 1.2 * engagement.mean + .8 * momentum.mean + .4 * trust.mean,
+    { id: "receptive", label: "愿意继续互动",
+      score: w.receptive.engagement! * engagement.mean + w.receptive.momentum! * momentum.mean + w.receptive.trust! * trust.mean,
       explanation: "投入度和推进势头支持继续互动", support: [...engagement.evidenceIds, ...momentum.evidenceIds], against: pressure.evidenceIds },
-    { id: "uncertain", label: "有兴趣但仍在观望", score: .7 - Math.abs(momentum.mean) - .4 * consistency.mean + .25 * engagement.mean,
-      explanation: "线索不完全一致，可能仍在观察", support: [...consistency.evidenceIds], against: momentum.evidenceIds },
-    { id: "pressured", label: "当前压力较高，需要降负担", score: 1.25 * pressure.mean + .65 * boundary.mean - .35 * engagement.mean,
-      explanation: "情绪压力或边界线索更值得优先照顾", support: [...pressure.evidenceIds, ...boundary.evidenceIds], against: engagement.evidenceIds },
-    { id: "disengaging", label: "互动意愿正在降低", score: -1.05 * engagement.mean - .8 * momentum.mean - .35 * trust.mean,
+    { id: "uncertain", label: "有兴趣但仍在观望",
+      score: .7 - Math.abs(momentum.mean) + w.uncertain.consistency! * consistency.mean + w.uncertain.engagement! * engagement.mean,
+      explanation: "线索还没有收敛，可能仍在观察", support: [...consistency.evidenceIds], against: momentum.evidenceIds },
+    { id: "pressured", label: "当前压力较高，先降负担",
+      score: w.pressured.emotional_pressure! * pressure.mean + w.pressured.boundary_sensitivity! * boundary.mean + w.pressured.engagement! * engagement.mean,
+      explanation: "情绪压力和戒备线索目前占主导", support: [...pressure.evidenceIds, ...boundary.evidenceIds], against: engagement.evidenceIds },
+    { id: "disengaging", label: "互动意愿正在降低",
+      score: w.disengaging.engagement! * engagement.mean + w.disengaging.momentum! * momentum.mean + w.disengaging.trust! * trust.mean,
       explanation: "投入与势头偏弱，推进可能带来反效果", support: [...engagement.evidenceIds, ...momentum.evidenceIds], against: trust.evidenceIds },
   ];
   const probabilities = softmax(raw.map((item) => item.score * 1.4));
@@ -97,17 +111,17 @@ export function discoverPatterns(events: DecisionEvent[]): PatternSignal[] {
   const delayed = outcomes.filter((event) => Number(event.payload.responseDelayHours ?? 0) >= 24);
   if (outcomes.length) candidates.push(pattern(
     "slow-response", "回复经常超过一天", delayed.length, outcomes.length - delayed.length,
-    "只描述已记录的回复时延；不把慢回复直接解释成性格或态度。",
+    "统计已记录的回复时延，用来校准节奏预期。",
   ));
   const positive = outcomes.filter((event) => event.payload.outcome === "positive");
   if (outcomes.length) candidates.push(pattern(
     "positive-outcome", "近期建议后续整体顺利", positive.length, outcomes.length - positive.length,
-    "由真实后续反馈验证，仍会随新结果和时间衰减。",
+    "由真实后续反馈验证，会随新结果和时间衰减。",
   ));
   const noReply = outcomes.filter((event) => event.payload.outcome === "no_reply");
   if (outcomes.length) candidates.push(pattern(
     "no-reply", "建议后出现未回复的情况", noReply.length, outcomes.length - noReply.length,
-    "用于降低推进风险，不代表对方永久不愿沟通。",
+    "用来调整推进节奏和策略选择。",
   ));
   return candidates.filter((item) => item.support > 0).sort((a, b) => b.confidence - a.confidence);
 }

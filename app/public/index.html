@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>电子军师 · 先想清楚，再帮你回</title>
-  <link rel="stylesheet" href="/style.css?v=5.0.0">
+  <link rel="stylesheet" href="/style.css?v=5.2.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='9' fill='%23177766'/%3E%3Cpath d='M9 16l4.5 4.5L23 10.5' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -41,13 +41,15 @@
         <div id="chat-sub" class="chat-sub">先告诉我你在和谁聊</div>
       </div>
       <div class="chat-actions">
-        <label class="compact-field" title="平衡适合大多数情况；深入会比较更多可能性">
+        <label class="compact-field slider-field" title="往右推演更深：比较更多解释、向前多想几步">
           <span>思考深度</span>
-          <select id="planning-mode" class="select">
-            <option value="fast">快速</option>
-            <option value="balanced" selected>平衡</option>
-            <option value="deep">深入</option>
-          </select>
+          <input type="range" id="planning-slider" min="0" max="2" step="1" value="1" aria-label="思考深度" autocomplete="off">
+          <b id="planning-value">平衡</b>
+        </label>
+        <label class="compact-field slider-field" title="往左更稳，往右更敢：影响风险偏好、推进力度和出手速度">
+          <span>胆量</span>
+          <input type="range" id="boldness-slider" min="0" max="100" step="5" value="50" aria-label="胆量" autocomplete="off" disabled>
+          <b id="boldness-value">50</b>
         </label>
         <label class="compact-field">
           <span>关系进度</span>
@@ -143,9 +145,10 @@
       <h4>发现的互动模式</h4>
       <div id="panel-patterns" class="panel-meta muted">模式需要多个结果支持，也可以由你暂停、恢复或标记为不适用。</div>
     </section>
-    <details class="panel-sec decision-details">
-      <summary>查看完整思考过程</summary>
-      <p class="muted">这里显示本地决策引擎比较过的证据、可能解释和方案。它不会把猜测伪装成事实。</p>
+    <details class="panel-sec decision-details" id="decision-details">
+      <summary>决策网络与完整思考过程</summary>
+      <p class="muted">本地决策引擎每一轮真实计算的数据流：状态信念 → 体制假设 → 动作特征 → 预测状态 → 回应分布 → 输出。点任意节点看参数。</p>
+      <div id="panel-network" class="panel-meta"></div>
       <div id="panel-decision" class="panel-meta muted">发来内容后，可以在这里核对这次为什么这样建议。</div>
     </details>
     <section class="panel-sec soft-panel">
@@ -174,7 +177,7 @@
         <label class="field">
           <span>怎么称呼 ta <em>必填</em></span>
           <input id="np-name" type="text" placeholder="昵称、备注名或代号都可以" autocomplete="off" maxlength="60">
-          <small>只会作为这个档案的名字，不会判断你们是什么关系</small>
+          <small>只作为这个档案的名字</small>
         </label>
         <label class="field">
           <span>现在大概到哪一步</span>
@@ -249,7 +252,7 @@
       <div>
         <p class="eyebrow">让判断跟着现实更新</p>
         <h3>ta 后来怎么反应？</h3>
-        <p>真实结果比猜测更有用。一次反馈不会给 ta 定性，只有反复出现的变化才会提高权重。</p>
+        <p>真实结果比猜测更有用。反复出现的变化会持续提高权重，世界模型也会用它校准预测。</p>
       </div>
       <button id="feedback-close" type="button" class="icon-btn" aria-label="关闭">×</button>
     </div>
@@ -301,6 +304,6 @@
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <button id="drawer-backdrop" class="drawer-backdrop" type="button" aria-label="关闭侧边页面" hidden></button>
 
-<script type="module" src="/app.js?v=5.0.0"></script>
+<script type="module" src="/app.js?v=5.2.0"></script>
 </body>
 </html>

@@ -22,10 +22,12 @@
  */
 
 import {
-  BELIEF_DIMENSIONS, type BeliefDimension, type BeliefState, type PlanningMode,
-  type ResponseClass, type SimulationBranch, type StateHypothesis, type StrategyCandidate,
-  type StrategyFamily, type WorldModelSnapshot, type LearnedRegimeFamily,
+  BELIEF_DIMENSIONS, type BeliefDimension, type BeliefState, type NetworkTrace,
+  type PlanningMode, type ResponseClass, type SimulationBranch, type StateHypothesis,
+  type StrategyCandidate, type StrategyFamily, type TraceEdge, type TraceNode,
+  type UncertaintyReport, type WorldModelSnapshot, type LearnedRegimeFamily,
 } from "./types";
+import { REGIME_SCORING } from "./state";
 
 export const RESPONSE_CLASSES: ResponseClass[] = ["positive", "neutral", "negative", "no_reply"];
 
@@ -80,7 +82,6 @@ const FAMILY_FEATURES: Record<StrategyFamily, Partial<Record<ActionFeature, numb
   invite: { advance: .9, warmth: .25, probe: .1, assert: .35 },
   clarify: { soothe: .15, advance: .05, warmth: .15, probe: .85, assert: .1 },
   give_space: { soothe: .55, advance: -.3, warmth: .15, assert: .05, withdraw: .9 },
-  boundary: { soothe: .1, advance: .05, warmth: .1, probe: .1, assert: .7, withdraw: .25 },
   // Asking the user does not send anything to the partner: null action, drift only.
   seek_more_context: {},
 };
@@ -461,7 +462,7 @@ function branchNarrative(family: StrategyFamily, regime: string, distribution: R
 // ---------------------------------------------------------------------------
 
 const PROBE_FAMILY: StrategyFamily = "clarify";
-const VOI_EVAL_FAMILIES: StrategyFamily[] = ["mirror", "warm", "playful", "direct", "invite", "give_space", "boundary"];
+const VOI_EVAL_FAMILIES: StrategyFamily[] = ["mirror", "warm", "playful", "direct", "invite", "give_space"];
 
 function oneStepValue(
   belief: GaussianBelief, regimes: Array<{ id: string; probability: number }>,
@@ -481,10 +482,12 @@ function oneStepValue(
 }
 
 /** EVOI(q) = E_o[max_a Q(a | b post-answer)] − max_a Q(a | b) − c(q), computed by
- * enumerating the probe's response classes and Bayes-updating the regime posterior. */
+ * enumerating the probe's response classes and Bayes-updating the regime posterior.
+ * Boldness raises the cost of stopping to ask: a bold profile prefers acting now. */
 export function expectedValueOfInformation(
   states: BeliefState[], hypotheses: StateHypothesis[],
   missingCount: number, mode: PlanningMode, snapshot?: WorldModelSnapshot,
+  boldness = .5,
 ): number {
   if (!hypotheses.length) return 0;
   const belief = beliefFromStates(states);
@@ -507,6 +510,227 @@ export function expectedValueOfInformation(
   }
   // An answer can only separate hypotheses the user can actually inform.
   const answerability = .5 + .5 * Math.min(1, missingCount / 3);
-  const askCost = mode === "fast" ? .02 : mode === "deep" ? .006 : .012;
+  const baseCost = mode === "fast" ? .02 : mode === "deep" ? .006 : .012;
+  const askCost = baseCost * (.6 + .8 * boldness);
   return Math.max(0, (posteriorGain - priorBest) * answerability - askCost);
+}
+
+// ---------------------------------------------------------------------------
+// Decision-network trace: the actual dataflow of this round, for inspection
+// ---------------------------------------------------------------------------
+
+const DIMENSION_LABELS: Record<BeliefDimension, string> = {
+  engagement: "互动投入", trust: "信任", communication_willingness: "沟通意愿",
+  emotional_pressure: "情绪压力", boundary_sensitivity: "戒备程度", commitment_reliability: "承诺可靠",
+  momentum: "互动势头", initiative: "主动程度", consistency: "一致性",
+};
+
+const FEATURE_LABELS: Record<ActionFeature, string> = {
+  soothe: "安抚缓压", advance: "推进", warmth: "温度", probe: "探询", assert: "直接表达", withdraw: "收力",
+};
+
+const RESPONSE_LABELS: Record<ResponseClass, string> = {
+  positive: "积极回应", neutral: "平稳回应", negative: "负面反应", no_reply: "未回复",
+};
+
+/** Mixture gain of one action feature on one dimension under the current
+ * regime posterior — exactly the coefficients the transition applied. */
+function mixedGain(feature: ActionFeature, dimension: BeliefDimension, regimes: Array<{ id: string; probability: number }>): number {
+  let gain = 0;
+  for (const regime of regimes) {
+    const prior = REGIME_PRIORS[regime.id] ?? NEUTRAL_REGIME;
+    let g = (BASE_GAIN[feature][dimension] ?? 0) * (prior.multipliers[feature] ?? 1);
+    for (const override of prior.overrides) {
+      if (override.feature === feature && override.dimension === dimension) g += override.gain;
+    }
+    gain += regime.probability * g;
+  }
+  return gain;
+}
+
+/** Builds the layered activation graph of one completed decision. Every node
+ * activation and edge weight is read back from the quantities the engine
+ * actually computed, so clicking through the graph audits the real math. */
+export function buildNetworkTrace(options: {
+  states: BeliefState[];
+  hypotheses: StateHypothesis[];
+  selected: StrategyCandidate;
+  branches: SimulationBranch[];
+  uncertainty: UncertaintyReport;
+  snapshot?: WorldModelSnapshot;
+}): NetworkTrace {
+  const { states, hypotheses, selected, branches, uncertainty, snapshot } = options;
+  const edges: TraceEdge[] = [];
+  const pushEdge = (from: string, to: string, weight: number) => {
+    if (Math.abs(weight) >= .04) edges.push({ from, to, weight: Math.max(-1, Math.min(1, weight)) });
+  };
+
+  const beliefNodes: TraceNode[] = states.map((state) => ({
+    id: `b:${state.dimension}`, label: DIMENSION_LABELS[state.dimension],
+    activation: state.mean,
+    detail: [
+      `均值 ${state.mean.toFixed(2)}（短期 ${state.shortTerm.toFixed(2)} / 长期 ${state.longTerm.toFixed(2)}）`,
+      `方差 ${state.variance.toFixed(2)} · 置信度 ${(state.confidence * 100).toFixed(0)}%`,
+      `有效样本 ${state.effectiveSampleSize.toFixed(1)} · 证据 ${state.evidenceCount} 条`,
+      ...(state.changing ? ["检测到近期变化：短期权重升至 0.72"] : []),
+      ...(state.conflicted ? ["存在方向冲突的证据，两侧都保留"] : []),
+    ],
+  }));
+
+  const regimeNodes: TraceNode[] = hypotheses.map((hypothesis) => ({
+    id: `h:${hypothesis.id}`, label: hypothesis.label,
+    activation: hypothesis.probability,
+    detail: [
+      `后验概率 ${(hypothesis.probability * 100).toFixed(0)}%`,
+      hypothesis.explanation,
+      `支持证据 ${hypothesis.supportingEvidenceIds.length} 条 · 反证 ${hypothesis.contradictingEvidenceIds.length} 条`,
+    ],
+  }));
+  for (const hypothesis of hypotheses) {
+    const scoring = REGIME_SCORING[hypothesis.id] ?? {};
+    for (const [dimension, coefficient] of Object.entries(scoring)) {
+      pushEdge(`b:${dimension}`, `h:${hypothesis.id}`, Number(coefficient) / 1.25);
+    }
+  }
+
+  const features = FAMILY_FEATURES[selected.family];
+  const activeFeatures = ACTION_FEATURES.filter((feature) => Math.abs(features[feature] ?? 0) >= .04);
+  const strategyNode: TraceNode = {
+    id: `a:${selected.family}`, label: `策略：${selected.label}`,
+    activation: selected.score,
+    detail: [
+      `综合得分 ${selected.score.toFixed(2)} · 学习先验 ${selected.prior.toFixed(2)}`,
+      `探索奖励 ${selected.explorationBonus.toFixed(3)}`,
+      `动作特征 φ：${activeFeatures.map((f) => `${FEATURE_LABELS[f]} ${Number(features[f]).toFixed(2)}`).join(" · ") || "无（先补信息）"}`,
+    ],
+  };
+  const selectedBranches = branches.filter((branch) => branch.strategyId === selected.id && branch.responseDistribution);
+  const branchMass = selectedBranches.reduce((sum, branch) => sum + branch.probability, 0) || 1;
+  for (const branch of selectedBranches) {
+    pushEdge(`h:${branch.hypothesisId}`, strategyNode.id, branch.delayedReward * (branch.probability / branchMass) * 2);
+  }
+
+  const learnedSelected = selectedBranches.length
+    ? learnedFor(snapshot, selectedBranches[0].hypothesisId, selected.family) : undefined;
+  const featureNodes: TraceNode[] = activeFeatures.map((feature) => {
+    const strength = Number(features[feature]);
+    return {
+      id: `f:${feature}`, label: FEATURE_LABELS[feature],
+      activation: strength,
+      detail: [
+        `特征强度 φ=${strength.toFixed(2)}`,
+        `按体制调制后作用于状态转移（G_h·φ）`,
+        ...(learnedSelected?.effective ? [`该情境已学习样本 ${learnedSelected.effective.toFixed(1)} 条`] : []),
+      ],
+    };
+  });
+  for (const feature of activeFeatures) {
+    pushEdge(strategyNode.id, `f:${feature}`, Number(features[feature]));
+  }
+
+  const regimeMixture = hypotheses.map((h) => ({ id: h.id, probability: h.probability }));
+  const mixedPredicted: Partial<Record<BeliefDimension, number>> = {};
+  for (const branch of selectedBranches) {
+    for (const [dimension, value] of Object.entries(branch.predictedState ?? {})) {
+      mixedPredicted[dimension as BeliefDimension] =
+        (mixedPredicted[dimension as BeliefDimension] ?? 0) + (branch.probability / branchMass) * Number(value);
+    }
+  }
+  const predictedDims = BELIEF_DIMENSIONS.filter((dimension) => {
+    const current = states.find((s) => s.dimension === dimension)?.mean ?? 0;
+    const predicted = mixedPredicted[dimension] ?? 0;
+    return Math.abs(predicted) >= .05 || Math.abs(predicted - current) >= .04;
+  });
+  const predictedNodes: TraceNode[] = predictedDims.map((dimension) => {
+    const current = states.find((s) => s.dimension === dimension)?.mean ?? 0;
+    const predicted = mixedPredicted[dimension] ?? 0;
+    const delta = predicted - current;
+    return {
+      id: `p:${dimension}`, label: `${DIMENSION_LABELS[dimension]}′`,
+      activation: predicted,
+      detail: [
+        `预测均值 ${predicted.toFixed(2)}（当前 ${current.toFixed(2)}，Δ ${delta >= 0 ? "+" : ""}${delta.toFixed(2)}）`,
+        `含均值回复 (1−λ)、体制增益 G_h·φ 与学习残差 δ`,
+      ],
+    };
+  });
+  for (const feature of activeFeatures) {
+    for (const dimension of predictedDims) {
+      pushEdge(`f:${feature}`, `p:${dimension}`, mixedGain(feature, dimension, regimeMixture) * Number(features[feature]) / .45);
+    }
+  }
+
+  const mixedResponse: Partial<Record<ResponseClass, number>> = {};
+  for (const branch of selectedBranches) {
+    for (const cls of RESPONSE_CLASSES) {
+      mixedResponse[cls] = (mixedResponse[cls] ?? 0) + (branch.probability / branchMass) * (branch.responseDistribution?.[cls] ?? 0);
+    }
+  }
+  const responseNodes: TraceNode[] = RESPONSE_CLASSES.map((cls) => {
+    const counts = learnedSelected?.counts?.[cls];
+    return {
+      id: `o:${cls}`, label: RESPONSE_LABELS[cls],
+      activation: mixedResponse[cls] ?? 0,
+      detail: [
+        `预测概率 ${((mixedResponse[cls] ?? 0) * 100).toFixed(0)}%`,
+        `结构头 softmax(u_o·s′+c_o) 与经验计数收缩混合`,
+        ...(counts !== undefined ? [`该情境真实计数 ${Number(counts).toFixed(1)}（衰减后）`] : ["该情境暂无真实样本，按结构先验预测"]),
+      ],
+    };
+  });
+  for (const cls of RESPONSE_CLASSES) {
+    for (const [dimension, loading] of Object.entries(RESPONSE_HEAD[cls].loadings)) {
+      if (!predictedDims.includes(dimension as BeliefDimension)) continue;
+      pushEdge(`p:${dimension}`, `o:${cls}`, Number(loading) / .95 * .8);
+    }
+  }
+
+  const expectedValue = selectedBranches.reduce((sum, branch) => sum + (branch.probability / branchMass) * branch.delayedReward, 0);
+  const expectedRisk = selectedBranches.reduce((sum, branch) => sum + (branch.probability / branchMass) * branch.risk, 0);
+  const outputNodes: TraceNode[] = [
+    {
+      id: "out:value", label: "期望价值", activation: expectedValue,
+      detail: [
+        `归一化 rollout 价值 ${expectedValue.toFixed(2)}（深度 ${selectedBranches[0]?.horizon ?? 1}）`,
+        `r = 0.58·u(o) + 0.42·v(s″)，γ=0.68`,
+      ],
+    },
+    {
+      id: "out:risk", label: "风险", activation: expectedRisk,
+      detail: [
+        `风险 ${expectedRisk.toFixed(2)}`,
+        `0.9·p(负面) + 0.7·p(未回复) + 0.5·P(压力越界)`,
+      ],
+    },
+    {
+      id: "out:uncertainty", label: "不确定性", activation: uncertainty.total,
+      detail: [
+        `总体 ${uncertainty.total.toFixed(2)} · 体制熵 ${uncertainty.stateEntropy.toFixed(2)}`,
+        `rollout 全方差 ${uncertainty.simulationVariance.toFixed(3)} · 证据覆盖 ${(uncertainty.evidenceCoverage * 100).toFixed(0)}%`,
+        ...(uncertainty.abstain ? [`触发收敛动作：${uncertainty.reason ?? "先补信息"}`] : []),
+      ],
+    },
+  ];
+  for (const cls of RESPONSE_CLASSES) {
+    pushEdge(`o:${cls}`, "out:value", (RESPONSE_UTILITY[cls] - .5) * (mixedResponse[cls] ?? 0) * 2.2);
+  }
+  pushEdge("o:negative", "out:risk", .9 * (mixedResponse.negative ?? 0) * 2.2);
+  pushEdge("o:no_reply", "out:risk", .7 * (mixedResponse.no_reply ?? 0) * 2.2);
+  for (const hypothesis of hypotheses) {
+    const p = hypothesis.probability;
+    if (p > .01) pushEdge(`h:${hypothesis.id}`, "out:uncertainty", (-p * Math.log(p)) / Math.log(hypotheses.length || 2));
+  }
+
+  return {
+    layers: [
+      { id: "beliefs", label: "状态信念", nodes: beliefNodes },
+      { id: "regimes", label: "体制假设", nodes: regimeNodes },
+      { id: "strategy", label: "选中策略", nodes: [strategyNode] },
+      { id: "features", label: "动作特征", nodes: featureNodes },
+      { id: "predicted", label: "预测状态", nodes: predictedNodes },
+      { id: "responses", label: "回应分布", nodes: responseNodes },
+      { id: "outputs", label: "决策输出", nodes: outputNodes },
+    ],
+    edges,
+  };
 }

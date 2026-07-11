@@ -6,15 +6,14 @@ import { posteriorFor } from "./store";
 import { expectedValueOfInformation, rolloutStrategies } from "./worldmodel";
 
 const STRATEGY_LIBRARY: Record<StrategyFamily, Omit<StrategyCandidate, "id" | "prior" | "explorationBonus" | "score">> = {
-  mirror: { family: "mirror", label: "顺着对方的节奏", intent: "维持同频，不额外施压", tactic: "复用对方的语气和信息量", tone: "自然、短", risk: "可能推进较慢", informationGain: .28 },
-  warm: { family: "warm", label: "先接住感受", intent: "降低压力并表达在场", tactic: "确认感受，不急着解决问题", tone: "温和、克制", risk: "过度安慰会显得用力", informationGain: .22 },
-  playful: { family: "playful", label: "轻松接梗", intent: "用低负担互动恢复节奏", tactic: "轻微自嘲或镜像玩笑", tone: "松弛、有分寸", risk: "严肃情境下可能显得不尊重", informationGain: .32 },
-  direct: { family: "direct", label: "把意思说清楚", intent: "减少猜测和歧义", tactic: "简短表达立场或需求", tone: "坦率、不逼迫", risk: "对方压力高时可能太重", informationGain: .55 },
-  invite: { family: "invite", label: "给一个轻量邀约", intent: "用行动验证互动意愿", tactic: "具体但容易拒绝的小邀约", tone: "轻松、留退路", risk: "势头不足时会暴露推进压力", informationGain: .72 },
-  clarify: { family: "clarify", label: "问一个容易回答的问题", intent: "补足关键背景", tactic: "一次只问一个事实问题", tone: "好奇、不审问", risk: "问题太多会造成负担", informationGain: .76 },
-  give_space: { family: "give_space", label: "留一点空间", intent: "避免在高压或低投入时继续加码", tactic: "短句收住并给出可回来的入口", tone: "平静、体面", risk: "可能暂时中断互动", informationGain: .16 },
-  boundary: { family: "boundary", label: "温和说明边界", intent: "保护双方感受和可持续互动", tactic: "描述事实、感受和下一步", tone: "清楚、不指责", risk: "需要避免像最后通牒", informationGain: .48 },
-  seek_more_context: { family: "seek_more_context", label: "先补一条关键信息", intent: "信息不足时避免凭空判断", tactic: "向用户确认最能区分两种解释的事实", tone: "诚实、具体", risk: "不能立刻给出完整结论", informationGain: .92 },
+  mirror: { family: "mirror", label: "顺着对方的节奏", intent: "维持同频，跟住当前节奏", tactic: "复用对方的语气和信息量", tone: "自然、短", risk: "可能推进较慢", informationGain: .28 },
+  warm: { family: "warm", label: "先接住感受", intent: "降低压力并表达在场", tactic: "确认感受，先陪住再说事", tone: "温和、有分寸", risk: "过度安慰会显得用力", informationGain: .22 },
+  playful: { family: "playful", label: "轻松接梗", intent: "用低负担互动恢复节奏", tactic: "轻微自嘲或镜像玩笑", tone: "松弛、有分寸", risk: "严肃情境下容易接不住", informationGain: .32 },
+  direct: { family: "direct", label: "把意思说清楚", intent: "减少猜测和歧义", tactic: "简短表达立场或需求", tone: "坦率、干脆", risk: "对方压力高时可能太重", informationGain: .55 },
+  invite: { family: "invite", label: "给一个轻量邀约", intent: "用行动验证互动意愿", tactic: "具体但容易接的小邀约", tone: "轻松、留退路", risk: "势头不足时会暴露推进压力", informationGain: .72 },
+  clarify: { family: "clarify", label: "问一个容易回答的问题", intent: "补足关键背景", tactic: "一次只问一个事实问题", tone: "好奇、自然", risk: "问题太多会造成负担", informationGain: .76 },
+  give_space: { family: "give_space", label: "留一点空间", intent: "在高压或低投入时先收力", tactic: "短句收住并留一个回来的入口", tone: "平静、体面", risk: "可能暂时中断互动", informationGain: .16 },
+  seek_more_context: { family: "seek_more_context", label: "先补一条关键信息", intent: "信息不足时先取证再判断", tactic: "向用户确认最能区分两种解释的事实", tone: "诚实、具体", risk: "这一轮先拿不到完整结论", informationGain: .92 },
 };
 
 export interface RewardWeights {
@@ -26,6 +25,16 @@ export const DEFAULT_REWARD_WEIGHTS: RewardWeights = {
   goalAlignment: .29, evidenceUse: .14, consistency: .13, naturalness: .15,
   informationValue: .12, learnedPrior: .1, riskPenalty: .22,
 };
+
+/** Boldness reshapes the objective: a bold profile pays less for risk, values
+ * information slightly less, and acts sooner; a cautious one is the reverse. */
+export function rewardWeightsFor(boldness = .5): RewardWeights {
+  return {
+    ...DEFAULT_REWARD_WEIGHTS,
+    riskPenalty: DEFAULT_REWARD_WEIGHTS.riskPenalty * (1.45 - .9 * boldness),
+    informationValue: DEFAULT_REWARD_WEIGHTS.informationValue * (1.2 - .4 * boldness),
+  };
+}
 
 function clamp(value: number, min = 0, max = 1): number {
   return Math.max(min, Math.min(max, value));
@@ -45,37 +54,38 @@ export function generateStrategies(
   patterns: PatternSignal[] = [],
   lookupPosterior: typeof posteriorFor = posteriorFor,
   model?: WorldModelSnapshot,
+  boldness = .5,
 ): StrategyCandidate[] {
   const pressure = state(states, "emotional_pressure").mean;
-  const boundary = state(states, "boundary_sensitivity").mean;
+  const guardedness = state(states, "boundary_sensitivity").mean;
   const momentum = state(states, "momentum").mean;
   const engagement = state(states, "engagement").mean;
   const dominant = hypotheses[0]?.id ?? "unknown";
   const families = new Set<StrategyFamily>(["mirror", "clarify", "give_space"]);
   if (pressure > .15) families.add("warm");
   else families.add("playful");
-  if (momentum > .15 && engagement > -.1) families.add("invite");
-  if (mode === "ask" || mode === "interest") families.add("direct");
-  if (boundary > .2 || mode === "ask") families.add("boundary");
-  if (expectedValueOfInformation(states, hypotheses, missing.length, planningMode, model) >= VOI_GATE) {
+  if (momentum > .15 - .48 * (boldness - .5) && engagement > -.1) families.add("invite");
+  if (mode === "ask" || mode === "interest" || boldness >= .72) families.add("direct");
+  if (expectedValueOfInformation(states, hypotheses, missing.length, planningMode, model, boldness) >= VOI_GATE) {
     families.add("seek_more_context");
   }
 
   const context = `${planningMode}:${dominant}`;
+  const drive = boldness - .5; // signed risk appetite around the neutral profile
   return [...families].map((family) => {
     const base = STRATEGY_LIBRARY[family];
     const posterior = lookupPosterior(profileSlug, context, family);
-    const explorationBonus = Math.min(.18, .16 / Math.sqrt(posterior.samples + 1));
+    const explorationBonus = Math.min(.2, .16 * (.7 + .6 * boldness) / Math.sqrt(posterior.samples + 1));
     const situational = family === "warm" ? .14 * pressure
-      : family === "give_space" ? .12 * pressure + .1 * boundary - .08 * momentum
-      : family === "invite" ? .14 * momentum + .1 * engagement - .16 * pressure
-      : family === "playful" ? .08 * engagement - .13 * pressure
-      : family === "boundary" ? .12 * boundary
-      : family === "seek_more_context" ? missing.length * .035
+      : family === "give_space" ? .12 * pressure + .1 * guardedness - .08 * momentum - .1 * drive
+      : family === "invite" ? .14 * momentum + .1 * engagement - .16 * pressure + .14 * drive
+      : family === "playful" ? .08 * engagement - .13 * pressure + .04 * drive
+      : family === "direct" ? .09 * drive
+      : family === "seek_more_context" ? missing.length * .035 - .06 * drive
       : 0;
     const patternAdjustment = patterns.filter((item) => item.lifecycle === "active").reduce((sum, pattern) => {
       if (pattern.id === "slow-response" && ["give_space", "mirror"].includes(family)) return sum + .06 * pattern.confidence;
-      if (pattern.id === "no-reply" && ["give_space", "boundary", "clarify"].includes(family)) return sum + .08 * pattern.confidence;
+      if (pattern.id === "no-reply" && ["give_space", "clarify"].includes(family)) return sum + .08 * pattern.confidence;
       if (pattern.id === "no-reply" && family === "invite") return sum - .1 * pattern.confidence;
       if (pattern.id === "positive-outcome" && ["mirror", "playful", "invite"].includes(family)) return sum + .05 * pattern.confidence;
       return sum;
@@ -95,9 +105,9 @@ const VOI_GATE = .02;
  * computation lives in the world model (Bayes regime update over imagined answers). */
 export function valueOfInformation(
   states: BeliefState[], hypotheses: StateHypothesis[], missingCount: number,
-  mode: PlanningMode, model?: WorldModelSnapshot,
+  mode: PlanningMode, model?: WorldModelSnapshot, boldness = .5,
 ): number {
-  return expectedValueOfInformation(states, hypotheses, missingCount, mode, model);
+  return expectedValueOfInformation(states, hypotheses, missingCount, mode, model, boldness);
 }
 
 /** Belief-space rollouts through the learned world model. Depth and regime
@@ -129,7 +139,7 @@ export function evaluateStrategies(
     const naturalness = ["mirror", "playful", "give_space"].includes(strategy.family) ? .86
       : strategy.family === "seek_more_context" ? .72 : .78;
     const consistency = clamp(.55 + (strategy.prior - .5) * .45);
-    const goalAlignment = clamp(expected + (antiSimp && ["boundary", "give_space"].includes(strategy.family) ? .08 : 0));
+    const goalAlignment = clamp(expected + (antiSimp && strategy.family === "give_space" ? .08 : 0));
     const critic: CriticScore = {
       strategyId: strategy.id, goalAlignment, evidenceUse, consistency, naturalness,
       informationValue: strategy.informationGain, risk,
@@ -156,6 +166,7 @@ export function assessUncertainty(
   strategies: StrategyCandidate[],
   simulations: SimulationBranch[],
   evidence: EvidenceRef[],
+  boldness = .5,
 ): UncertaintyReport {
   const sorted = [...strategies].sort((a, b) => b.score - a.score);
   const scoreMargin = clamp((sorted[0]?.score ?? 0) - (sorted[1]?.score ?? 0));
@@ -172,7 +183,9 @@ export function assessUncertainty(
   const stateEntropy = entropy(hypotheses);
   const total = clamp(.31 * stateEntropy + .2 * conflict + .19 * Math.min(1, variance * 5)
     + .18 * (1 - coverage) + .12 * (1 - Math.min(1, scoreMargin * 6)));
-  const abstain = evidence.length < 2 || (total > .76 && coverage < .42);
+  // A bolder profile tolerates more uncertainty before it pauses to gather info.
+  const abstainBar = .76 + .14 * (boldness - .5);
+  const abstain = evidence.length < 2 || (total > abstainBar && coverage < .42);
   return {
     total, stateEntropy, evidenceConflict: conflict, simulationVariance: variance,
     scoreMargin, evidenceCoverage: coverage, abstain,

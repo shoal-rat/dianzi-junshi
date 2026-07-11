@@ -220,6 +220,48 @@ describe("learned world model", () => {
     expect(adjusted.no_reply).toBeGreaterThan(structural.no_reply);
   });
 
+  test("network trace mirrors the actual computation", () => {
+    const beliefs = stateEngine.buildBeliefs(pressuredRows);
+    const hypotheses = stateEngine.buildHypotheses(beliefs);
+    const strategies = planner.generateStrategies("wm-trace", "reply", "deep", beliefs, hypotheses, []);
+    const branches = planner.simulateStrategies(strategies, hypotheses, beliefs, "deep");
+    const critics = planner.evaluateStrategies(strategies, branches, [], false);
+    void critics;
+    const uncertainty = planner.assessUncertainty(beliefs, hypotheses, strategies, branches, []);
+    const selected = planner.selectStrategy(strategies, uncertainty).selected;
+    const trace = worldmodel.buildNetworkTrace({
+      states: beliefs, hypotheses, selected, branches, uncertainty,
+    });
+    expect(trace.layers.length).toBeGreaterThanOrEqual(6);
+    expect(trace.edges.length).toBeGreaterThan(12);
+    const pressureNode = trace.layers[0].nodes.find((n: any) => n.id === "b:emotional_pressure")!;
+    expect(pressureNode.activation).toBeGreaterThan(.3);
+    const regimeLayer = trace.layers.find((l: any) => l.id === "regimes")!;
+    const total = regimeLayer.nodes.reduce((sum: number, n: any) => sum + n.activation, 0);
+    expect(Math.abs(total - 1)).toBeLessThan(1e-6);
+    const ids = new Set(trace.layers.flatMap((l: any) => l.nodes.map((n: any) => n.id)));
+    for (const edge of trace.edges) {
+      expect(ids.has(edge.from)).toBe(true);
+      expect(ids.has(edge.to)).toBe(true);
+    }
+  });
+
+  test("boldness reshapes the objective monotonically", () => {
+    expect(planner.rewardWeightsFor(.9).riskPenalty).toBeLessThan(planner.rewardWeightsFor(.1).riskPenalty);
+    const beliefs = stateEngine.buildBeliefs([]);
+    const hypotheses = stateEngine.buildHypotheses(beliefs);
+    const timid = worldmodel.expectedValueOfInformation(beliefs, hypotheses, 3, "deep", undefined, .1);
+    const bold = worldmodel.expectedValueOfInformation(beliefs, hypotheses, 3, "deep", undefined, .9);
+    expect(bold).toBeLessThanOrEqual(timid);
+    const stub = () => ({ mean: .5, samples: 0 });
+    const boldInvite = planner.generateStrategies("bold", "reply", "deep", beliefs, hypotheses, [], [], stub, undefined, .95)
+      .find((s: any) => s.family === "invite");
+    const timidInvite = planner.generateStrategies("bold", "reply", "deep", beliefs, hypotheses, [], [], stub, undefined, .05)
+      .find((s: any) => s.family === "invite");
+    if (boldInvite && timidInvite) expect(boldInvite.score).toBeGreaterThan(timidInvite.score);
+    else expect(Boolean(boldInvite)).toBe(true); // bold profile must at least consider inviting
+  });
+
   test("hybrid retrieval ranks matches first and suppresses near-duplicates", () => {
     const base = { kind: "message" as const, observedAt: new Date().toISOString(), reliability: .8, importance: .6 };
     const items = [

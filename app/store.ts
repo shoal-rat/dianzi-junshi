@@ -24,6 +24,8 @@ export interface PartnerMeta {
   name: string;
   stage: number;
   antiSimp: boolean;
+  /** Risk appetite in [0,1]; .5 is the neutral profile. Missing on old files. */
+  boldness?: number;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -197,20 +199,28 @@ export function getPartner(slug: string): PartnerMeta | null {
   }
 }
 
-export function createPartner(name: string, stage: number, antiSimp: boolean): PartnerMeta {
+function clampBoldness(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : .5;
+}
+
+export function createPartner(name: string, stage: number, antiSimp: boolean, boldness = .5): PartnerMeta {
   ensureDirs();
   const safeName = name.trim().slice(0, 60);
   let slug = slugify(safeName);
   let n = 2;
   while (existsSync(join(PARTNERS_DIR, slug))) slug = `${slugify(safeName)}-${n++}`;
   const now = new Date().toISOString();
-  const meta: PartnerMeta = { slug, name: safeName, stage: clampStage(stage), antiSimp, createdAt: now, updatedAt: now };
+  const meta: PartnerMeta = {
+    slug, name: safeName, stage: clampStage(stage), antiSimp,
+    boldness: clampBoldness(boldness), createdAt: now, updatedAt: now,
+  };
   mkdirSync(join(PARTNERS_DIR, slug), { recursive: true, mode: 0o700 });
   writeFileSync(join(PARTNERS_DIR, slug, "meta.json"), JSON.stringify(meta, null, 2), { mode: 0o600 });
   return meta;
 }
 
-export function updatePartner(slug: string, patch: Partial<Pick<PartnerMeta, "stage" | "antiSimp" | "notes" | "name">>): PartnerMeta | null {
+export function updatePartner(slug: string, patch: Partial<Pick<PartnerMeta, "stage" | "antiSimp" | "boldness" | "notes" | "name">>): PartnerMeta | null {
   const meta = getPartner(slug);
   if (!meta) return null;
   const next: PartnerMeta = {
@@ -220,6 +230,7 @@ export function updatePartner(slug: string, patch: Partial<Pick<PartnerMeta, "st
     stage: patch.stage === undefined ? meta.stage : clampStage(Number(patch.stage)),
     notes: typeof patch.notes === "string" ? patch.notes.slice(0, 20_000) : meta.notes,
     antiSimp: patch.antiSimp === undefined ? meta.antiSimp : Boolean(patch.antiSimp),
+    boldness: patch.boldness === undefined ? clampBoldness(meta.boldness) : clampBoldness(patch.boldness),
     updatedAt: new Date().toISOString(),
   };
   writeFileSync(join(partnerDir(slug)!, "meta.json"), JSON.stringify(next, null, 2), { mode: 0o600 });

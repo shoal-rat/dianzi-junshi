@@ -20,6 +20,32 @@ export interface WorldModelSnapshot {
   gate: { logLossModel: number; logLossBase: number; samples: number };
 }
 
+/** One node of the decision network trace: an actual quantity the engine
+ * computed this round, with its activation and inspectable parameters. */
+export interface TraceNode {
+  id: string;
+  label: string;
+  /** Signed activation in [-1, 1] (state-like) or [0, 1] (probability-like). */
+  activation: number;
+  /** Parameter lines shown when the node is inspected in the UI. */
+  detail: string[];
+}
+
+export interface TraceEdge {
+  from: string;
+  to: string;
+  /** Signed contribution weight, normalized to [-1, 1] for rendering. */
+  weight: number;
+}
+
+/** Layered dataflow of one decision: beliefs → regimes → action features →
+ * predicted state → response classes → outputs. Every value is read from the
+ * actual computation, so the visualization is an audit view, not decoration. */
+export interface NetworkTrace {
+  layers: Array<{ id: string; label: string; nodes: TraceNode[] }>;
+  edges: TraceEdge[];
+}
+
 export const BELIEF_DIMENSIONS = [
   "engagement", "trust", "communication_willingness", "emotional_pressure",
   "boundary_sensitivity", "commitment_reliability", "momentum", "initiative", "consistency",
@@ -97,7 +123,7 @@ export interface PatternSignal {
 
 export type StrategyFamily =
   | "mirror" | "warm" | "playful" | "direct" | "invite"
-  | "clarify" | "give_space" | "boundary" | "seek_more_context";
+  | "clarify" | "give_space" | "seek_more_context";
 
 export interface StrategyCandidate {
   id: string;
@@ -187,6 +213,7 @@ export interface DecisionReport {
   selectionReason: string;
   replyId: string;
   metrics: DecisionMetrics;
+  networkTrace?: NetworkTrace;
 }
 
 export interface DecisionEvent {
@@ -216,6 +243,9 @@ export interface PipelineInput {
   partnerName: string;
   stage: number;
   antiSimp: boolean;
+  /** Risk appetite in [0,1]: 0 = cautious, 1 = bold. Scales the risk penalty,
+   * advance bonuses, clarifying-question cost and the abstention bar. */
+  boldness?: number;
   mode: "reply" | "analyze" | "ask" | "interest";
   planningMode: PlanningMode;
   text: string;

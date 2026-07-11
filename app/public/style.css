@@ -354,7 +354,37 @@ dialog::backdrop { background: rgba(12, 18, 15, .52); backdrop-filter: blur(3px)
 .dlg-actions.between { justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; }
 .dlg-actions.between > div { display: flex; gap: 9px; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 100; max-width: min(460px, 90vw); padding: 11px 15px; border-radius: 12px; background: #202522; color: #fff; box-shadow: var(--shadow); font-size: 12.5px; }
-.drawer-backdrop { position: fixed; inset: 0; z-index: 25; border: none; background: rgba(12, 18, 15, .42); backdrop-filter: blur(2px); cursor: default; }
+/* Dim only — no blur — and always UNDER the open drawer (sidebar/panel raise
+ * above it), so the drawer itself stays crisp and clickable. */
+.drawer-backdrop { position: fixed; inset: 0; z-index: 25; border: none; background: rgba(12, 18, 15, .34); cursor: default; }
+
+/* Sliders (thinking depth + boldness) */
+.slider-field input[type="range"] {
+  width: 92px; height: 4px; accent-color: var(--brand); cursor: pointer;
+}
+.slider-field b { min-width: 30px; font-size: 11px; color: var(--brand-deep); font-weight: 700; text-align: left; }
+.slider-field input[type="range"]:disabled { opacity: .45; cursor: default; }
+
+/* Decision network graph */
+.network-graph { margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); overflow: hidden; }
+.network-graph svg { display: block; width: 100%; height: auto; }
+.network-graph .trace-node { cursor: pointer; }
+.network-graph .trace-node circle { transition: stroke-width .12s; }
+.network-graph .trace-node:hover circle, .network-graph .trace-node.selected circle { stroke: var(--text); stroke-width: 2; }
+.network-graph .trace-node text { font-size: 8.5px; fill: var(--text-2); pointer-events: none; }
+.network-graph .trace-node.selected text { fill: var(--text); font-weight: 700; }
+.network-graph .layer-title { font-size: 8px; fill: var(--text-3); letter-spacing: .06em; }
+.network-graph .trace-edge { fill: none; pointer-events: none; }
+.network-graph .trace-edge.dimmed { opacity: .05 !important; }
+.network-legend { display: flex; gap: 10px; padding: 7px 10px; border-top: 1px dashed var(--line); color: var(--text-3); font-size: 9.5px; flex-wrap: wrap; }
+.network-legend i { font-style: normal; display: inline-flex; align-items: center; gap: 4px; }
+.network-legend .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.network-detail { margin-top: 8px; padding: 10px 12px; border-radius: 11px; background: var(--brand-soft); font-size: 11px; line-height: 1.6; }
+.network-detail b { display: block; margin-bottom: 3px; }
+.network-detail ul { margin: 5px 0 0; padding-left: 16px; }
+.network-detail li { margin: 2px 0; }
+.network-detail .muted { font-size: 10px; }
+.thinking-link { border: none; background: transparent; color: var(--brand); cursor: pointer; font-size: inherit; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 1120px) {
   #app { grid-template-columns: 230px minmax(0, 1fr); }
@@ -365,11 +395,12 @@ dialog::backdrop { background: rgba(12, 18, 15, .52); backdrop-filter: blur(3px)
 @media (min-width: 1121px) { #btn-panel { display: none; } }
 @media (max-width: 760px) {
   #app { grid-template-columns: minmax(0, 1fr); min-height: 520px; }
-  #sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 270px; transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow); }
+  #sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 270px; transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow); z-index: 30; }
   #sidebar.open { transform: none; }
   #chat-header { padding: 8px 11px; min-height: 60px; }
   .compact-field > span, .toggle span { display: none; }
   .compact-field .select { max-width: 110px; }
+  .slider-field input[type="range"] { width: 64px; }
   .messages { padding: 16px 11px 10px; }
   .welcome-card { padding: 27px 18px; border-radius: 22px; }
   .welcome-steps { flex-direction: column; align-items: center; }
