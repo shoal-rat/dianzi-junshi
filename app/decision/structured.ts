@@ -1,4 +1,4 @@
-import { completeOnce, providerCapabilities, type ProviderConfig } from "../providers";
+import { completeOnce, completeStructuredNative, providerCapabilities, type ProviderConfig } from "../providers";
 import { readDecisionCache, writeDecisionCache } from "./store";
 
 export interface StructuredResult<T> {
@@ -22,14 +22,18 @@ export function parseJsonWithRepair(raw: string): unknown {
   throw new Error("模型没有返回可解析的 JSON");
 }
 
-/** Structured role adapter with validation, one repair retry, caching and a
- * deterministic fallback. The main planner remains usable when any role fails. */
+/** Structured role adapter. Prefers API-level constrained decoding (forced tool
+ * schema / JSON response_format) when the provider supports it; falls back to a
+ * prompt-and-repair loop for local CLI providers, and finally to a deterministic
+ * local result. The main planner remains usable when any role fails. */
 export async function completeStructured<T>(options: {
   provider: ProviderConfig;
   schemaName: string;
   cacheKey: string;
   system: string;
   user: string;
+  /** JSON Schema (top-level object) enabling native constrained decoding. */
+  schema?: Record<string, unknown>;
   validate: (value: unknown) => T | null;
   fallback: () => T;
   workspaceDir?: string;
@@ -39,8 +43,22 @@ export async function completeStructured<T>(options: {
     const valid = options.validate(cached);
     if (valid) return { value: valid, attempts: 0, cacheHit: true, fallback: false };
   }
-  if (!providerCapabilities(options.provider).structuredOutput) {
+  const capabilities = providerCapabilities(options.provider);
+  if (!capabilities.structuredOutput) {
     return { value: options.fallback(), attempts: 0, cacheHit: false, fallback: true };
+  }
+  if (options.schema && capabilities.nativeJsonSchema) {
+    try {
+      const raw = await completeStructuredNative(options.provider, {
+        system: options.system, user: options.user,
+        schemaName: options.schemaName, schema: options.schema,
+      });
+      const valid = options.validate(parseJsonWithRepair(raw));
+      if (valid) {
+        writeDecisionCache(options.cacheKey, valid, options.provider.provider, options.schemaName);
+        return { value: valid, attempts: 1, cacheHit: false, fallback: false };
+      }
+    } catch { /* degrade to the prompt-and-repair loop below */ }
   }
   let last = "";
   for (let attempt = 1; attempt <= 2; attempt++) {

@@ -92,7 +92,10 @@ function tokens(text: string): string[] {
   return out.slice(0, 8_000);
 }
 
-export function vectorize(text: string): string {
+/** Pure feature-hashed embedding (signed FNV-1a buckets over word and Han
+ * n-gram tokens, L2-normalized). Shared by material memories and decision
+ * evidence retrieval so both rank in one vector space. */
+export function embedText(text: string): Float32Array {
   const vector = new Float32Array(VECTOR_DIMS);
   for (const token of tokens(text)) {
     const hash = fnv1a(token);
@@ -104,7 +107,11 @@ export function vectorize(text: string): string {
   for (const value of vector) norm += value * value;
   norm = Math.sqrt(norm) || 1;
   for (let i = 0; i < vector.length; i++) vector[i] /= norm;
-  return Buffer.from(vector.buffer).toString("base64");
+  return vector;
+}
+
+export function vectorize(text: string): string {
+  return Buffer.from(embedText(text).buffer).toString("base64");
 }
 
 function decodeVector(encoded: string): Float32Array {
@@ -118,6 +125,8 @@ function cosine(a: Float32Array, b: Float32Array): number {
   for (let i = 0; i < VECTOR_DIMS; i++) score += a[i] * b[i];
   return Math.max(-1, Math.min(1, score));
 }
+
+export const cosineSimilarity = cosine;
 
 function lexicalOverlap(query: string, document: string): number {
   const q = new Set(tokens(query));

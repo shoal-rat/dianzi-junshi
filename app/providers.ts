@@ -105,6 +105,9 @@ export function supportsVision(cfg: ProviderConfig): boolean {
 export interface ProviderCapabilities {
   vision: boolean;
   structuredOutput: boolean;
+  /** Constrained decoding at the API level: forced tool schema (Anthropic) or
+   * JSON response_format (OpenAI-compatible). No prompt-and-repair needed. */
+  nativeJsonSchema: boolean;
   streaming: boolean;
   local: boolean;
   parallelRoles: boolean;
@@ -116,8 +119,9 @@ export interface ProviderCapabilities {
 export function providerCapabilities(cfg: ProviderConfig): ProviderCapabilities {
   const local = cfg.provider === "codex" || cfg.provider === "claude-code" || cfg.provider === "demo";
   return {
-    vision: supportsVision(cfg), structuredOutput: cfg.provider !== "demo", streaming: true,
-    local, parallelRoles: !local,
+    vision: supportsVision(cfg), structuredOutput: cfg.provider !== "demo",
+    nativeJsonSchema: ["claude", "deepseek", "glm", "custom"].includes(cfg.provider),
+    streaming: true, local, parallelRoles: !local,
     maxRecommendedDecisionCalls: cfg.provider === "demo" ? 0 : local ? 1 : 3,
   };
 }
@@ -519,6 +523,78 @@ export function streamChat(cfg: ProviderConfig, req: ChatRequest): AsyncGenerato
     default:
       throw new Error(`未知供应商：${(cfg as any).provider}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// 原生结构化输出：让解码器而不是提示词保证 JSON 合法
+// ---------------------------------------------------------------------------
+
+export interface StructuredCall {
+  system: string;
+  user: string;
+  schemaName: string;
+  /** JSON Schema，顶层必须是 object（Anthropic tool input 的要求）。 */
+  schema: Record<string, unknown>;
+  maxTokens?: number;
+}
+
+/** Anthropic：单个强制 tool，input_schema 即约束；返回 tool_use 的 input。 */
+async function structuredClaude(cfg: ProviderConfig, call: StructuredCall): Promise<string> {
+  const res = await fetch(`${cfg.baseUrl || "https://api.anthropic.com"}/v1/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": cfg.apiKey ?? "",
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: cfg.model || PROVIDER_PRESETS.claude.defaultModel,
+      max_tokens: call.maxTokens ?? 1024,
+      system: call.system,
+      messages: [{ role: "user", content: call.user }],
+      tools: [{
+        name: "emit_structured",
+        description: `返回符合 ${call.schemaName} 的结构化结果`,
+        input_schema: call.schema,
+      }],
+      tool_choice: { type: "tool", name: "emit_structured" },
+    }),
+  });
+  if (!res.ok) await raiseHttpError("Claude structured", res);
+  const data = await res.json() as any;
+  const block = (data.content ?? []).find((item: any) => item?.type === "tool_use");
+  if (!block?.input) throw new Error("Claude 没有返回结构化结果");
+  return JSON.stringify(block.input);
+}
+
+/** OpenAI 兼容：response_format 强制 JSON，schema 附在 system 里约束字段。 */
+async function structuredOpenAICompat(cfg: ProviderConfig, call: StructuredCall): Promise<string> {
+  const base = (cfg.baseUrl || OPENAI_BASE[cfg.provider] || "").replace(/\/$/, "");
+  if (!base) throw new Error("自定义供应商需要填 Base URL");
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${cfg.apiKey ?? ""}` },
+    body: JSON.stringify({
+      model: cfg.model || PROVIDER_PRESETS[cfg.provider === "glm" ? "glm" : "deepseek"].defaultModel,
+      messages: [
+        { role: "system", content: `${call.system}\n输出必须是符合以下 JSON Schema（${call.schemaName}）的单个 JSON 对象：\n${JSON.stringify(call.schema)}` },
+        { role: "user", content: call.user },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: call.maxTokens ?? 1024,
+    }),
+  });
+  if (!res.ok) await raiseHttpError(`${cfg.provider} structured`, res);
+  const data = await res.json() as any;
+  const content = data.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) throw new Error(`${cfg.provider} 没有返回结构化结果`);
+  return content;
+}
+
+export async function completeStructuredNative(cfg: ProviderConfig, call: StructuredCall): Promise<string> {
+  if (cfg.provider === "claude") return structuredClaude(cfg, call);
+  if (["deepseek", "glm", "custom"].includes(cfg.provider)) return structuredOpenAICompat(cfg, call);
+  throw new Error(`供应商 ${cfg.provider} 不支持原生结构化输出`);
 }
 
 /** 非流式小调用（一键修用），复用流式接口拼接结果。 */

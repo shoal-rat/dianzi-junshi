@@ -15,6 +15,11 @@ const stateEngine = await import("./decision/state.ts");
 const planner = await import("./decision/planner.ts");
 const structured = await import("./decision/structured.ts");
 const evaluation = await import("./decision/evaluation.ts");
+const worldmodel = await import("./decision/worldmodel.ts");
+const evidenceModule = await import(`./decision/evidence.ts?decision=${Date.now()}`);
+const { BELIEF_DIMENSIONS } = await import("./decision/types.ts");
+
+const DIM = (name: string) => BELIEF_DIMENSIONS.indexOf(name as never);
 
 afterAll(() => {
   adaptive.resetAdaptiveDatabaseForTests();
@@ -133,5 +138,98 @@ describe("adaptive decision engine", () => {
     const result = evaluation.evaluateDecisionEngine("deep");
     expect(result.unsafeRate).toBeLessThanOrEqual(.2);
     expect(result.abstentionAccuracy).toBeGreaterThanOrEqual(.8);
+  });
+});
+
+describe("learned world model", () => {
+  const pressuredRows = ["emotional_pressure", "boundary_sensitivity"].flatMap((dimension) =>
+    Array.from({ length: 4 }, (_, index) => ({
+      id: `wm-${dimension}-${index}`, profileSlug: "wm", sourceId: `wm-s-${dimension}-${index}`,
+      dimension: dimension as any, value: .8, confidence: .9, reliability: .9,
+      observedAt: new Date(Date.now() - index * 86_400_000).toISOString(), rationale: "压力线索",
+    })));
+
+  test("regime-switching dynamics: advancing under pressure predicts worse outcomes than soothing", () => {
+    const belief = worldmodel.beliefFromStates(stateEngine.buildBeliefs(pressuredRows));
+    const invite = worldmodel.transition(belief, "invite", "pressured");
+    const warm = worldmodel.transition(belief, "warm", "pressured");
+    expect(invite.mean[DIM("emotional_pressure")]).toBeGreaterThan(warm.mean[DIM("emotional_pressure")]);
+    const inviteResponses = worldmodel.responseDistribution(invite);
+    const warmResponses = worldmodel.responseDistribution(warm);
+    expect(warmResponses.negative).toBeLessThan(inviteResponses.negative);
+    expect(warmResponses.positive).toBeGreaterThan(inviteResponses.positive);
+  });
+
+  test("imagined observations update the belief like a measurement", () => {
+    const belief = { mean: new Float64Array(9), variance: new Float64Array(9).fill(.5) };
+    const updated = worldmodel.observationUpdate(belief, "positive");
+    expect(updated.mean[DIM("engagement")]).toBeGreaterThan(0);
+    expect(updated.variance[DIM("engagement")]).toBeLessThan(.5);
+    const ghosted = worldmodel.observationUpdate(belief, "no_reply");
+    expect(ghosted.mean[DIM("engagement")]).toBeLessThan(0);
+  });
+
+  test("rollout branches expose calibrated response distributions and bounded values", () => {
+    const beliefs = stateEngine.buildBeliefs([]);
+    const hypotheses = stateEngine.buildHypotheses(beliefs);
+    const strategies = planner.generateStrategies("wm-branches", "reply", "deep", beliefs, hypotheses, ["a", "b"]);
+    const branches = planner.simulateStrategies(strategies, hypotheses, beliefs, "deep");
+    for (const branch of branches) {
+      const total = Object.values(branch.responseDistribution ?? {}).reduce((a, b) => a + b, 0);
+      expect(Math.abs(total - 1)).toBeLessThan(1e-6);
+      expect(branch.delayedReward).toBeGreaterThanOrEqual(0);
+      expect(branch.delayedReward).toBeLessThanOrEqual(1);
+      expect(branch.horizon).toBe(3);
+      expect(branch.valueVariance).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  test("EVOI: a clarifying question is worth more when hypotheses compete", () => {
+    const beliefs = stateEngine.buildBeliefs([]);
+    const uniform = stateEngine.buildHypotheses(beliefs);
+    const peaked = uniform.map((hypothesis, index) => ({
+      ...hypothesis, probability: index === 0 ? .91 : .03,
+    }));
+    const ambiguous = worldmodel.expectedValueOfInformation(beliefs, uniform, 3, "deep");
+    const resolved = worldmodel.expectedValueOfInformation(beliefs, peaked, 3, "deep");
+    expect(ambiguous).toBeGreaterThan(resolved);
+  });
+
+  test("recorded outcomes shift the learned response mixture and the gate", async () => {
+    const profile = store.createPartner("世界模型学习", 2, false);
+    const report = await pipeline.runDecisionPipeline({
+      profileSlug: profile.slug, partnerName: profile.name, stage: profile.stage,
+      antiSimp: false, mode: "reply", planningMode: "balanced",
+      text: "她最近回复都很快，周末还主动提了一起去看展",
+      evidence: [],
+    });
+    const at = new Date().toISOString();
+    for (let i = 0; i < 4; i++) {
+      decisionStore.updateWorldModel(profile.slug, report, {
+        outcome: "no_reply", strategyId: report.selectedStrategy.id,
+      }, at);
+    }
+    const snapshot = decisionStore.loadWorldModel(profile.slug);
+    const key = `${report.hypotheses[0].id}:${report.selectedStrategy.family}`;
+    expect(snapshot.entries[key]?.counts.no_reply).toBeGreaterThanOrEqual(3.9);
+    expect(snapshot.gate.samples).toBeGreaterThanOrEqual(3.9);
+    const belief = worldmodel.beliefFromStates(report.beliefs);
+    const predicted = worldmodel.transition(belief, report.selectedStrategy.family, report.hypotheses[0].id, snapshot.entries[key]);
+    const adjusted = worldmodel.responseDistribution(predicted, snapshot.entries[key]);
+    const structural = worldmodel.responseDistribution(predicted);
+    expect(adjusted.no_reply).toBeGreaterThan(structural.no_reply);
+  });
+
+  test("hybrid retrieval ranks matches first and suppresses near-duplicates", () => {
+    const base = { kind: "message" as const, observedAt: new Date().toISOString(), reliability: .8, importance: .6 };
+    const items = [
+      { ...base, id: "food-plan", text: "她说这周末想一起去吃饭" },
+      { ...base, id: "band", text: "她喜欢的乐队下个月有演唱会" },
+      { ...base, id: "food-plan-dup", text: "她说这周末想一起去吃饭呀" },
+      { ...base, id: "work", text: "她最近项目加班比较多" },
+    ];
+    const selected = evidenceModule.retrieveEvidence("retrieval-test", "周末一起吃饭的邀约", items, 3);
+    expect(selected[0].id).toBe("food-plan");
+    expect(selected.some((item: any) => item.id === "food-plan-dup")).toBe(false);
   });
 });

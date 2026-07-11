@@ -35,9 +35,10 @@ env/
 Thumbs.db
 desktop.ini
 
-# IDE
+# IDE / agent harness
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 

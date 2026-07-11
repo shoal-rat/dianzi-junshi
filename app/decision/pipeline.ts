@@ -1,6 +1,6 @@
 import type { ProviderConfig } from "../providers";
 import type { PipelineInput, DecisionReport, DecisionMetrics, EvidenceRef, PlanningMode, StrategyCandidate, StructuredObservation } from "./types";
-import { appendDecisionEvent, graphEvidence, readDecisionEvents, readObservations, recordTemporalFact, saveDecisionReport, saveObservations, syncPatternRegistry } from "./store";
+import { appendDecisionEvent, graphEvidence, loadWorldModel, posteriorFor, readDecisionEvents, readObservations, recordTemporalFact, saveDecisionReport, saveObservations, syncPatternRegistry } from "./store";
 import { extractObservations, retrieveEvidence, validateObservations } from "./evidence";
 import { buildBeliefs, buildHypotheses, detectChanges, discoverPatterns, missingInformation } from "./state";
 import { assessUncertainty, evaluateStrategies, generateStrategies, selectStrategy, simulateStrategies, strategyAlternatives } from "./planner";
@@ -45,9 +45,10 @@ export async function runDecisionPipeline(
       cacheKey: `observations:${input.profileSlug}:${Bun.hash(input.text).toString(16)}`,
       workspaceDir: options.workspaceDir,
       system: `你是结构化观察器。只记录当前文字直接支持的状态信号，不诊断人格。
-返回 JSON 数组。每项字段：dimension、value(-1到1)、confidence(0到1)、reliability(0到1)、rationale。
-dimension 只能是 engagement, trust, communication_willingness, emotional_pressure, boundary_sensitivity, commitment_reliability, momentum, initiative, consistency。没有证据就返回 []。`,
+返回 {"observations": [...]}。每项字段：dimension、value(-1到1)、confidence(0到1)、reliability(0到1)、rationale。
+dimension 只能是 engagement, trust, communication_willingness, emotional_pressure, boundary_sensitivity, commitment_reliability, momentum, initiative, consistency。没有证据就返回空数组。`,
       user: input.text,
+      schema: OBSERVATION_SCHEMA,
       validate: validateLlmObservations,
       fallback: () => [],
     });
@@ -87,10 +88,14 @@ dimension 只能是 engagement, trust, communication_willingness, emotional_pres
     input.profileSlug, input.text, [...input.evidence, ...graph, ...observationEvidence], limits.evidence,
   ));
   metrics.evidenceSelected = evidence.length;
+  const worldModel = stage(metrics, "world_model_load", () => loadWorldModel(input.profileSlug));
   let strategies = stage(metrics, "strategy_generation", () => generateStrategies(
     input.profileSlug, input.mode, input.planningMode, beliefs, hypotheses, missing, patterns,
+    posteriorFor, worldModel,
   ));
-  const simulations = stage(metrics, "simulation", () => simulateStrategies(strategies, hypotheses, beliefs, input.planningMode));
+  const simulations = stage(metrics, "simulation", () => simulateStrategies(
+    strategies, hypotheses, beliefs, input.planningMode, worldModel,
+  ));
   metrics.simulationCount = simulations.length;
   const critics = stage(metrics, "critics", () => evaluateStrategies(strategies, simulations, evidence, input.antiSimp));
   const uncertainty = stage(metrics, "uncertainty", () => assessUncertainty(beliefs, hypotheses, strategies, simulations, evidence));
@@ -109,7 +114,36 @@ dimension 只能是 engagement, trust, communication_willingness, emotional_pres
   return report;
 }
 
+const OBSERVATION_SCHEMA: Record<string, unknown> = {
+  type: "object", required: ["observations"], additionalProperties: false,
+  properties: {
+    observations: {
+      type: "array", maxItems: 12,
+      items: {
+        type: "object", additionalProperties: false,
+        required: ["dimension", "value", "confidence", "reliability", "rationale"],
+        properties: {
+          dimension: {
+            type: "string",
+            enum: ["engagement", "trust", "communication_willingness", "emotional_pressure",
+              "boundary_sensitivity", "commitment_reliability", "momentum", "initiative", "consistency"],
+          },
+          value: { type: "number", minimum: -1, maximum: 1 },
+          confidence: { type: "number", minimum: 0, maximum: 1 },
+          reliability: { type: "number", minimum: 0, maximum: 1 },
+          rationale: { type: "string", maxLength: 500 },
+        },
+      },
+    },
+  },
+};
+
 function validateLlmObservations(value: unknown): Array<Omit<StructuredObservation, "id" | "profileSlug" | "sourceId" | "observedAt">> | null {
+  // Accept both the wrapped {observations: [...]} shape (native structured
+  // output; tool inputs must be objects) and the bare array from older prompts.
+  if (value && typeof value === "object" && !Array.isArray(value) && Array.isArray((value as any).observations)) {
+    value = (value as any).observations;
+  }
   if (!Array.isArray(value) || value.length > 12) return null;
   const allowed = new Set([
     "engagement", "trust", "communication_willingness", "emotional_pressure",

@@ -3,6 +3,23 @@ import type { FeedbackOutcome } from "../adaptive";
 export type PlanningMode = "fast" | "balanced" | "deep";
 export type EvidenceKind = "message" | "material" | "outcome" | "fact" | "observation";
 
+/** Partner-response classes are exactly the recordable real outcomes, so the
+ * world model's predictive distribution is directly scoreable against feedback. */
+export type ResponseClass = FeedbackOutcome;
+
+/** Learned per-(regime, family) statistics: decayed Dirichlet response counts
+ * and mean transition residuals on the outcome-observable dimensions. */
+export interface LearnedRegimeFamily {
+  counts: Partial<Record<ResponseClass, number>>;
+  effective: number;
+  delta: Partial<Record<BeliefDimension, number>>;
+}
+
+export interface WorldModelSnapshot {
+  entries: Record<string, LearnedRegimeFamily>;
+  gate: { logLossModel: number; logLossBase: number; samples: number };
+}
+
 export const BELIEF_DIMENSIONS = [
   "engagement", "trust", "communication_willingness", "emotional_pressure",
   "boundary_sensitivity", "commitment_reliability", "momentum", "initiative", "consistency",
@@ -105,6 +122,14 @@ export interface SimulationBranch {
   delayedReward: number;
   risk: number;
   hypothesisId: string;
+  /** Predictive distribution over partner-response classes for this branch. */
+  responseDistribution?: Record<ResponseClass, number>;
+  /** Posterior-mean state the world model predicts after this action. */
+  predictedState?: Partial<Record<BeliefDimension, number>>;
+  /** Variance of the normalized rollout value across imagined responses. */
+  valueVariance?: number;
+  /** Rollout depth (exchanges) used for the value estimate. */
+  horizon?: number;
 }
 
 export interface CriticScore {

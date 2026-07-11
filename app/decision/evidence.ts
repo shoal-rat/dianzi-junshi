@@ -1,5 +1,6 @@
 import type { EvidenceRef, PipelineInput, StructuredObservation, BeliefDimension } from "./types";
 import { usefulnessFor } from "./store";
+import { cosineSimilarity, embedText } from "../materials";
 
 const SIGNALS: Array<{
   dimension: BeliefDimension; positive: RegExp; negative: RegExp; confidence: number; rationale: string;
@@ -60,22 +61,14 @@ export function validateObservations(items: StructuredObservation[]): Structured
   });
 }
 
-function terms(text: string): Set<string> {
-  const out = new Set<string>();
-  const lower = text.toLowerCase();
-  for (const word of lower.match(/[a-z0-9]{3,}/g) ?? []) out.add(word);
+function terms(text: string): string[] {
+  const out: string[] = [];
+  const lower = text.normalize("NFKC").toLowerCase();
+  for (const word of lower.match(/[a-z0-9]{2,}/g) ?? []) out.push(word);
   for (const run of lower.match(/[\p{Script=Han}]{2,}/gu) ?? []) {
-    for (let i = 0; i < run.length - 1 && out.size < 280; i++) out.add(run.slice(i, i + 2));
+    for (let i = 0; i < run.length - 1 && out.length < 600; i++) out.push(run.slice(i, i + 2));
   }
   return out;
-}
-
-function lexicalSimilarity(query: Set<string>, text: string): number {
-  if (!query.size) return 0;
-  const lower = text.toLowerCase();
-  let hits = 0;
-  for (const term of query) if (lower.includes(term)) hits += 1;
-  return Math.min(1, hits / Math.max(2, Math.sqrt(query.size) * 1.8));
 }
 
 function recency(observedAt: string): number {
@@ -83,29 +76,84 @@ function recency(observedAt: string): number {
   return Math.pow(.5, ageDays / 120);
 }
 
-/** Decision-oriented retrieval: relevance is necessary, but reliability, usefulness,
- * contradiction coverage, and diversity decide what reaches the planner. */
-export function retrieveEvidence(profileSlug: string, queryText: string, items: EvidenceRef[], limit: number): EvidenceRef[] {
-  const query = terms(queryText);
-  const scored = items.map((item) => {
-    const lexical = lexicalSimilarity(query, item.text);
-    const historical = usefulnessFor(profileSlug, item.id);
-    const contradictionBoost = item.contradiction ? .11 : 0;
-    const score = .36 * lexical + .15 * recency(item.observedAt) + .15 * item.importance
-      + .16 * item.reliability + .12 * historical + contradictionBoost;
-    return { ...item, relevance: Math.max(0, Math.min(1, score)) };
-  }).sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0));
-
-  const selected: EvidenceRef[] = [];
-  const kindCount = new Map<string, number>();
-  for (const item of scored) {
-    if (selected.length >= limit) break;
-    const sameKind = kindCount.get(item.kind) ?? 0;
-    if (sameKind >= Math.max(2, Math.ceil(limit * .55))) continue;
-    const duplicate = selected.some((other) => lexicalSimilarity(terms(other.text), item.text) > .86);
-    if (duplicate && !item.contradiction) continue;
-    selected.push(item);
-    kindCount.set(item.kind, sameKind + 1);
+/** Okapi BM25 over the candidate set, with document frequencies computed from
+ * the same set — no global index needed at this scale. */
+function bm25Scores(queryTerms: string[], documents: string[][]): number[] {
+  const n = documents.length;
+  if (!n || !queryTerms.length) return documents.map(() => 0);
+  const df = new Map<string, number>();
+  const unique = [...new Set(queryTerms)];
+  for (const doc of documents) {
+    const bag = new Set(doc);
+    for (const term of unique) if (bag.has(term)) df.set(term, (df.get(term) ?? 0) + 1);
   }
-  return selected;
+  const averageLength = documents.reduce((sum, doc) => sum + doc.length, 0) / n || 1;
+  const k1 = 1.4;
+  const b = .6;
+  return documents.map((doc) => {
+    if (!doc.length) return 0;
+    const tf = new Map<string, number>();
+    for (const term of doc) tf.set(term, (tf.get(term) ?? 0) + 1);
+    let score = 0;
+    for (const term of unique) {
+      const frequency = tf.get(term);
+      if (!frequency) continue;
+      const idf = Math.log(1 + (n - (df.get(term) ?? 0) + .5) / ((df.get(term) ?? 0) + .5));
+      score += idf * frequency * (k1 + 1) / (frequency + k1 * (1 - b + b * doc.length / averageLength));
+    }
+    return score;
+  });
+}
+
+/** Ranks → fused score via Reciprocal Rank Fusion: Σ w_r / (k + rank_r(d)). */
+function rrfFuse(rankings: Array<{ scores: number[]; weight: number }>, count: number, k = 60): number[] {
+  const fused = new Array(count).fill(0);
+  for (const ranking of rankings) {
+    const order = ranking.scores.map((score, index) => ({ score, index }))
+      .sort((a, b) => b.score - a.score);
+    order.forEach((entry, rank) => {
+      if (entry.score > 0) fused[entry.index] += ranking.weight / (k + rank + 1);
+    });
+  }
+  return fused;
+}
+
+/** Decision-oriented hybrid retrieval. BM25 and hashed-embedding cosine are
+ * fused with reciprocal ranks alongside a decision prior (recency, reliability,
+ * importance, learned usefulness); selection then applies MMR-style redundancy
+ * suppression in embedding space, kind quotas, and contradiction coverage. */
+export function retrieveEvidence(profileSlug: string, queryText: string, items: EvidenceRef[], limit: number): EvidenceRef[] {
+  if (!items.length) return [];
+  const queryTerms = terms(queryText);
+  const queryVector = embedText(queryText);
+  const vectors = items.map((item) => embedText(item.text));
+  const lexical = bm25Scores(queryTerms, items.map((item) => terms(item.text)));
+  const semantic = vectors.map((vector) => Math.max(0, cosineSimilarity(queryVector, vector)));
+  const prior = items.map((item) => .35 * recency(item.observedAt) + .3 * item.reliability
+    + .2 * item.importance + .15 * usefulnessFor(profileSlug, item.id));
+  const fused = rrfFuse([
+    { scores: lexical, weight: 1 },
+    { scores: semantic, weight: 1 },
+    { scores: prior, weight: .8 },
+  ], items.length);
+  const peak = Math.max(...fused, 1e-6);
+  const ranked = items.map((item, index) => ({
+    item: { ...item, relevance: Math.max(0, Math.min(1, fused[index] / peak)) },
+    index,
+    score: fused[index] + (item.contradiction ? .004 : 0),
+  })).sort((a, b) => b.score - a.score);
+
+  const selected: Array<{ item: EvidenceRef; index: number }> = [];
+  const kindCount = new Map<string, number>();
+  for (const candidate of ranked) {
+    if (selected.length >= limit) break;
+    const sameKind = kindCount.get(candidate.item.kind) ?? 0;
+    if (sameKind >= Math.max(2, Math.ceil(limit * .55))) continue;
+    const redundant = selected.some((other) =>
+      cosineSimilarity(vectors[candidate.index], vectors[other.index]) > .82);
+    if (redundant && !candidate.item.contradiction) continue;
+    selected.push(candidate);
+    kindCount.set(candidate.item.kind, sameKind + 1);
+  }
+  return selected.map((entry) => entry.item);
 }

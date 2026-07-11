@@ -1,8 +1,9 @@
 import type {
   BeliefState, CriticScore, EvidenceRef, PlanningMode, SimulationBranch, StateHypothesis,
-  StrategyCandidate, StrategyFamily, UncertaintyReport, PatternSignal,
+  StrategyCandidate, StrategyFamily, UncertaintyReport, PatternSignal, WorldModelSnapshot,
 } from "./types";
 import { posteriorFor } from "./store";
+import { expectedValueOfInformation, rolloutStrategies } from "./worldmodel";
 
 const STRATEGY_LIBRARY: Record<StrategyFamily, Omit<StrategyCandidate, "id" | "prior" | "explorationBonus" | "score">> = {
   mirror: { family: "mirror", label: "顺着对方的节奏", intent: "维持同频，不额外施压", tactic: "复用对方的语气和信息量", tone: "自然、短", risk: "可能推进较慢", informationGain: .28 },
@@ -43,6 +44,7 @@ export function generateStrategies(
   missing: string[],
   patterns: PatternSignal[] = [],
   lookupPosterior: typeof posteriorFor = posteriorFor,
+  model?: WorldModelSnapshot,
 ): StrategyCandidate[] {
   const pressure = state(states, "emotional_pressure").mean;
   const boundary = state(states, "boundary_sensitivity").mean;
@@ -55,7 +57,9 @@ export function generateStrategies(
   if (momentum > .15 && engagement > -.1) families.add("invite");
   if (mode === "ask" || mode === "interest") families.add("direct");
   if (boundary > .2 || mode === "ask") families.add("boundary");
-  if (valueOfInformation(hypotheses, missing.length, planningMode) >= .42) families.add("seek_more_context");
+  if (expectedValueOfInformation(states, hypotheses, missing.length, planningMode, model) >= VOI_GATE) {
+    families.add("seek_more_context");
+  }
 
   const context = `${planningMode}:${dominant}`;
   return [...families].map((family) => {
@@ -83,60 +87,29 @@ export function generateStrategies(
   }).slice(0, planningMode === "fast" ? 4 : planningMode === "balanced" ? 6 : 8);
 }
 
-/** Expected decision improvement from one clarifying question, minus user
- * effort and latency. It intentionally stays conservative in fast mode. */
-export function valueOfInformation(hypotheses: StateHypothesis[], missingCount: number, mode: PlanningMode): number {
-  const uncertainty = 1 - (hypotheses[0]?.probability ?? .25);
-  const distinguishability = Math.min(1, missingCount / 3);
-  const informationBenefit = uncertainty * distinguishability;
-  const interactionCost = mode === "fast" ? .26 : mode === "deep" ? .1 : .16;
-  return clamp(informationBenefit - interactionCost);
+/** Gate above which a clarifying exchange beats acting now. EVOI is an absolute
+ * expected-return improvement in [0,1] value units, so the bar is deliberately low. */
+const VOI_GATE = .02;
+
+/** Expected value of one clarifying question. Kept as a planner export; the
+ * computation lives in the world model (Bayes regime update over imagined answers). */
+export function valueOfInformation(
+  states: BeliefState[], hypotheses: StateHypothesis[], missingCount: number,
+  mode: PlanningMode, model?: WorldModelSnapshot,
+): number {
+  return expectedValueOfInformation(states, hypotheses, missingCount, mode, model);
 }
 
+/** Belief-space rollouts through the learned world model. Depth and regime
+ * branching follow the planning budget; see worldmodel.ts for the dynamics. */
 export function simulateStrategies(
   strategies: StrategyCandidate[],
   hypotheses: StateHypothesis[],
   states: BeliefState[],
   planningMode: PlanningMode,
+  model?: WorldModelSnapshot,
 ): SimulationBranch[] {
-  const branchLimit = planningMode === "fast" ? 2 : planningMode === "balanced" ? 3 : 4;
-  const pressure = state(states, "emotional_pressure").mean;
-  const boundary = state(states, "boundary_sensitivity").mean;
-  const momentum = state(states, "momentum").mean;
-  const branches: SimulationBranch[] = [];
-  for (const strategy of strategies) {
-    for (const hypothesis of hypotheses.slice(0, branchLimit)) {
-      const fit = strategyFit(strategy.family, hypothesis.id, pressure, boundary, momentum);
-      const immediateReward = clamp(.5 + fit * .38 + (strategy.prior - .5) * .28);
-      const risk = clamp(.18 - fit * .18 + (strategy.family === "invite" ? Math.max(0, pressure) * .35 : 0));
-      branches.push({
-        id: crypto.randomUUID(), strategyId: strategy.id,
-        outcome: branchDescription(strategy.family, hypothesis.id, fit),
-        probability: hypothesis.probability, immediateReward,
-        delayedReward: clamp(immediateReward * .82 + strategy.informationGain * .18),
-        risk, hypothesisId: hypothesis.id,
-      });
-    }
-  }
-  return branches;
-}
-
-function strategyFit(family: StrategyFamily, hypothesis: string, pressure: number, boundary: number, momentum: number): number {
-  let fit = 0;
-  if (hypothesis === "pressured") fit += ["warm", "give_space", "clarify"].includes(family) ? .65 : -.42;
-  if (hypothesis === "receptive") fit += ["mirror", "playful", "invite", "direct"].includes(family) ? .5 : .05;
-  if (hypothesis === "uncertain") fit += ["mirror", "clarify", "direct"].includes(family) ? .42 : -.05;
-  if (hypothesis === "disengaging") fit += ["give_space", "boundary", "seek_more_context"].includes(family) ? .55 : -.36;
-  if (family === "invite") fit += momentum * .45 - pressure * .45;
-  if (family === "warm") fit += pressure * .32;
-  if (family === "boundary") fit += boundary * .3;
-  return Math.max(-1, Math.min(1, fit));
-}
-
-function branchDescription(family: StrategyFamily, hypothesis: string, fit: number): string {
-  if (fit > .42) return `${hypothesis} 成立时，${STRATEGY_LIBRARY[family].label}较可能降低摩擦并得到可观察反馈`;
-  if (fit < -.3) return `${hypothesis} 成立时，这个策略可能增加压力或造成误读`;
-  return `${hypothesis} 成立时，结果可能中性，需要看对方是否继续互动`;
+  return rolloutStrategies(strategies, hypotheses, states, planningMode, { snapshot: model });
 }
 
 export function evaluateStrategies(
@@ -148,8 +121,10 @@ export function evaluateStrategies(
 ): CriticScore[] {
   return strategies.map((strategy) => {
     const branches = simulations.filter((item) => item.strategyId === strategy.id);
-    const expected = branches.reduce((sum, branch) => sum + branch.probability * branch.delayedReward, 0);
-    const risk = branches.reduce((sum, branch) => sum + branch.probability * branch.risk, 0);
+    // Branches only cover the top regimes, so normalize by the covered mass.
+    const mass = branches.reduce((sum, branch) => sum + branch.probability, 0) || 1;
+    const expected = branches.reduce((sum, branch) => sum + branch.probability * branch.delayedReward, 0) / mass;
+    const risk = branches.reduce((sum, branch) => sum + branch.probability * branch.risk, 0) / mass;
     const evidenceUse = clamp(.24 + evidence.length / 18);
     const naturalness = ["mirror", "playful", "give_space"].includes(strategy.family) ? .86
       : strategy.family === "seek_more_context" ? .72 : .78;
@@ -186,8 +161,13 @@ export function assessUncertainty(
   const scoreMargin = clamp((sorted[0]?.score ?? 0) - (sorted[1]?.score ?? 0));
   const conflict = states.filter((item) => item.conflicted).length / Math.max(1, states.length);
   const topBranches = simulations.filter((item) => item.strategyId === sorted[0]?.id);
-  const mean = topBranches.reduce((s, b) => s + b.probability * b.delayedReward, 0);
-  const variance = topBranches.reduce((s, b) => s + b.probability * (b.delayedReward - mean) ** 2, 0);
+  const mass = topBranches.reduce((s, b) => s + b.probability, 0) || 1;
+  const mean = topBranches.reduce((s, b) => s + b.probability * b.delayedReward, 0) / mass;
+  // Law of total variance over the rollout: regime disagreement (between) plus
+  // response stochasticity inside each regime branch (within, from the model).
+  const between = topBranches.reduce((s, b) => s + b.probability * (b.delayedReward - mean) ** 2, 0) / mass;
+  const within = topBranches.reduce((s, b) => s + b.probability * (b.valueVariance ?? 0), 0) / mass;
+  const variance = between + within;
   const coverage = clamp(evidence.reduce((s, item) => s + item.reliability * (item.relevance ?? .4), 0) / 4.5);
   const stateEntropy = entropy(hypotheses);
   const total = clamp(.31 * stateEntropy + .2 * conflict + .19 * Math.min(1, variance * 5)

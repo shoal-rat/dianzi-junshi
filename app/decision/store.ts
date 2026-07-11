@@ -2,8 +2,10 @@ import type { Database } from "bun:sqlite";
 import { decisionDatabase } from "../adaptive";
 import type {
   BeliefState, CriticScore, DecisionEvent, DecisionReport, EvidenceRef, LinkedOutcome,
-  PatternSignal, SimulationBranch, StateHypothesis, StrategyCandidate, StructuredObservation, BeliefDimension,
+  PatternSignal, SimulationBranch, StateHypothesis, StrategyCandidate, StructuredObservation,
+  BeliefDimension, LearnedRegimeFamily, ResponseClass, WorldModelSnapshot,
 } from "./types";
+import { RESPONSE_CLASSES } from "./worldmodel";
 
 let migrated = false;
 
@@ -125,11 +127,20 @@ function migrateDecisionStore(conn: Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_calibration_active_time
       ON calibration_examples(deleted_at, captured_at DESC);
+    CREATE TABLE IF NOT EXISTS world_model_stats (
+      profile_slug TEXT NOT NULL, regime TEXT NOT NULL, strategy_family TEXT NOT NULL,
+      counts_json TEXT NOT NULL, delta_json TEXT NOT NULL, effective REAL NOT NULL,
+      updated_at TEXT NOT NULL, PRIMARY KEY(profile_slug, regime, strategy_family)
+    );
+    CREATE TABLE IF NOT EXISTS world_model_gate (
+      profile_slug TEXT PRIMARY KEY, log_loss_model REAL NOT NULL,
+      log_loss_base REAL NOT NULL, samples REAL NOT NULL, updated_at TEXT NOT NULL
+    );
   `);
-  conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (2, ?)")
-    .run(new Date().toISOString());
-  conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (3, ?)")
-    .run(new Date().toISOString());
+  for (const version of [2, 3, 4]) {
+    conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (?, ?)")
+      .run(version, new Date().toISOString());
+  }
   bootstrapLegacyOutcomes(conn);
 }
 
@@ -481,7 +492,10 @@ export function recordLinkedOutcome(profileSlug: string, input: LinkedOutcome): 
       rationale: observation.rationale,
     }, { observedAt, causationId: id });
     if (strategyFamily) updatePosterior(profileSlug, contextKey(decision), strategyFamily, input.outcome, observedAt);
-    if (decision) updateEvidenceUsefulness(profileSlug, decision.evidence, input.outcome, observedAt);
+    if (decision) {
+      updateEvidenceUsefulness(profileSlug, decision.evidence, input.outcome, observedAt);
+      updateWorldModel(profileSlug, decision, { outcome: input.outcome, strategyId: input.strategyId }, observedAt);
+    }
   })();
   return id;
 }
@@ -565,6 +579,107 @@ export function usefulnessFor(profileSlug: string, evidenceId: string): number {
   const row = db().query(`SELECT useful, harmful FROM evidence_usefulness
     WHERE profile_slug=? AND evidence_id=?`).get(profileSlug, evidenceId) as any;
   return row ? (Number(row.useful) + 1) / (Number(row.useful) + Number(row.harmful) + 2) : 0.5;
+}
+
+// ---------------------------------------------------------------------------
+// World-model learning: decayed response counts, transition residuals and a
+// predictive-log-loss gate that tracks whether the model beats base rates.
+// ---------------------------------------------------------------------------
+
+const WORLD_HALF_LIFE_DAYS = 120;
+const RESPONSE_BASE_RATES: Record<ResponseClass, number> = { positive: .35, neutral: .3, negative: .15, no_reply: .2 };
+/** Residuals are learned only on dimensions a recorded outcome actually observes. */
+const RESIDUAL_DIMENSIONS: BeliefDimension[] = ["engagement", "communication_willingness", "momentum"];
+
+export function loadWorldModel(profileSlug: string): WorldModelSnapshot {
+  const rows = db().query(`SELECT regime, strategy_family, counts_json, delta_json, effective
+    FROM world_model_stats WHERE profile_slug=?`).all(profileSlug) as any[];
+  const entries: Record<string, LearnedRegimeFamily> = {};
+  for (const row of rows) {
+    entries[`${row.regime}:${row.strategy_family}`] = {
+      counts: parseJson(row.counts_json, {}), delta: parseJson(row.delta_json, {}),
+      effective: Number(row.effective),
+    };
+  }
+  const gate = db().query(`SELECT log_loss_model, log_loss_base, samples
+    FROM world_model_gate WHERE profile_slug=?`).get(profileSlug) as any;
+  return {
+    entries,
+    gate: {
+      logLossModel: Number(gate?.log_loss_model ?? 0), logLossBase: Number(gate?.log_loss_base ?? 0),
+      samples: Number(gate?.samples ?? 0),
+    },
+  };
+}
+
+/** The report stores what the model predicted at decision time, so a later real
+ * outcome scores the prediction (log loss vs base rates) and updates the
+ * Dirichlet response counts and mean transition residuals for (regime, family). */
+export function updateWorldModel(
+  profileSlug: string, report: DecisionReport,
+  outcome: { outcome: ResponseClass; strategyId?: string }, observedAt: string,
+): void {
+  const family = report.strategies.find((s) => s.id === outcome.strategyId)?.family
+    ?? report.selectedStrategy.family;
+  const regime = report.hypotheses[0]?.id ?? "unknown";
+  const branches = report.simulations.filter((b) =>
+    b.strategyId === (outcome.strategyId ?? report.selectedStrategy.id) && b.responseDistribution);
+  const mass = branches.reduce((sum, b) => sum + b.probability, 0);
+  const predicted = Object.fromEntries(RESPONSE_CLASSES.map((cls) => [
+    cls,
+    mass ? branches.reduce((sum, b) => sum + b.probability * (b.responseDistribution![cls] ?? 0), 0) / mass
+      : RESPONSE_BASE_RATES[cls],
+  ])) as Record<ResponseClass, number>;
+
+  const conn = db();
+  const row = conn.query(`SELECT counts_json, delta_json, effective, updated_at FROM world_model_stats
+    WHERE profile_slug=? AND regime=? AND strategy_family=?`).get(profileSlug, regime, family) as any;
+  const ageDays = row ? Math.max(0, (Date.parse(observedAt) - Date.parse(row.updated_at)) / 86_400_000) : 0;
+  const decay = Math.pow(.5, ageDays / WORLD_HALF_LIFE_DAYS);
+  const counts = parseJson<Partial<Record<ResponseClass, number>>>(row?.counts_json, {});
+  for (const cls of RESPONSE_CLASSES) counts[cls] = (counts[cls] ?? 0) * decay;
+  counts[outcome.outcome] = (counts[outcome.outcome] ?? 0) + 1;
+  const effective = (row ? Number(row.effective) * decay : 0) + 1;
+
+  // Residual target: what the outcome observations say the state moved to,
+  // minus what the transition model predicted. Decayed running mean per dim.
+  const delta = parseJson<Partial<Record<BeliefDimension, number>>>(row?.delta_json, {});
+  const dominantBranch = branches.sort((a, b) => b.probability - a.probability)[0];
+  if (dominantBranch?.predictedState) {
+    const observedValue: Partial<Record<BeliefDimension, number>> = {
+      engagement: { positive: .72, neutral: .08, negative: -.62, no_reply: -.72 }[outcome.outcome],
+      communication_willingness: outcome.outcome === "no_reply" ? -.8 : .35,
+      momentum: { positive: .58, neutral: .06, negative: -.5, no_reply: -.58 }[outcome.outcome],
+    };
+    const step = 1 / Math.min(24, effective + 1);
+    for (const dimension of RESIDUAL_DIMENSIONS) {
+      const residual = Number(observedValue[dimension]) - Number(dominantBranch.predictedState[dimension] ?? 0);
+      const previous = Number(delta[dimension] ?? 0);
+      delta[dimension] = Math.max(-.5, Math.min(.5, previous + step * (residual - previous)));
+    }
+  }
+
+  conn.query(`INSERT INTO world_model_stats(
+    profile_slug, regime, strategy_family, counts_json, delta_json, effective, updated_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(profile_slug, regime, strategy_family) DO UPDATE SET
+    counts_json=excluded.counts_json, delta_json=excluded.delta_json,
+    effective=excluded.effective, updated_at=excluded.updated_at`).run(
+      profileSlug, regime, family, JSON.stringify(counts), JSON.stringify(delta), effective, observedAt,
+    );
+
+  const gate = conn.query(`SELECT log_loss_model, log_loss_base, samples FROM world_model_gate
+    WHERE profile_slug=?`).get(profileSlug) as any;
+  const gateDecay = Math.pow(.5, ageDays / WORLD_HALF_LIFE_DAYS);
+  conn.query(`INSERT INTO world_model_gate(profile_slug, log_loss_model, log_loss_base, samples, updated_at)
+    VALUES (?, ?, ?, ?, ?) ON CONFLICT(profile_slug) DO UPDATE SET
+    log_loss_model=excluded.log_loss_model, log_loss_base=excluded.log_loss_base,
+    samples=excluded.samples, updated_at=excluded.updated_at`).run(
+      profileSlug,
+      Number(gate?.log_loss_model ?? 0) * gateDecay - Math.log(Math.max(.02, predicted[outcome.outcome])),
+      Number(gate?.log_loss_base ?? 0) * gateDecay - Math.log(RESPONSE_BASE_RATES[outcome.outcome]),
+      Number(gate?.samples ?? 0) * gateDecay + 1, observedAt,
+    );
 }
 
 export function readDecisionCache<T>(key: string): T | null {
@@ -782,6 +897,8 @@ export function rebuildDerivedState(profileSlug: string): { events: number; outc
     conn.query("DELETE FROM strategy_posteriors WHERE profile_slug=?").run(profileSlug);
     conn.query("DELETE FROM evidence_usefulness WHERE profile_slug=?").run(profileSlug);
     conn.query("DELETE FROM structured_observations WHERE profile_slug=?").run(profileSlug);
+    conn.query("DELETE FROM world_model_stats WHERE profile_slug=?").run(profileSlug);
+    conn.query("DELETE FROM world_model_gate WHERE profile_slug=?").run(profileSlug);
     const observations = events.filter((event) => event.type === "observation.extracted").map((event) => ({
       id: String(event.payload.observationId), profileSlug, sourceId: String(event.payload.sourceId),
       dimension: String(event.payload.dimension) as BeliefDimension, value: Number(event.payload.value),
@@ -795,7 +912,10 @@ export function rebuildDerivedState(profileSlug: string): { events: number; outc
       const report = row.decision_id ? getDecisionReport(profileSlug, row.decision_id) : null;
       const family = report?.strategies.find((s) => s.id === row.strategy_id)?.family ?? report?.selectedStrategy.family;
       if (family) updatePosterior(profileSlug, contextKey(report), family, row.outcome, row.observed_at);
-      if (report) updateEvidenceUsefulness(profileSlug, report.evidence, row.outcome, row.observed_at);
+      if (report) {
+        updateEvidenceUsefulness(profileSlug, report.evidence, row.outcome, row.observed_at);
+        updateWorldModel(profileSlug, report, { outcome: row.outcome, strategyId: row.strategy_id ?? undefined }, row.observed_at);
+      }
     }
   })();
   return { events: events.length, outcomes: outcomeCount, observations: Number(legacyObservations?.count ?? 0) + readObservations(profileSlug).length };
@@ -804,11 +924,19 @@ export function rebuildDerivedState(profileSlug: string): { events: number; outc
 export function decisionDiagnostics(profileSlug: string): Record<string, unknown> {
   const conn = db();
   const count = (table: string) => Number((conn.query(`SELECT COUNT(*) AS count FROM ${table} WHERE profile_slug=?`).get(profileSlug) as any)?.count ?? 0);
+  const world = loadWorldModel(profileSlug);
   return {
     schemaVersion: Number((conn.query("SELECT MAX(version) AS version FROM schema_migrations").get() as any)?.version ?? 0),
     counts: {
       events: count("decision_events"), observations: count("structured_observations"),
       facts: count("temporal_facts"), decisions: count("decision_runs"), outcomes: count("outcome_events"),
+    },
+    worldModel: {
+      learnedContexts: Object.keys(world.entries).length,
+      samples: world.gate.samples,
+      meanLogLossModel: world.gate.samples ? world.gate.logLossModel / world.gate.samples : null,
+      meanLogLossBase: world.gate.samples ? world.gate.logLossBase / world.gate.samples : null,
+      advantage: world.gate.samples ? (world.gate.logLossBase - world.gate.logLossModel) / world.gate.samples : null,
     },
     recent: listDecisionReports(profileSlug, 5).map((report) => ({
       id: report.id, createdAt: report.createdAt, mode: report.planningMode,
