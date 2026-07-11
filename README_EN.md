@@ -10,7 +10,7 @@ A local-first desktop assistant for understanding Chinese dating chats and draft
 
 </div>
 
-![The desktop app with conversation history, copyable replies, and visible context](assets/app-home-v3.png)
+![The desktop app: profiles, copyable replies, thinking-depth and boldness sliders, and the insight panel](assets/app-home-v6.png)
 
 ## Download
 
@@ -61,7 +61,7 @@ bun install
 bun run build
 ```
 
-Pushing a `v*` tag runs the cross-platform release workflow and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v5.2.0 notes](docs/releases/v5.2.0.md).
+The cross-platform release workflow is dispatched manually from GitHub Actions at a chosen tag and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v5.2.0 notes](docs/releases/v5.2.0.md).
 
 Version 5 added an event-sourced decision pipeline with temporal beliefs, competing hypotheses, decision-oriented retrieval, independent critics, uncertainty-aware abstention, linked outcome learning, replay, and offline evaluation. Version 5.1 replaced the static simulation table with a learned generative world model: regime-switching linear-Gaussian latent dynamics, a calibrated response head (structural softmax shrunk against decayed Dirichlet–multinomial outcome counts), diagonal-Kalman belief updates on imagined responses, finite-horizon belief-space rollouts, an exactly-computed expected value of information for clarifying questions, and online learning gated by predictive log-loss against base rates. Evidence retrieval is hybrid (Okapi BM25 ⊕ feature-hashed embeddings ⊕ Reciprocal Rank Fusion), and structured LLM calls use API-level constrained decoding with prompt-repair only as a fallback.
 

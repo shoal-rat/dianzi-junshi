@@ -258,7 +258,21 @@ async function selectPartner(slug) {
   await loadMessages(slug);
   void loadAdaptiveProfile(slug);
   void loadDecisionInsights(slug);
+  void loadLatestDecision(slug);
   void restoreMaterialProgress(slug);
+}
+
+/** The decision panel (and its network graph) survives reloads: bring back the
+ * most recent report for this profile. `#thinking` deep-links straight to it. */
+async function loadLatestDecision(slug) {
+  try {
+    const data = await api(`/api/partners/${encodeURIComponent(slug)}/decisions/latest`);
+    const report = data.report ?? data;
+    if (!report?.selectedStrategy || state.slug !== slug) return;
+    state.currentDecision = state.currentDecision ?? report;
+    renderDecisionPanel(report);
+    if (window.location.hash.includes("thinking")) openThinking();
+  } catch { /* no decision yet */ }
 }
 
 async function loadAdaptiveProfile(slug) {
