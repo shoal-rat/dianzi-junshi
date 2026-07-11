@@ -15,7 +15,8 @@ const CONFIG_PATH = join(DJ_HOME, "config.json");
 
 export interface Settings {
   provider: ProviderConfig["provider"];
-  providers: Record<string, { apiKey?: string; model?: string; baseUrl?: string }>;
+  providers: Record<string, { apiKey?: string; hasKey?: boolean; removeApiKey?: boolean; model?: string; baseUrl?: string }>;
+  calibrationConsent?: { enabled: boolean; version: string; enabledAt?: string };
 }
 
 export interface PartnerMeta {
@@ -74,6 +75,17 @@ const DEFAULT_SETTINGS: Settings = {
   },
 };
 
+const runtimeProviderSecrets = new Map<string, string>();
+
+export function setRuntimeProviderSecret(provider: string, secret?: string): void {
+  if (secret) runtimeProviderSecrets.set(provider, secret);
+  else runtimeProviderSecrets.delete(provider);
+}
+
+export function runtimeProviderSecret(provider: string): string | undefined {
+  return runtimeProviderSecrets.get(provider);
+}
+
 export function readSettings(): Settings {
   ensureDirs();
   if (!existsSync(CONFIG_PATH)) return structuredClone(DEFAULT_SETTINGS);
@@ -92,18 +104,25 @@ export function writeSettings(patch: Partial<Settings>): Settings {
   if (patch.provider && !allowedProviders.includes(patch.provider)) throw new Error("不支持这个 AI 连接");
   const next: Settings = {
     provider: patch.provider ?? cur.provider,
-    providers: { ...cur.providers },
+    providers: Object.fromEntries(Object.entries(cur.providers).map(([key, value]) => {
+      const { apiKey, removeApiKey, ...safe } = value;
+      if (apiKey && !/^•+/.test(apiKey)) setRuntimeProviderSecret(key, apiKey);
+      return [key, { ...safe, hasKey: safe.hasKey || Boolean(apiKey) }];
+    })),
+    calibrationConsent: patch.calibrationConsent ?? cur.calibrationConsent,
   };
   if (patch.providers) {
     for (const [k, v] of Object.entries(patch.providers)) {
       if (!allowedProviders.includes(k as ProviderConfig["provider"]) || !v || typeof v !== "object") continue;
       const prev = next.providers[k] ?? {};
       const apiKey = typeof v.apiKey === "string" ? v.apiKey : undefined;
+      if (v.removeApiKey) setRuntimeProviderSecret(k);
+      else if (apiKey && !/^•+/.test(apiKey)) setRuntimeProviderSecret(k, apiKey);
       next.providers[k] = {
         ...prev,
-        ...v,
-        // 前端传回掩码 key（•••）时保留原 key
-        apiKey: apiKey && !/^•+/.test(apiKey) ? apiKey : prev.apiKey,
+        model: v.model ?? prev.model,
+        baseUrl: v.baseUrl ?? prev.baseUrl,
+        hasKey: v.removeApiKey ? false : apiKey && !/^•+/.test(apiKey) ? true : prev.hasKey,
       };
     }
   }
@@ -115,7 +134,7 @@ export function maskedSettings(): Settings {
   const s = readSettings();
   const masked = structuredClone(s);
   for (const v of Object.values(masked.providers)) {
-    if (v.apiKey) v.apiKey = "•".repeat(8) + v.apiKey.slice(-4);
+    if (v.hasKey) v.apiKey = "•".repeat(12);
   }
   return masked;
 }
@@ -123,7 +142,7 @@ export function maskedSettings(): Settings {
 export function activeProviderConfig(): ProviderConfig {
   const s = readSettings();
   const p = s.providers[s.provider] ?? {};
-  return { provider: s.provider, apiKey: p.apiKey, model: p.model, baseUrl: p.baseUrl };
+  return { provider: s.provider, apiKey: runtimeProviderSecret(s.provider), model: p.model, baseUrl: p.baseUrl };
 }
 
 // ---------------------------------------------------------------------------

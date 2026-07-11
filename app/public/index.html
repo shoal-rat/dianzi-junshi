@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>电子军师 · 先读懂，再回复</title>
-  <link rel="stylesheet" href="/style.css?v=4.0.0">
+<title>电子军师 · 先想清楚，再帮你回</title>
+  <link rel="stylesheet" href="/style.css?v=5.0.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='9' fill='%23177766'/%3E%3Cpath d='M9 16l4.5 4.5L23 10.5' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -41,6 +41,14 @@
         <div id="chat-sub" class="chat-sub">先告诉我你在和谁聊</div>
       </div>
       <div class="chat-actions">
+        <label class="compact-field" title="平衡适合大多数情况；深入会比较更多可能性">
+          <span>思考深度</span>
+          <select id="planning-mode" class="select">
+            <option value="fast">快速</option>
+            <option value="balanced" selected>平衡</option>
+            <option value="deep">深入</option>
+          </select>
+        </label>
         <label class="compact-field">
           <span>关系进度</span>
           <select id="stage-select" class="select" title="关系进度" disabled></select>
@@ -127,6 +135,19 @@
       <h4>ta 最近有没有变化</h4>
       <div id="panel-adaptive" class="panel-meta muted">发出建议后，点「记录后来结果」。有了真实反馈，军师才会逐渐分清短期变化和长期习惯。</div>
     </section>
+    <section class="panel-sec">
+      <h4>哪些方法更适合</h4>
+      <div id="panel-performance" class="panel-meta muted">记录几次真实结果后，这里会显示每类建议的历史表现和最近趋势。</div>
+    </section>
+    <section class="panel-sec">
+      <h4>发现的互动模式</h4>
+      <div id="panel-patterns" class="panel-meta muted">模式需要多个结果支持，也可以由你暂停、恢复或标记为不适用。</div>
+    </section>
+    <details class="panel-sec decision-details">
+      <summary>查看完整思考过程</summary>
+      <p class="muted">这里显示本地决策引擎比较过的证据、可能解释和方案。它不会把猜测伪装成事实。</p>
+      <div id="panel-decision" class="panel-meta muted">发来内容后，可以在这里核对这次为什么这样建议。</div>
+    </details>
     <section class="panel-sec soft-panel">
       <h4>你的资料怎么处理</h4>
       <div class="panel-meta">
@@ -203,6 +224,17 @@
     <div id="local-provider-note" class="connection-note">正在检查这台电脑…</div>
     <div id="provider-cards" class="provider-cards"></div>
     <div id="provider-fields" class="provider-fields"></div>
+    <section class="calibration-card">
+      <label class="check">
+        <input id="calibration-consent" type="checkbox">
+        <span><b>帮忙校准本机决策引擎</b><small>只从以后记录的结果中保存去标识化数字特征。不会保存姓名、档案、聊天原文、回复文案或对方回复，也不会自动上传。</small></span>
+      </label>
+      <div id="calibration-status" class="muted">尚未加入本机校准样本。</div>
+      <div class="calibration-actions">
+        <button id="calibration-export" type="button" class="mini-btn">导出去标识化数据</button>
+        <button id="calibration-delete" type="button" class="mini-btn">删除本机校准数据</button>
+      </div>
+    </section>
     <div id="settings-error" class="form-error" role="alert" hidden></div>
     <div class="dlg-actions">
       <button id="settings-cancel" type="button" class="btn">取消</button>
@@ -269,6 +301,6 @@
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <button id="drawer-backdrop" class="drawer-backdrop" type="button" aria-label="关闭侧边页面" hidden></button>
 
-<script type="module" src="/app.js?v=4.0.0"></script>
+<script type="module" src="/app.js?v=5.0.0"></script>
 </body>
 </html>

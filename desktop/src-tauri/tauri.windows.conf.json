@@ -1,3 +1,10 @@
 {
-  "productName": "Dianzi Junshi"
+  "productName": "Dianzi Junshi",
+  "bundle": {
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com",
+      "signCommand": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sign-windows.ps1 %1"
+    }
+  }
 }

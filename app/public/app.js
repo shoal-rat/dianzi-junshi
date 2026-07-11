@@ -9,6 +9,7 @@ const state = {
   partners: [],
   slug: null,
   mode: "reply",
+  planningMode: localStorage.getItem("dj-planning-mode") || "balanced",
   settings: null,
   presets: null,
   attachments: [], // {mediaType, dataBase64, previewUrl}
@@ -18,6 +19,8 @@ const state = {
   materialPollTimer: null,
   materialProgressDismissed: false,
   selectedReply: "",
+  selectedDecision: null,
+  currentDecision: null,
   adaptiveProfile: null,
   sending: false,
 };
@@ -140,9 +143,14 @@ function renderReplyBlock(text, lintResult, idx) {
   };
   tools.appendChild(copyBtn);
   const feedbackBtn = el(`<button class="mini-btn feedback-btn">记录后来结果</button>`);
-  feedbackBtn.onclick = () => openFeedback(block.dataset.text || text);
+  feedbackBtn.onclick = () => openFeedback(block.dataset.text || text, block);
   tools.appendChild(feedbackBtn);
   block.dataset.text = text;
+  if (state.currentDecision) {
+    block.dataset.decisionId = state.currentDecision.id;
+    block.dataset.strategyId = state.currentDecision.selectedStrategy?.id || "";
+    block.dataset.replyId = state.currentDecision.replyId || "";
+  }
   block.appendChild(tools);
   if (lintResult) applyLint(block, lintResult);
   return block;
@@ -239,6 +247,7 @@ async function selectPartner(slug) {
   closeDrawers();
   await loadMessages(slug);
   void loadAdaptiveProfile(slug);
+  void loadDecisionInsights(slug);
   void restoreMaterialProgress(slug);
 }
 
@@ -272,9 +281,67 @@ async function loadAdaptiveProfile(slug) {
   }
 }
 
-function openFeedback(replyText) {
+const STRATEGY_NAMES = { mirror: "顺着节奏", warm: "先接住感受", playful: "轻松接梗", direct: "直接说清楚",
+  invite: "轻量邀约", clarify: "问一个关键问题", give_space: "留一点空间", boundary: "说明边界", seek_more_context: "先补信息", unknown: "未关联旧记录" };
+
+async function loadDecisionInsights(slug) {
+  const performanceWrap = $("#panel-performance");
+  const patternWrap = $("#panel-patterns");
+  try {
+    const [performance, patterns, graph] = await Promise.all([
+      api(`/api/partners/${encodeURIComponent(slug)}/strategy-performance`),
+      api(`/api/partners/${encodeURIComponent(slug)}/patterns`),
+      api(`/api/partners/${encodeURIComponent(slug)}/evidence-graph`),
+    ]);
+    performanceWrap.innerHTML = "";
+    if (!performance.totalOutcomes) {
+      performanceWrap.classList.add("muted");
+      performanceWrap.textContent = "还没有真实结果。发出建议后点「记录后来结果」，这里才会开始学习。";
+    } else {
+      performanceWrap.classList.remove("muted");
+      performanceWrap.appendChild(el(`<p>已关联 ${performance.totalOutcomes} 次真实结果。样本少时只显示趋势，不下定论。</p>`));
+      for (const item of performance.strategies.slice(0, 7)) {
+        const trend = item.trend === null ? "样本还少" : item.trend > .08 ? "最近更顺" : item.trend < -.08 ? "最近变弱" : "最近稳定";
+        performanceWrap.appendChild(el(`<div class="performance-row"><div><b>${esc(STRATEGY_NAMES[item.family] || item.family)}</b><span>${item.samples} 次 · ${trend}</span></div><i>${Math.round(item.score * 100)}</i><em style="--score:${Math.round(item.score * 100)}%"></em></div>`));
+      }
+    }
+    patternWrap.innerHTML = "";
+    const visiblePatterns = patterns.filter((item) => item.lifecycle !== "rejected");
+    if (!visiblePatterns.length) {
+      patternWrap.classList.add("muted");
+      patternWrap.textContent = `还没有达到展示门槛的模式。证据图已保存 ${graph.nodes.length} 个节点、${graph.edges.length} 条关系。`;
+    } else {
+      patternWrap.classList.remove("muted");
+      patternWrap.appendChild(el(`<p>证据图：${graph.nodes.length} 个节点 · ${graph.edges.length} 条可追溯关系</p>`));
+      for (const item of visiblePatterns.slice(0, 6)) {
+        const row = el(`<div class="pattern-row"><div><b>${esc(item.label)}</b><small>${item.support} 次支持 · ${item.counterexamples} 个反例 · 置信度 ${Math.round(item.confidence * 100)}%</small></div><select class="select" aria-label="${esc(item.label)}的使用状态"><option value="active">用于规划</option><option value="watch">继续观察</option><option value="candidate">样本不足</option><option value="retired">暂停使用</option><option value="rejected">不适用</option></select></div>`);
+        const select = row.querySelector("select");
+        select.value = item.lifecycle || "candidate";
+        select.onchange = async () => {
+          select.disabled = true;
+          try {
+            await api(`/api/partners/${encodeURIComponent(slug)}/patterns/${encodeURIComponent(item.id)}/lifecycle`, { method: "POST", body: { lifecycle: select.value } });
+            toast("这个模式的使用状态已更新");
+          } catch (error) { toast(friendlyError(error)); select.value = item.lifecycle || "candidate"; }
+          finally { select.disabled = false; }
+        };
+        patternWrap.appendChild(row);
+      }
+    }
+  } catch {
+    performanceWrap.textContent = "暂时读不到策略历史，不影响继续使用。";
+    patternWrap.textContent = "暂时读不到模式记录，不影响继续使用。";
+  }
+}
+
+function openFeedback(replyText, block = null) {
   if (!state.slug) return;
   state.selectedReply = replyText;
+  state.selectedDecision = block ? {
+    decisionId: block.dataset.decisionId || undefined,
+    strategyId: block.dataset.strategyId || undefined,
+    replyId: block.dataset.replyId || undefined,
+  } : null;
   $("#feedback-reply").textContent = replyText;
   $("#feedback-response").value = "";
   $("#feedback-delay").value = "6";
@@ -284,6 +351,7 @@ function openFeedback(replyText) {
 }
 
 async function loadMessages(slug) {
+  state.currentDecision = null;
   const msgs = await api(`/api/partners/${encodeURIComponent(slug)}/messages`);
   const wrap = $("#messages");
   wrap.innerHTML = "";
@@ -415,6 +483,7 @@ async function send() {
       body: JSON.stringify({
         slug: state.slug,
         mode: state.mode,
+        planningMode: state.planningMode,
         text,
         images: sentAttachments.map((a) => ({ name: a.name, mediaType: a.mediaType, dataBase64: a.dataBase64 })),
       }),
@@ -440,10 +509,17 @@ async function send() {
         if (line.startsWith("event:")) event = line.slice(6).trim();
         else if (line.startsWith("data:")) {
           const data = JSON.parse(line.slice(5));
-          if (event === "meta") renderPanelMeta(data);
+          if (event === "meta") {
+            state.currentDecision = data.decision || null;
+            renderPanelMeta(data);
+            renderDecisionPanel(data.decision);
+          }
           else if (event === "delta") { raw += data.text; scheduleRender(); }
           else if (event === "lint") { lintBlocks = data.blocks; renderPanelLint(data.blocks); scheduleRender(); }
-          else if (event === "done") completed = true;
+          else if (event === "done") {
+            completed = true;
+            state.currentDecision = state.currentDecision || data;
+          }
           else if (event === "error") throw new Error(data.message);
         }
       }
@@ -502,6 +578,52 @@ function renderPanelLint(blocks) {
     const label = b.result === "PASS" ? (b.warnCount ? `${b.warnCount} 个小提醒` : "读起来比较自然") : `${b.failCount} 处建议先改`;
     wrap.appendChild(el(`<p>第 ${i + 1} 个说法：<span class="chip ${cls}">${label}</span></p>`));
   });
+}
+
+function renderDecisionPanel(report) {
+  const wrap = $("#panel-decision");
+  wrap.innerHTML = "";
+  if (!report) { wrap.textContent = "这次没有可显示的决策记录。"; return; }
+  wrap.classList.remove("muted");
+  const uncertainty = Math.round((report.uncertainty?.total || 0) * 100);
+  const modeLabel = ({ fast: "快速", balanced: "平衡", deep: "深入" })[report.planningMode] || report.planningMode;
+  wrap.appendChild(el(`<div class="decision-callout"><b>最后选择：${esc(report.selectedStrategy.label)}</b><span>不确定性 ${uncertainty}% · ${esc(modeLabel)}</span><p>${esc(report.selectionReason)}</p></div>`));
+
+  const beliefs = report.beliefs.filter((item) => item.confidence >= .18 || item.changing).sort((a, b) => b.confidence - a.confidence).slice(0, 6);
+  if (beliefs.length) {
+    wrap.appendChild(el(`<h5>当前状态（带置信度）</h5>`));
+    for (const item of beliefs) {
+      const row = el(`<div class="belief-row"><span>${esc(beliefLabel(item.dimension))}${item.changing ? " · 近期变化" : ""}</span><i>${Math.round(item.confidence * 100)}%</i><b style="--value:${Math.round((item.mean + 1) * 50)}%"></b></div>`);
+      wrap.appendChild(row);
+    }
+  }
+  wrap.appendChild(el(`<h5>仍在比较的解释</h5>`));
+  for (const item of report.hypotheses.slice(0, 4)) {
+    wrap.appendChild(el(`<p><b>${Math.round(item.probability * 100)}% · ${esc(item.label)}</b><br><span class="muted">${esc(item.explanation)}</span></p>`));
+  }
+  if (report.patterns?.length) {
+    wrap.appendChild(el(`<h5>从真实结果里发现的模式</h5>`));
+    for (const item of report.patterns.slice(0, 3)) wrap.appendChild(el(`<p>${item.validated ? "✓" : "样本少"} · ${esc(item.label)}（${item.support} 支持 / ${item.counterexamples} 反例）</p>`));
+  }
+  wrap.appendChild(el(`<h5>比较过的方案</h5>`));
+  for (const item of [...report.strategies].sort((a, b) => b.score - a.score).slice(0, 6)) {
+    const selected = item.id === report.selectedStrategy.id;
+    wrap.appendChild(el(`<div class="strategy-row ${selected ? "selected" : ""}"><b>${selected ? "✓ " : ""}${esc(item.label)}</b><span>${Math.round(item.score * 100)} 分</span><small>${esc(item.risk)}</small></div>`));
+  }
+  const evidence = report.evidence?.slice(0, 6) || [];
+  if (evidence.length) {
+    wrap.appendChild(el(`<h5>本轮采用的证据</h5>`));
+    const list = el("<ul class=\"evidence-list\"></ul>");
+    for (const item of evidence) list.appendChild(el(`<li>${esc(item.text)} <small>${Math.round(item.reliability * 100)}% 可靠</small></li>`));
+    wrap.appendChild(list);
+  }
+  wrap.appendChild(el(`<p class="decision-metrics">本地规划 ${Math.round(report.metrics.durationMs)}ms · 检索 ${report.metrics.evidenceSelected}/${report.metrics.evidenceScanned} 条证据 · 模拟 ${report.metrics.simulationCount} 个分支</p>`));
+}
+
+function beliefLabel(key) {
+  return ({ engagement: "互动投入", trust: "信任", communication_willingness: "沟通意愿",
+    emotional_pressure: "情绪压力", boundary_sensitivity: "边界敏感", commitment_reliability: "承诺可靠",
+    momentum: "互动势头", initiative: "主动程度", consistency: "一致性" })[key] || key;
 }
 
 // ---------------------------------------------------------------------------
@@ -780,6 +902,11 @@ async function openSettings() {
   state.localStatus = local;
   renderLocalStatus();
   renderProviderCards(data.provider);
+  $("#calibration-consent").checked = Boolean(data.calibrationConsent?.enabled);
+  const samples = data.calibration?.samples || 0;
+  $("#calibration-status").textContent = samples
+    ? `本机已有 ${samples} 条去标识化样本${data.calibration.brierScore === null ? "" : ` · 校准误差 ${data.calibration.calibrationError.toFixed(3)}`}`
+    : "尚未加入本机校准样本。开启后也只记录未来的新反馈。";
   $("#dlg-settings").showModal();
 }
 
@@ -792,7 +919,9 @@ function renderLocalStatus() {
     if (!s.authenticated) return `${label} 已安装、还没登录`;
     return `${label} 已登录`;
   });
-  note.textContent = `这台电脑：${labels.join(" · ")}`;
+  const keychain = state.settings?.keychain;
+  const credentialNote = keychain?.available ? "API Key 使用系统凭据库" : "当前模式只在本次运行中保留 API Key";
+  note.textContent = `这台电脑：${labels.join(" · ")} · ${credentialNote}`;
 }
 
 function renderProviderCards(activeKey) {
@@ -850,9 +979,10 @@ function renderProviderFields(key) {
   }
   const modelOptions = preset.models.map((m) => `<option value="${esc(m)}" ${saved.model === m ? "selected" : ""}>${esc(m)}</option>`).join("");
   wrap.innerHTML = `
-    <p class="muted">这是给熟悉 API 的用户准备的高级连接。Key 只保存在本机配置里。</p>
+    <p class="muted">这是给熟悉 API 的用户准备的高级连接。Key 保存在操作系统的安全凭据库，不写入聊天配置文件。</p>
     <label class="field"><span>API Key${preset.keyUrl ? ` · <a href="${preset.keyUrl}" target="_blank" rel="noopener">去服务商后台获取</a>` : ""}</span>
-      <input id="sf-key" type="password" placeholder="sk-…" value="${esc(saved.apiKey ?? "")}"></label>
+      <input id="sf-key" type="password" placeholder="${saved.hasKey ? "已安全保存；留空表示不更改" : "sk-…"}" value=""></label>
+    ${saved.hasKey ? `<label class="check remove-key"><input id="sf-remove-key" type="checkbox"><span>从系统凭据库删除这个 Key</span></label>` : ""}
     <label class="field"><span>模型</span>
       ${preset.models.length
         ? `<select id="sf-model" class="select" style="width:100%">${modelOptions}</select>`
@@ -874,10 +1004,12 @@ async function saveSettings() {
   } else if (key !== "demo") {
     patch.providers[key] = {
       apiKey: $("#sf-key")?.value?.trim() || undefined,
+      removeApiKey: Boolean($("#sf-remove-key")?.checked),
       model: $("#sf-model")?.value?.trim() || undefined,
       baseUrl: $("#sf-base")?.value?.trim() || undefined,
     };
   }
+  patch.calibrationConsent = { enabled: $("#calibration-consent").checked };
   await api("/api/settings", { method: "POST", body: patch });
   await refreshProviderPill();
 }
@@ -950,6 +1082,12 @@ function bind() {
   // 阶段下拉
   const stageSel = $("#stage-select");
   const npStage = $("#np-stage");
+  const planningSelect = $("#planning-mode");
+  planningSelect.value = ["fast", "balanced", "deep"].includes(state.planningMode) ? state.planningMode : "balanced";
+  planningSelect.onchange = () => {
+    state.planningMode = planningSelect.value;
+    localStorage.setItem("dj-planning-mode", state.planningMode);
+  };
   STAGES.forEach((name, i) => {
     stageSel.appendChild(el(`<option value="${i}">${STAGE_OPTIONS[i]}</option>`));
     npStage.appendChild(el(`<option value="${i}" ${i === 1 ? "selected" : ""}>${STAGE_OPTIONS[i]}</option>`));
@@ -1047,6 +1185,15 @@ function bind() {
   $("#btn-settings").onclick = () => openSettings().catch((e) => toast(friendlyError(e)));
   $("#settings-close").onclick = () => $("#dlg-settings").close();
   $("#settings-cancel").onclick = () => $("#dlg-settings").close();
+  $("#calibration-export").onclick = () => { window.location.href = "/api/calibration/export"; };
+  $("#calibration-delete").onclick = async () => {
+    if (!window.confirm("删除所有本机去标识化校准样本？聊天档案和结果记录不会删除。")) return;
+    try {
+      const result = await api("/api/calibration/delete", { method: "POST", body: {} });
+      $("#calibration-status").textContent = `已删除 ${result.deleted} 条校准样本。`;
+      toast("本机校准数据已删除");
+    } catch (error) { toast(friendlyError(error)); }
+  };
   $("#dlg-settings form").onsubmit = async (e) => {
     e.preventDefault();
     const btn = $("#settings-save");
@@ -1081,6 +1228,7 @@ function bind() {
       await api(`/api/partners/${encodeURIComponent(state.slug)}/feedback`, {
         method: "POST",
         body: {
+          ...(state.selectedDecision || {}),
           replyText: state.selectedReply,
           partnerResponse: $("#feedback-response").value,
           outcome,
@@ -1098,6 +1246,7 @@ function bind() {
       $("#dlg-feedback").close();
       toast("记下了。它会和以后几次结果一起慢慢校准，不会因为一次反馈就定性。");
       await loadAdaptiveProfile(state.slug);
+      await loadDecisionInsights(state.slug);
       await loadMessages(state.slug);
     } catch (error) {
       showFormError("#feedback-error", friendlyError(error));

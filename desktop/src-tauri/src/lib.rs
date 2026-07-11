@@ -1,4 +1,5 @@
 use std::{
+    io::{self, Read},
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     sync::Mutex,
     thread,
@@ -8,6 +9,45 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_shell::{process::CommandChild, ShellExt};
 
 struct BackendProcess(Mutex<Option<CommandChild>>);
+
+const KEYCHAIN_SERVICE: &str = "com.shoalrat.dianzi-junshi";
+
+pub fn run_keychain_cli() -> Option<i32> {
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) != Some("--keychain") { return None; }
+    let action = args.get(2).map(String::as_str).unwrap_or("");
+    let provider = args.get(3).map(String::as_str).unwrap_or("");
+    if !["claude", "deepseek", "glm", "custom", "integration-test"].contains(&provider) {
+        eprintln!("unsupported provider");
+        return Some(2);
+    }
+    let entry = match keyring::Entry::new(KEYCHAIN_SERVICE, &format!("{provider}-api-key")) {
+        Ok(entry) => entry,
+        Err(error) => { eprintln!("{error}"); return Some(3); }
+    };
+    match action {
+        "get" => match entry.get_password() {
+            Ok(secret) => { print!("{secret}"); Some(0) }
+            Err(keyring::Error::NoEntry) => Some(4),
+            Err(error) => { eprintln!("{error}"); Some(5) }
+        },
+        "set" => {
+            let mut secret = String::new();
+            if let Err(error) = io::stdin().take(32 * 1024).read_to_string(&mut secret) {
+                eprintln!("{error}"); return Some(6);
+            }
+            if secret.trim().is_empty() { eprintln!("empty secret"); return Some(7); }
+            match entry.set_password(secret.trim()) {
+                Ok(()) => Some(0), Err(error) => { eprintln!("{error}"); Some(8) }
+            }
+        }
+        "delete" => match entry.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => Some(0),
+            Err(error) => { eprintln!("{error}"); Some(9) }
+        },
+        _ => { eprintln!("unsupported action"); Some(2) }
+    }
+}
 
 fn free_local_port() -> u16 {
     TcpListener::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0))
@@ -50,7 +90,8 @@ pub fn run() {
                 .shell()
                 .sidecar("dianzi-junshi-server")?
                 .env("HOST", "127.0.0.1")
-                .env("PORT", port.to_string());
+                .env("PORT", port.to_string())
+                .env("DJ_KEYCHAIN_HELPER", std::env::current_exe()?.to_string_lossy().to_string());
             #[cfg(not(target_os = "macos"))]
             let sidecar = {
                 let mut configured = sidecar;

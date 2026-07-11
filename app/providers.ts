@@ -102,6 +102,26 @@ export function supportsVision(cfg: ProviderConfig): boolean {
   return false;
 }
 
+export interface ProviderCapabilities {
+  vision: boolean;
+  structuredOutput: boolean;
+  streaming: boolean;
+  local: boolean;
+  parallelRoles: boolean;
+  maxRecommendedDecisionCalls: number;
+}
+
+/** Capability detection lets every advanced role degrade to a deterministic
+ * local evaluator instead of failing when a provider lacks a feature. */
+export function providerCapabilities(cfg: ProviderConfig): ProviderCapabilities {
+  const local = cfg.provider === "codex" || cfg.provider === "claude-code" || cfg.provider === "demo";
+  return {
+    vision: supportsVision(cfg), structuredOutput: cfg.provider !== "demo", streaming: true,
+    local, parallelRoles: !local,
+    maxRecommendedDecisionCalls: cfg.provider === "demo" ? 0 : local ? 1 : 3,
+  };
+}
+
 export interface LocalProviderStatus {
   installed: boolean;
   authenticated: boolean;
