@@ -153,4 +153,4 @@ jobs:
       - name: Attest installer provenance
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ${{ steps.tauri.outputs.artifactPaths }}
+          subject-path: desktop/src-tauri/target/**/release/bundle/**/*.{dmg,AppImage,deb,exe,msi}
