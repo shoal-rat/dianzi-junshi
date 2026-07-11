@@ -1,6 +1,6 @@
 {
   "name": "dianzi-junshi-app",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "description": "电子军师桌面后端：SQLite 时间画像、批量截图和本机 AI 连接",
   "type": "module",
@@ -10,7 +10,8 @@
     "build:app": "bun build --compile server.ts --outfile dist/dianzi-junshi-app",
     "check": "tsc --noEmit && bun build server.ts --target bun --outdir /tmp/dj-typecheck-out",
     "test": "bun test",
-    "verify": "bun run check && bun test"
+    "evaluate": "bun run evaluate.ts",
+    "verify": "bun run check && bun test && bun run evaluate"
   },
   "dependencies": {
     "sqlite-vec": "0.1.9"

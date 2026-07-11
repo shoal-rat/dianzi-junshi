@@ -11,7 +11,7 @@
  */
 
 import { compose, revisePrompt, scanMemes, stageInfo, type Mode } from "./junshi";
-import { streamChat, completeOnce, supportsVision, PROVIDER_PRESETS, detectLocalProviders } from "./providers";
+import { streamChat, completeOnce, supportsVision, PROVIDER_PRESETS, detectLocalProviders, providerCapabilities } from "./providers";
 import { lint } from "./voicelint";
 import {
   readSettings, writeSettings, maskedSettings, activeProviderConfig,
@@ -27,6 +27,15 @@ import {
   adaptivePrompt, getAdaptiveProfile, recordOutcomeFeedback, sqliteCapabilities,
   type OutcomeFeedback,
 } from "./adaptive";
+import { runDecisionPipeline, realizationPrompt, demoRealization } from "./decision/pipeline";
+import {
+  calibrationDataset, calibrationReport, decisionDiagnostics, deleteCalibrationDataset,
+  evidenceGraph, getDecisionReport, listDecisionReports, readPatternRegistry,
+  rebuildDerivedState, recordCalibrationExample, recordLinkedOutcome, strategyPerformance,
+  updatePatternLifecycle,
+} from "./decision/store";
+import type { EvidenceRef, PlanningMode } from "./decision/types";
+import { deleteProviderKey, initializeProviderKeychain, keychainBackend, saveProviderKey } from "./keychain";
 
 // @ts-ignore  bun text import
 import indexHtml from "./public/index.html" with { type: "text" };
@@ -37,6 +46,7 @@ import appJs from "./public/app.js" with { type: "text" };
 
 const PORT = Number(process.env.PORT || 5177);
 const HOST = process.env.HOST || "127.0.0.1";
+const keychainStatus = await initializeProviderKeychain();
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8" } });
@@ -52,14 +62,16 @@ function extractReplyBlocks(markdown: string): string[] {
 
 async function handleChat(req: Request): Promise<Response> {
   const body = await req.json();
-  const { slug, mode, text, images = [] } = body as {
+  const { slug, mode, text, images = [], planningMode = "balanced" } = body as {
     slug: string; mode: Mode; text: string;
     images: IncomingImage[];
+    planningMode?: PlanningMode;
   };
   const partner = getPartner(slug);
   if (!partner) return json({ error: "对象不存在" }, 404);
   if (!text?.trim() && !images.length) return json({ error: "内容为空" }, 400);
   if (!["reply", "analyze", "ask", "interest"].includes(mode)) return json({ error: "不支持这个分析方式" }, 400);
+  if (!["fast", "balanced", "deep"].includes(planningMode)) return json({ error: "不支持这个思考深度" }, 400);
 
   const cfg = activeProviderConfig();
   const allBefore = readMessages(slug, 10_000);
@@ -114,6 +126,30 @@ async function handleChat(req: Request): Promise<Response> {
     attachments: savedImages,
   });
 
+  const evidence: EvidenceRef[] = [
+    ...packed.messages.map((message, index) => ({
+      id: `message:${message.ts}:${index}`, kind: "message" as const,
+      text: message.text, observedAt: message.ts,
+      reliability: message.role === "junshi" ? .42 : .68,
+      importance: message.mode === "context" ? .72 : .52,
+    })),
+    ...materialMemories.map((memory) => ({
+      id: `material:${memory.id}`, kind: "material" as const,
+      text: [memory.summary, ...memory.facts].join("；"), observedAt: memory.createdAt,
+      reliability: memory.provider === "demo" ? .45 : .72,
+      importance: memory.importance, sourceId: memory.id,
+    })),
+  ];
+  const pipelineInput = {
+    profileSlug: slug, partnerName: partner.name, stage: partner.stage,
+    antiSimp: partner.antiSimp, mode, planningMode,
+    text: text?.trim() || "（只发了图片）", evidence,
+  };
+  const decision = await runDecisionPipeline(pipelineInput, {
+    provider: cfg, workspaceDir: getPartnerDataDir(slug) ?? DJ_HOME,
+  });
+  const realization = realizationPrompt(pipelineInput, decision, cfg);
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -127,6 +163,8 @@ async function handleChat(req: Request): Promise<Response> {
           provider: cfg.provider,
           model: cfg.model ?? PROVIDER_PRESETS[cfg.provider]?.defaultModel,
           vision: supportsVision(cfg),
+          capabilities: providerCapabilities(cfg),
+          decision,
           context: {
             ...packed.stats,
             materialsIndexed: indexedMaterials.length,
@@ -137,22 +175,30 @@ async function handleChat(req: Request): Promise<Response> {
           },
         });
         let full = "";
-        const gen = streamChat(cfg, {
-          systemBlocks: composed.systemBlocks,
-          userText: composed.userText,
-          images: apiImages,
-          localImagePaths,
-          workspaceDir: getPartnerDataDir(slug) ?? DJ_HOME,
-        });
-        for await (const chunk of gen) {
-          full += chunk;
-          send("delta", { text: chunk });
+        if (cfg.provider === "demo") {
+          full = demoRealization(decision, pipelineInput);
+          for (const chunk of full.match(/[\s\S]{1,8}/g) ?? []) send("delta", { text: chunk });
+        } else {
+          const gen = streamChat(cfg, {
+            systemBlocks: realization.systemBlocks,
+            userText: realization.userText,
+            images: apiImages,
+            localImagePaths,
+            workspaceDir: getPartnerDataDir(slug) ?? DJ_HOME,
+          });
+          for await (const chunk of gen) {
+            full += chunk;
+            send("delta", { text: chunk });
+          }
         }
         const replies = extractReplyBlocks(full);
         const lints = replies.map((r) => lint(r));
         send("lint", { blocks: lints });
         appendMessage(slug, { role: "junshi", mode, text: full });
-        send("done", { ok: true });
+        send("done", {
+          ok: true, decisionId: decision.id,
+          strategyId: decision.selectedStrategy.id, replyId: decision.replyId,
+        });
       } catch (e: any) {
         send("error", { message: String(e?.message ?? e) });
       } finally {
@@ -196,7 +242,9 @@ const server = Bun.serve({
       if (path === "/api/health") return json({ ok: true, home: DJ_HOME, database: sqliteCapabilities() });
       if (path === "/api/settings") {
         const masked = maskedSettings();
-        return json({ ...masked, presets: PROVIDER_PRESETS });
+        return json({ ...masked, presets: PROVIDER_PRESETS, keychain: {
+          ...keychainStatus, backend: keychainBackend(),
+        }, calibration: calibrationReport() });
       }
       if (path === "/api/providers/local") return json(await detectLocalProviders());
       if (path === "/api/partners") return json(listPartners().map((p) => ({ ...p, stageName: stageInfo(p.stage).name })));
@@ -214,6 +262,53 @@ const server = Bun.serve({
         const slug = decodeURIComponent(mAdaptive[1]);
         return getPartner(slug) ? json(getAdaptiveProfile(slug)) : json({ error: "对象不存在" }, 404);
       }
+      const mDecisionLatest = path.match(/^\/api\/partners\/([^/]+)\/decisions\/latest$/);
+      if (mDecisionLatest) {
+        const slug = decodeURIComponent(mDecisionLatest[1]);
+        return getPartner(slug) ? json(getDecisionReport(slug)) : json({ error: "对象不存在" }, 404);
+      }
+      const mDecisionHistory = path.match(/^\/api\/partners\/([^/]+)\/decisions$/);
+      if (mDecisionHistory) {
+        const slug = decodeURIComponent(mDecisionHistory[1]);
+        return getPartner(slug)
+          ? json(listDecisionReports(slug, Number(url.searchParams.get("limit") || 20)))
+          : json({ error: "对象不存在" }, 404);
+      }
+      const mDecision = path.match(/^\/api\/partners\/([^/]+)\/decisions\/([a-f0-9-]{36})$/);
+      if (mDecision) {
+        const report = getDecisionReport(decodeURIComponent(mDecision[1]), mDecision[2]);
+        return report ? json(report) : json({ error: "这次决策记录不存在" }, 404);
+      }
+      const mDiagnostics = path.match(/^\/api\/partners\/([^/]+)\/decision-diagnostics$/);
+      if (mDiagnostics) {
+        const slug = decodeURIComponent(mDiagnostics[1]);
+        return getPartner(slug) ? json(decisionDiagnostics(slug)) : json({ error: "对象不存在" }, 404);
+      }
+      const mPatterns = path.match(/^\/api\/partners\/([^/]+)\/patterns$/);
+      if (mPatterns) {
+        const slug = decodeURIComponent(mPatterns[1]);
+        return getPartner(slug) ? json(readPatternRegistry(slug)) : json({ error: "对象不存在" }, 404);
+      }
+      const mGraph = path.match(/^\/api\/partners\/([^/]+)\/evidence-graph$/);
+      if (mGraph) {
+        const slug = decodeURIComponent(mGraph[1]);
+        return getPartner(slug) ? json(evidenceGraph(slug)) : json({ error: "对象不存在" }, 404);
+      }
+      const mPerformance = path.match(/^\/api\/partners\/([^/]+)\/strategy-performance$/);
+      if (mPerformance) {
+        const slug = decodeURIComponent(mPerformance[1]);
+        return getPartner(slug) ? json(strategyPerformance(slug)) : json({ error: "对象不存在" }, 404);
+      }
+      if (path === "/api/calibration") return json({
+        consent: readSettings().calibrationConsent ?? { enabled: false, version: "2026-07-v1" },
+        report: calibrationReport(),
+      });
+      if (path === "/api/calibration/export") return new Response(JSON.stringify(calibrationDataset(), null, 2), {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "content-disposition": `attachment; filename="dianzi-junshi-calibration-${new Date().toISOString().slice(0, 10)}.json"`,
+        },
+      });
       const mAsset = path.match(/^\/api\/partners\/([^/]+)\/imports\/([^/]+)$/);
       if (mAsset) {
         const filePath = attachmentPath(decodeURIComponent(mAsset[1]), decodeURIComponent(mAsset[2]));
@@ -225,8 +320,19 @@ const server = Bun.serve({
 
     if (req.method === "POST") {
       if (path === "/api/settings") {
-        const patch = await req.json();
+        const patch = await req.json() as any;
         try {
+          for (const [provider, values] of Object.entries(patch.providers ?? {}) as Array<[string, any]>) {
+            if (values?.removeApiKey) await deleteProviderKey(provider);
+            else if (typeof values?.apiKey === "string" && values.apiKey.trim() && !/^•+/.test(values.apiKey)) {
+              await saveProviderKey(provider, values.apiKey);
+            }
+          }
+          if (patch.calibrationConsent) patch.calibrationConsent = {
+            enabled: Boolean(patch.calibrationConsent.enabled), version: "2026-07-v1",
+            enabledAt: patch.calibrationConsent.enabled
+              ? readSettings().calibrationConsent?.enabledAt ?? new Date().toISOString() : undefined,
+          };
           writeSettings(patch);
           resumePendingMaterialJobs();
           return json(maskedSettings());
@@ -283,6 +389,14 @@ const server = Bun.serve({
         if (!getPartner(slug)) return json({ error: "对象不存在" }, 404);
         try {
           const feedback = await req.json() as OutcomeFeedback;
+          if (!feedback.replyText?.trim() || !["positive", "neutral", "negative", "no_reply"].includes(feedback.outcome)) {
+            return json({ error: "请选中实际发送的话，并记录 ta 后来的反应" }, 400);
+          }
+          recordLinkedOutcome(slug, feedback);
+          const linkedDecision = feedback.decisionId ? getDecisionReport(slug, feedback.decisionId) : null;
+          if (linkedDecision && readSettings().calibrationConsent?.enabled) {
+            recordCalibrationExample(linkedDecision, feedback, readSettings().calibrationConsent?.version);
+          }
           const profile = recordOutcomeFeedback(slug, feedback);
           appendMessage(slug, {
             role: "user",
@@ -293,6 +407,24 @@ const server = Bun.serve({
         } catch (e: any) {
           return json({ error: String(e?.message ?? e) }, 400);
         }
+      }
+      const mPatternLifecycle = path.match(/^\/api\/partners\/([^/]+)\/patterns\/([^/]+)\/lifecycle$/);
+      if (mPatternLifecycle) {
+        const slug = decodeURIComponent(mPatternLifecycle[1]);
+        if (!getPartner(slug)) return json({ error: "对象不存在" }, 404);
+        try {
+          const { lifecycle } = await req.json() as { lifecycle: "candidate" | "active" | "watch" | "retired" | "rejected" };
+          const pattern = updatePatternLifecycle(slug, decodeURIComponent(mPatternLifecycle[2]), lifecycle);
+          return pattern ? json(pattern) : json({ error: "模式不存在" }, 404);
+        } catch (e: any) { return json({ error: String(e?.message ?? e) }, 400); }
+      }
+      if (path === "/api/calibration/delete") {
+        return json({ deleted: deleteCalibrationDataset() });
+      }
+      const mRebuild = path.match(/^\/api\/partners\/([^/]+)\/decision-engine\/rebuild$/);
+      if (mRebuild) {
+        const slug = decodeURIComponent(mRebuild[1]);
+        return getPartner(slug) ? json(rebuildDerivedState(slug)) : json({ error: "对象不存在" }, 404);
       }
       const mUpd = path.match(/^\/api\/partners\/([^/]+)$/);
       if (mUpd) {

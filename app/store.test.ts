@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -19,6 +19,14 @@ describe("profile storage and context packing", () => {
   test("rejects profile path traversal", () => {
     expect(store.getPartner("../../outside")).toBeNull();
     expect(store.attachmentPath("../../outside", "x.png")).toBeNull();
+  });
+
+  test("never writes API keys into the JSON settings file", () => {
+    store.writeSettings({ provider: "claude", providers: { claude: { apiKey: "secret-test-key", model: "test" } } });
+    const raw = readFileSync(join(home, "config.json"), "utf8");
+    expect(raw).not.toContain("secret-test-key");
+    expect(JSON.parse(raw).providers.claude.hasKey).toBe(true);
+    expect(store.activeProviderConfig().apiKey).toBe("secret-test-key");
   });
 
   test("keeps the full import while retrieving an older relevant chunk", () => {

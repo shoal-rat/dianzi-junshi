@@ -2,12 +2,11 @@ name: Build desktop installers
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*"
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   installers:
@@ -22,30 +21,41 @@ jobs:
             bun_target: bun-darwin-arm64
             vec_package: sqlite-vec-darwin-arm64
             args: --target aarch64-apple-darwin --bundles dmg
+            attest: desktop/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
           - name: macOS Intel
             platform: macos-latest
             target: x86_64-apple-darwin
             bun_target: bun-darwin-x64
             vec_package: sqlite-vec-darwin-x64
             args: --target x86_64-apple-darwin --bundles dmg
+            attest: desktop/src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           - name: Windows x64
             platform: windows-latest
             target: x86_64-pc-windows-msvc
             bun_target: bun-windows-x64
             vec_package: sqlite-vec-windows-x64
             args: --verbose --bundles nsis,msi
+            attest: |
+              desktop/src-tauri/target/release/bundle/nsis/*.exe
+              desktop/src-tauri/target/release/bundle/msi/*.msi
           - name: Linux x64
             platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             bun_target: bun-linux-x64
             vec_package: sqlite-vec-linux-x64
             args: --verbose --bundles appimage,deb
+            attest: |
+              desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+              desktop/src-tauri/target/release/bundle/deb/*.deb
           - name: Linux ARM64
             platform: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
             bun_target: bun-linux-arm64
             vec_package: sqlite-vec-linux-arm64
             args: --verbose --bundles appimage,deb
+            attest: |
+              desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+              desktop/src-tauri/target/release/bundle/deb/*.deb
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -55,7 +65,7 @@ jobs:
         if: startsWith(matrix.platform, 'ubuntu-')
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libsqlite3-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libsqlite3-dev libsecret-1-dev
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -85,7 +95,57 @@ jobs:
         working-directory: app
         run: bun run verify
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Import Windows signing certificate when configured
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+          WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE)) {
+            Write-Warning "WINDOWS_CERTIFICATE is not configured; producing an unsigned installer."
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP "dianzi-junshi-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password | Out-Null
+          Remove-Item $pfx -Force
+          if (-not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_THUMBPRINT)) {
+            "WINDOWS_CERTIFICATE_THUMBPRINT=$env:WINDOWS_CERTIFICATE_THUMBPRINT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+          if (-not [string]::IsNullOrWhiteSpace($env:WINDOWS_TIMESTAMP_URL)) {
+            "WINDOWS_TIMESTAMP_URL=$env:WINDOWS_TIMESTAMP_URL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
+      - name: Configure Apple signing when credentials are available
+        if: startsWith(matrix.platform, 'macos-')
+        shell: bash
+        env:
+          SIGNING_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_ID }}
+          NOTARIZATION_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          NOTARIZATION_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [[ -z "$SIGNING_CERTIFICATE" ]]; then
+            echo "::warning::APPLE_CERTIFICATE is not configured; producing an unsigned, unnotarized DMG."
+            exit 0
+          fi
+          {
+            echo "APPLE_CERTIFICATE=$SIGNING_CERTIFICATE"
+            echo "APPLE_CERTIFICATE_PASSWORD=$SIGNING_CERTIFICATE_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$SIGNING_IDENTITY"
+            echo "APPLE_ID=$NOTARIZATION_APPLE_ID"
+            echo "APPLE_PASSWORD=$NOTARIZATION_PASSWORD"
+            echo "APPLE_TEAM_ID=$NOTARIZATION_TEAM_ID"
+          } >> "$GITHUB_ENV"
+
+      - id: tauri
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -97,3 +157,8 @@ jobs:
           prerelease: false
           assetNamePattern: Dianzi-Junshi_[version]_[platform]_[arch]_[bundle][ext]
           args: ${{ matrix.args }}
+
+      - name: Attest installer provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ matrix.attest }}

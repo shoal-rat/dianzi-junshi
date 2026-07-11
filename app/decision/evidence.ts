@@ -1,0 +1,111 @@
+import type { EvidenceRef, PipelineInput, StructuredObservation, BeliefDimension } from "./types";
+import { usefulnessFor } from "./store";
+
+const SIGNALS: Array<{
+  dimension: BeliefDimension; positive: RegExp; negative: RegExp; confidence: number; rationale: string;
+}> = [
+  { dimension: "engagement", positive: /继续|聊|哈哈|分享|问你|主动|回得|一起|可以|好呀|行啊/i, negative: /敷衍|冷淡|不回|消失|随便|嗯嗯|哦$|算了/i, confidence: .64, rationale: "互动投入线索" },
+  { dimension: "trust", positive: /告诉你|坦白|秘密|放心|相信|真实|心里话/i, negative: /怀疑|骗|不信|防着|隐瞒|套路/i, confidence: .7, rationale: "信任与自我暴露线索" },
+  { dimension: "communication_willingness", positive: /聊聊|说说|解释|回复|有空说|电话|语音/i, negative: /不想说|别问|以后再说|没什么好说|闭嘴/i, confidence: .72, rationale: "沟通意愿线索" },
+  { dimension: "emotional_pressure", positive: /压力|难受|累|生气|烦|崩溃|焦虑|委屈|不舒服|吵/i, negative: /轻松|开心|没事|放松|好起来/i, confidence: .7, rationale: "情绪压力线索" },
+  { dimension: "boundary_sensitivity", positive: /别|不要|不方便|隐私|界限|需要空间|先这样|尊重/i, negative: /都可以|随你|没关系|不介意/i, confidence: .76, rationale: "边界敏感度线索" },
+  { dimension: "commitment_reliability", positive: /答应|做到|准时|说到做到|兑现|确定|安排好了/i, negative: /放鸽子|爽约|忘了|改天吧|临时取消|没做到/i, confidence: .83, rationale: "承诺兑现线索" },
+  { dimension: "momentum", positive: /下次|周末|见面|一起|继续|以后|期待|计划/i, negative: /到此为止|别联系|暂停|冷静|结束|算了/i, confidence: .72, rationale: "关系推进线索" },
+  { dimension: "initiative", positive: /主动|找你|约你|先发|问你|邀请|给你/i, negative: /总是我|从不主动|不找|被动/i, confidence: .75, rationale: "主动性线索" },
+  { dimension: "consistency", positive: /一直|每次|稳定|照旧|还是会|长期/i, negative: /忽冷忽热|反复|突然|前后不一|变化很大/i, confidence: .7, rationale: "行为一致性线索" },
+];
+
+function clamp(value: number, min = -1, max = 1): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function extractObservations(input: PipelineInput, sourceId: string, observedAt = new Date().toISOString()): StructuredObservation[] {
+  const text = input.text.trim();
+  if (!text) return [];
+  const results: StructuredObservation[] = [];
+  for (const signal of SIGNALS) {
+    const positive = signal.positive.test(text);
+    const negative = signal.negative.test(text);
+    if (!positive && !negative) continue;
+    const value = positive === negative ? 0 : positive ? .68 : -.68;
+    results.push({
+      id: crypto.randomUUID(), profileSlug: input.profileSlug, sourceId,
+      dimension: signal.dimension, value,
+      confidence: positive && negative ? .34 : signal.confidence,
+      reliability: input.mode === "ask" ? .55 : .7,
+      observedAt, rationale: positive && negative ? `${signal.rationale}存在冲突` : signal.rationale,
+    });
+  }
+  // A message itself is weak evidence of available communication, never a personality verdict.
+  if (!results.some((item) => item.dimension === "communication_willingness")) {
+    results.push({
+      id: crypto.randomUUID(), profileSlug: input.profileSlug, sourceId,
+      dimension: "communication_willingness", value: .12, confidence: .24,
+      reliability: .62, observedAt, rationale: "仅确认本轮存在沟通，属于弱证据",
+    });
+  }
+  return validateObservations(results);
+}
+
+export function validateObservations(items: StructuredObservation[]): StructuredObservation[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!item.id || !item.profileSlug || !item.sourceId || !item.observedAt) return false;
+    if (seen.has(`${item.sourceId}:${item.dimension}`)) return false;
+    seen.add(`${item.sourceId}:${item.dimension}`);
+    item.value = clamp(Number(item.value));
+    item.confidence = clamp(Number(item.confidence), 0, 1);
+    item.reliability = clamp(Number(item.reliability), 0, 1);
+    return Number.isFinite(Date.parse(item.observedAt));
+  });
+}
+
+function terms(text: string): Set<string> {
+  const out = new Set<string>();
+  const lower = text.toLowerCase();
+  for (const word of lower.match(/[a-z0-9]{3,}/g) ?? []) out.add(word);
+  for (const run of lower.match(/[\p{Script=Han}]{2,}/gu) ?? []) {
+    for (let i = 0; i < run.length - 1 && out.size < 280; i++) out.add(run.slice(i, i + 2));
+  }
+  return out;
+}
+
+function lexicalSimilarity(query: Set<string>, text: string): number {
+  if (!query.size) return 0;
+  const lower = text.toLowerCase();
+  let hits = 0;
+  for (const term of query) if (lower.includes(term)) hits += 1;
+  return Math.min(1, hits / Math.max(2, Math.sqrt(query.size) * 1.8));
+}
+
+function recency(observedAt: string): number {
+  const ageDays = Math.max(0, (Date.now() - Date.parse(observedAt)) / 86_400_000);
+  return Math.pow(.5, ageDays / 120);
+}
+
+/** Decision-oriented retrieval: relevance is necessary, but reliability, usefulness,
+ * contradiction coverage, and diversity decide what reaches the planner. */
+export function retrieveEvidence(profileSlug: string, queryText: string, items: EvidenceRef[], limit: number): EvidenceRef[] {
+  const query = terms(queryText);
+  const scored = items.map((item) => {
+    const lexical = lexicalSimilarity(query, item.text);
+    const historical = usefulnessFor(profileSlug, item.id);
+    const contradictionBoost = item.contradiction ? .11 : 0;
+    const score = .36 * lexical + .15 * recency(item.observedAt) + .15 * item.importance
+      + .16 * item.reliability + .12 * historical + contradictionBoost;
+    return { ...item, relevance: Math.max(0, Math.min(1, score)) };
+  }).sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0));
+
+  const selected: EvidenceRef[] = [];
+  const kindCount = new Map<string, number>();
+  for (const item of scored) {
+    if (selected.length >= limit) break;
+    const sameKind = kindCount.get(item.kind) ?? 0;
+    if (sameKind >= Math.max(2, Math.ceil(limit * .55))) continue;
+    const duplicate = selected.some((other) => lexicalSimilarity(terms(other.text), item.text) > .86);
+    if (duplicate && !item.contradiction) continue;
+    selected.push(item);
+    kindCount.set(item.kind, sameKind + 1);
+  }
+  return selected;
+}

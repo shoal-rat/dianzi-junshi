@@ -21,6 +21,9 @@ let vectorExtension = false;
 export type FeedbackOutcome = "positive" | "neutral" | "negative" | "no_reply";
 
 export interface OutcomeFeedback {
+  decisionId?: string;
+  strategyId?: string;
+  replyId?: string;
   replyText: string;
   partnerResponse?: string;
   outcome: FeedbackOutcome;
@@ -104,7 +107,7 @@ function tryEnableVectorExtension() {
   }
 }
 
-function db(): Database {
+export function decisionDatabase(): Database {
   if (database) return database;
   mkdirSync(DJ_HOME, { recursive: true, mode: 0o700 });
   tryEnableVectorExtension();
@@ -126,6 +129,10 @@ function db(): Database {
   migrate(database);
   return database;
 }
+
+// Internal alias retained so the original adaptive-profile code and the new
+// decision engine share one WAL-backed source of truth.
+const db = decisionDatabase;
 
 function migrate(conn: Database): void {
   conn.exec(`

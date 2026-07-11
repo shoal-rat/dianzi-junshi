@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "电子军师",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "identifier": "com.shoalrat.dianzi-junshi",
   "build": {
     "beforeBuildCommand": "bun run build:sidecar",
@@ -29,8 +29,7 @@
     "shortDescription": "先读懂，再回复",
     "longDescription": "本地优先的聊天理解与回复助手，支持批量截图和随时间变化的长期记忆。",
     "macOS": {
-      "minimumSystemVersion": "10.15",
-      "signingIdentity": "-"
+      "minimumSystemVersion": "10.15"
     },
     "windows": {
       "nsis": {

@@ -21,6 +21,7 @@ desktop/src-tauri/gen/
 desktop/src-tauri/resources/native/
 desktop/src-tauri/resources/backend/
 node_modules/
+app/evaluation-results/
 bun.lockb
 
 # Virtual environments

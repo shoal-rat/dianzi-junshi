@@ -4,7 +4,7 @@
 
 A local-first desktop assistant for understanding Chinese dating chats and drafting natural replies.
 
-[![Release](https://img.shields.io/badge/release-v4.0.0-7C3AED)](docs/releases/v4.0.0.md)
+[![Release](https://img.shields.io/badge/release-v5.0.0-177766)](docs/releases/v5.0.0.md)
 [![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-177766)](#download)
 [![中文](https://img.shields.io/badge/中文-README-red)](README.md)
 
@@ -28,7 +28,7 @@ End users do not need Bun, Node.js, Rust, or a database server. See [INSTALL.md]
 
 ## Desktop-first architecture
 
-Version 4 is a full desktop product, not an agent-skill installation. A small Tauri 2 window launches a compiled Bun sidecar on a random localhost port. The installer contains everything the app needs and stops the sidecar when the window exits.
+Version 5 is a full desktop decision product, not an agent-skill installation. A small Tauri 2 window launches a compiled Bun sidecar on a random localhost port. The installer contains everything the app needs and stops the sidecar when the window exits.
 
 The app can reuse an existing Codex or Claude Code login without storing another API key. It can also connect to Anthropic, DeepSeek, GLM, or an OpenAI-compatible API.
 
@@ -47,7 +47,7 @@ This design is informed by [PersonaMem](https://arxiv.org/abs/2504.14225), [Memo
 
 ## Storage and security
 
-Data remains under `~/.dianzi-junshi/` by default. The HTTP sidecar only listens on a random `127.0.0.1` port. Local CLI agents receive minimal read access, and screenshots are sent to the chosen model only when their analysis job runs. API keys are local but are not yet integrated with the OS keychain.
+Data remains under `~/.dianzi-junshi/` by default. The HTTP sidecar only listens on a random `127.0.0.1` port. Local CLI agents receive minimal read access, and screenshots are sent to the chosen model only when their analysis job runs. API keys use macOS Keychain, Windows Credential Manager, or Linux Secret Service and are never written to the JSON settings file.
 
 ## Development
 
@@ -61,7 +61,8 @@ bun install
 bun run build
 ```
 
-Pushing a `v*` tag runs the cross-platform release workflow and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v4.0.0 notes](docs/releases/v4.0.0.md).
+Pushing a `v*` tag runs the cross-platform release workflow and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v5.0.0 notes](docs/releases/v5.0.0.md).
+Version 5 adds an event-sourced decision pipeline with temporal beliefs, competing hypotheses, decision-oriented retrieval, bounded simulation, independent critics, uncertainty-aware abstention, linked outcome learning, replay, and offline evaluation. See the [v5.0.0 notes](docs/releases/v5.0.0.md).
 
 ## License
 
