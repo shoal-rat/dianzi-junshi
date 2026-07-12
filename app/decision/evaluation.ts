@@ -1,6 +1,12 @@
 import { buildBeliefs, buildHypotheses } from "./state";
 import { assessUncertainty, evaluateStrategies, generateStrategies, selectStrategy, simulateStrategies } from "./planner";
-import type { BeliefDimension, PlanningMode, StructuredObservation, StrategyFamily } from "./types";
+import { beliefFromStates, responseDistribution, transition, RESPONSE_CLASSES, REGIME_ORDER } from "./worldmodel";
+import {
+  GRID_CHANNELS, GRID_STEPS, EXTRA_FEATURES, meanLogLoss, seededRandom, trainCnn,
+  type TrainingExample,
+} from "./neural";
+import { BELIEF_DIMENSIONS } from "./types";
+import type { BeliefDimension, BeliefState, PlanningMode, StructuredObservation, StrategyFamily } from "./types";
 
 export interface SyntheticCase {
   id: string;
@@ -87,8 +93,93 @@ export function evaluateDecisionEngine(mode: PlanningMode = "deep") {
       abstentionQuality: abstentionAccuracy,
       regressionAcrossReleases: unsafeRate <= .2 && abstentionAccuracy >= .8,
     },
+    neuralBenchmark: neuralBenchmark(),
     results,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Temporal-CNN benchmark: sequences engineered so the FINAL state summary is
+// (nearly) identical across classes and only the trajectory shape separates
+// them — rising vs fading engagement that lands on the same value, silence
+// emerging in the last buckets, pressure trending upward. A summary-only head
+// cannot tell these apart by construction; the convolution can.
+// ---------------------------------------------------------------------------
+
+export interface NeuralBenchmark {
+  cases: number;
+  holdout: number;
+  cnnLogLoss: number;
+  structuralLogLoss: number;
+  improved: boolean;
+}
+
+let cachedBenchmark: NeuralBenchmark | null = null;
+
+export function neuralBenchmark(): NeuralBenchmark {
+  if (cachedBenchmark) return cachedBenchmark;
+  const rand = seededRandom(20260712);
+  const clampState = (v: number) => Math.max(-1, Math.min(1, v));
+  const noise = () => (rand() - .5) * .24;
+  const make = (label: number): TrainingExample => {
+    const grid = new Array<number>(GRID_CHANNELS * GRID_STEPS).fill(0);
+    for (let t = 0; t < GRID_STEPS; t += 1) {
+      const f = t / (GRID_STEPS - 1);
+      let engagement = .5;
+      let pressure = .1;
+      let momentum = .1;
+      let density = .55;
+      if (label === 0) { engagement = -.2 + .7 * f; momentum = .1 + .3 * f; }               // 升温收于 .5
+      if (label === 1) { engagement = .5; }                                                  // 一直平稳在 .5
+      if (label === 2) { engagement = .5; pressure = .05 + .45 * f + (t % 2 ? .12 : -.12); } // 压力震荡上行
+      if (label === 3) { engagement = .9 - .4 * f; momentum = .4 - .5 * f; density = t >= GRID_STEPS - 4 ? .05 : .6; } // 降温且末端沉默
+      grid[0 * GRID_STEPS + t] = clampState(engagement + noise());
+      grid[3 * GRID_STEPS + t] = clampState(pressure + noise());
+      grid[6 * GRID_STEPS + t] = clampState(momentum + noise());
+      grid[9 * GRID_STEPS + t] = Math.max(0, Math.min(1, density + noise() * .5));
+    }
+    const extra = new Array<number>(EXTRA_FEATURES).fill(0);
+    extra[0] = .1; // mirror-like soothe
+    extra[6] = .25; extra[7] = .25; extra[8] = .25; extra[9] = .25; // uniform regime posterior
+    return { grid, extra, label };
+  };
+  const examples: TrainingExample[] = [];
+  for (let i = 0; i < 160; i += 1) examples.push(make(i % 4));
+  const train = examples.slice(0, 120);
+  const holdout = examples.slice(120);
+  const { weights } = trainCnn(train, { seed: 11, epochs: 200 });
+  const cnnLogLoss = meanLogLoss(weights, holdout);
+
+  // Structural-head baseline: build the summary belief a state estimator would
+  // see (mean of the last 4 buckets per dimension), roll it through the same
+  // transition + response head, and score the marginal over a uniform regime mix.
+  let structuralLogLoss = 0;
+  for (const example of holdout) {
+    const states: BeliefState[] = BELIEF_DIMENSIONS.map((dimension, d) => {
+      let sum = 0;
+      for (let t = GRID_STEPS - 4; t < GRID_STEPS; t += 1) sum += example.grid[d * GRID_STEPS + t];
+      const mean = sum / 4;
+      return {
+        dimension, mean, variance: .3, confidence: .6, shortTerm: mean, longTerm: mean,
+        effectiveSampleSize: 4, evidenceCount: 4, changing: false, stale: false,
+        conflicted: false, evidenceIds: [],
+      };
+    });
+    const belief = beliefFromStates(states);
+    const marginal = new Array<number>(4).fill(0);
+    for (const regime of REGIME_ORDER) {
+      const dist = responseDistribution(transition(belief, "mirror", regime));
+      RESPONSE_CLASSES.forEach((cls, index) => { marginal[index] += dist[cls] / REGIME_ORDER.length; });
+    }
+    structuralLogLoss += -Math.log(Math.max(1e-12, marginal[example.label]));
+  }
+  structuralLogLoss /= holdout.length;
+  cachedBenchmark = {
+    cases: examples.length, holdout: holdout.length,
+    cnnLogLoss, structuralLogLoss,
+    improved: cnnLogLoss + .05 < structuralLogLoss,
+  };
+  return cachedBenchmark;
 }
 
 function evaluateChangeDetection(): number {

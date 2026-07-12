@@ -5,7 +5,11 @@ import type {
   PatternSignal, SimulationBranch, StateHypothesis, StrategyCandidate, StructuredObservation,
   BeliefDimension, LearnedRegimeFamily, ResponseClass, WorldModelSnapshot,
 } from "./types";
-import { RESPONSE_CLASSES } from "./worldmodel";
+import { RESPONSE_CLASSES, actionFeatureVector, regimePosteriorVector } from "./worldmodel";
+import {
+  buildObservationGrid, meanLogLoss, parameterCount, trainCnn,
+  type CnnWeights, type TrainingExample,
+} from "./neural";
 
 let migrated = false;
 
@@ -136,8 +140,12 @@ function migrateDecisionStore(conn: Database): void {
       profile_slug TEXT PRIMARY KEY, log_loss_model REAL NOT NULL,
       log_loss_base REAL NOT NULL, samples REAL NOT NULL, updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS neural_predictor (
+      scope TEXT PRIMARY KEY, weights_json TEXT NOT NULL, samples INTEGER NOT NULL,
+      params INTEGER NOT NULL, holdout_model REAL, holdout_base REAL, trained_at TEXT NOT NULL
+    );
   `);
-  for (const version of [2, 3, 4]) {
+  for (const version of [2, 3, 4, 5]) {
     conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (?, ?)")
       .run(version, new Date().toISOString());
   }
@@ -497,6 +505,9 @@ export function recordLinkedOutcome(profileSlug: string, input: LinkedOutcome): 
       updateWorldModel(profileSlug, decision, { outcome: input.outcome, strategyId: input.strategyId }, observedAt);
     }
   })();
+  if (decision) {
+    try { trainNeuralPredictor(); } catch { /* prediction refinement must never block feedback */ }
+  }
   return id;
 }
 
@@ -590,6 +601,110 @@ const WORLD_HALF_LIFE_DAYS = 120;
 const RESPONSE_BASE_RATES: Record<ResponseClass, number> = { positive: .35, neutral: .3, negative: .15, no_reply: .2 };
 /** Residuals are learned only on dimensions a recorded outcome actually observes. */
 const RESIDUAL_DIMENSIONS: BeliefDimension[] = ["engagement", "communication_willingness", "momentum"];
+
+// ---------------------------------------------------------------------------
+// Temporal-CNN response predictor: dataset assembly, gated training, loading.
+// One global (per-install) net — all data stays on this machine.
+// ---------------------------------------------------------------------------
+
+const NEURAL_MIN_SAMPLES = 8;
+const NEURAL_GATE_NATS = .02;
+const NEURAL_SEED = 7;
+const RESPONSE_INDEX: Record<ResponseClass, number> = { positive: 0, neutral: 1, negative: 2, no_reply: 3 };
+
+interface NeuralExample extends TrainingExample {
+  /** The head's stored prediction for the realized outcome (gate baseline). */
+  baselineProb: number;
+  observedAt: string;
+}
+
+/** Rebuild the full training set from immutable decision reports and their
+ * linked outcomes: grid at decision time, φ(a), regime posterior, label. */
+function neuralTrainingSet(): NeuralExample[] {
+  const rows = db().query(`SELECT o.profile_slug, o.outcome, o.strategy_id, o.observed_at, r.report_json
+    FROM outcome_events o JOIN decision_runs r
+      ON r.profile_slug = o.profile_slug AND r.id = o.decision_id
+    ORDER BY o.observed_at`).all() as any[];
+  const examples: NeuralExample[] = [];
+  for (const row of rows) {
+    const report = parseJson<DecisionReport | null>(row.report_json, null);
+    const label = RESPONSE_INDEX[row.outcome as ResponseClass];
+    if (!report || label === undefined) continue;
+    const family = report.strategies.find((s) => s.id === row.strategy_id)?.family
+      ?? report.selectedStrategy.family;
+    const decidedAt = Date.parse(report.createdAt);
+    const observations = db().query(`SELECT dimension, value, confidence, reliability, observed_at
+      FROM structured_observations WHERE profile_slug=? AND observed_at<?
+      ORDER BY observed_at DESC LIMIT 400`).all(row.profile_slug, report.createdAt) as any[];
+    const grid = buildObservationGrid(observations.map((o) => ({
+      dimension: o.dimension, value: Number(o.value), confidence: Number(o.confidence),
+      reliability: Number(o.reliability), observedAt: String(o.observed_at),
+    })), decidedAt);
+    const branches = report.simulations.filter((b) =>
+      b.strategyId === (row.strategy_id ?? report.selectedStrategy.id) && b.responseDistribution);
+    const branchMass = branches.reduce((sum, b) => sum + b.probability, 0);
+    const baselineProb = branchMass
+      ? branches.reduce((sum, b) => sum + b.probability * (b.responseDistribution![row.outcome as ResponseClass] ?? 0), 0) / branchMass
+      : RESPONSE_BASE_RATES[row.outcome as ResponseClass];
+    examples.push({
+      grid,
+      extra: [...actionFeatureVector(family), ...regimePosteriorVector(report.hypotheses)],
+      label, baselineProb, observedAt: String(row.observed_at),
+    });
+  }
+  return examples;
+}
+
+/** Train the global CNN. Gating metrics come from a time-ordered 75/25 split
+ * (never random — later outcomes must not leak into the past); the deployed
+ * weights are then retrained on the full set with the same seed. */
+export function trainNeuralPredictor(): { samples: number; holdoutModel: number | null; holdoutBase: number | null } | null {
+  const examples = neuralTrainingSet();
+  if (examples.length < NEURAL_MIN_SAMPLES) {
+    db().query("DELETE FROM neural_predictor WHERE scope='global'").run();
+    return null;
+  }
+  const epochs = Math.min(220, 80 + examples.length * 4);
+  const holdCount = Math.max(2, Math.floor(examples.length / 4));
+  const trainSlice = examples.slice(0, examples.length - holdCount);
+  const holdout = examples.slice(examples.length - holdCount);
+  const gateModel = trainCnn(trainSlice, { seed: NEURAL_SEED, epochs });
+  const holdoutModel = meanLogLoss(gateModel.weights, holdout);
+  const holdoutBase = holdout.reduce((sum, e) => sum - Math.log(Math.max(1e-12, e.baselineProb)), 0) / holdout.length;
+  const deployed = trainCnn(examples, { seed: NEURAL_SEED, epochs });
+  db().query(`INSERT INTO neural_predictor(scope, weights_json, samples, params, holdout_model, holdout_base, trained_at)
+    VALUES ('global', ?, ?, ?, ?, ?, ?) ON CONFLICT(scope) DO UPDATE SET
+    weights_json=excluded.weights_json, samples=excluded.samples, params=excluded.params,
+    holdout_model=excluded.holdout_model, holdout_base=excluded.holdout_base, trained_at=excluded.trained_at`).run(
+      JSON.stringify(deployed.weights), examples.length, parameterCount(),
+      holdoutModel, holdoutBase, new Date().toISOString(),
+    );
+  return { samples: examples.length, holdoutModel, holdoutBase };
+}
+
+export interface NeuralPredictorState {
+  weights: CnnWeights;
+  samples: number;
+  params: number;
+  holdoutModel: number | null;
+  holdoutBase: number | null;
+  /** min(.5, n/(n+12)) when the holdout advantage clears the gate, else 0. */
+  trust: number;
+}
+
+export function loadNeuralPredictor(): NeuralPredictorState | null {
+  const row = db().query(`SELECT weights_json, samples, params, holdout_model, holdout_base
+    FROM neural_predictor WHERE scope='global'`).get() as any;
+  if (!row) return null;
+  const weights = parseJson<CnnWeights | null>(row.weights_json, null);
+  if (!weights) return null;
+  const holdoutModel = row.holdout_model === null ? null : Number(row.holdout_model);
+  const holdoutBase = row.holdout_base === null ? null : Number(row.holdout_base);
+  const advantage = holdoutModel !== null && holdoutBase !== null ? holdoutBase - holdoutModel : 0;
+  const samples = Number(row.samples);
+  const trust = advantage > NEURAL_GATE_NATS ? Math.min(.5, samples / (samples + 12)) : 0;
+  return { weights, samples, params: Number(row.params), holdoutModel, holdoutBase, trust };
+}
 
 export function loadWorldModel(profileSlug: string): WorldModelSnapshot {
   const rows = db().query(`SELECT regime, strategy_family, counts_json, delta_json, effective
@@ -918,6 +1033,7 @@ export function rebuildDerivedState(profileSlug: string): { events: number; outc
       }
     }
   })();
+  try { trainNeuralPredictor(); } catch { /* projection rebuild still succeeds without the CNN */ }
   return { events: events.length, outcomes: outcomeCount, observations: Number(legacyObservations?.count ?? 0) + readObservations(profileSlug).length };
 }
 
@@ -938,6 +1054,15 @@ export function decisionDiagnostics(profileSlug: string): Record<string, unknown
       meanLogLossBase: world.gate.samples ? world.gate.logLossBase / world.gate.samples : null,
       advantage: world.gate.samples ? (world.gate.logLossBase - world.gate.logLossModel) / world.gate.samples : null,
     },
+    neuralPredictor: (() => {
+      const neural = loadNeuralPredictor();
+      return neural ? {
+        samples: neural.samples, params: neural.params, trust: neural.trust,
+        holdoutModel: neural.holdoutModel, holdoutBase: neural.holdoutBase,
+        advantage: neural.holdoutModel !== null && neural.holdoutBase !== null
+          ? neural.holdoutBase - neural.holdoutModel : null,
+      } : { samples: 0, params: parameterCount(), trust: 0, holdoutModel: null, holdoutBase: null, advantage: null };
+    })(),
     recent: listDecisionReports(profileSlug, 5).map((report) => ({
       id: report.id, createdAt: report.createdAt, mode: report.planningMode,
       strategy: report.selectedStrategy.family, uncertainty: report.uncertainty.total,

@@ -17,6 +17,7 @@ const structured = await import("./decision/structured.ts");
 const evaluation = await import("./decision/evaluation.ts");
 const worldmodel = await import("./decision/worldmodel.ts");
 const evidenceModule = await import(`./decision/evidence.ts?decision=${Date.now()}`);
+const neural = await import("./decision/neural.ts");
 const { BELIEF_DIMENSIONS } = await import("./decision/types.ts");
 
 const DIM = (name: string) => BELIEF_DIMENSIONS.indexOf(name as never);
@@ -273,5 +274,60 @@ describe("learned world model", () => {
     const selected = evidenceModule.retrieveEvidence("retrieval-test", "周末一起吃饭的邀约", items, 3);
     expect(selected[0].id).toBe("food-plan");
     expect(selected.some((item: any) => item.id === "food-plan-dup")).toBe(false);
+  });
+});
+
+describe("temporal CNN response predictor", () => {
+  test("hand-written backprop matches numeric gradients", () => {
+    expect(neural.gradientCheck()).toBeLessThan(1e-3);
+  });
+
+  test("training is deterministic and learns a temporal pattern", () => {
+    const rand = neural.seededRandom(5);
+    const make = (label: number) => {
+      const grid = new Array(neural.GRID_CHANNELS * neural.GRID_STEPS).fill(0);
+      for (let t = 0; t < neural.GRID_STEPS; t += 1) {
+        const f = t / (neural.GRID_STEPS - 1);
+        grid[0 * neural.GRID_STEPS + t] = (label === 0 ? -.2 + .7 * f : .5 - .0 * f) + (rand() - .5) * .2;
+        grid[9 * neural.GRID_STEPS + t] = .5;
+      }
+      return { grid, extra: new Array(neural.EXTRA_FEATURES).fill(.25), label: label as 0 | 1 };
+    };
+    const train = Array.from({ length: 48 }, (_, i) => make(i % 2));
+    const test48 = Array.from({ length: 16 }, (_, i) => make(i % 2));
+    const a = neural.trainCnn(train, { seed: 9, epochs: 120 });
+    const b = neural.trainCnn(train, { seed: 9, epochs: 120 });
+    expect(a.weights.d2w.join(",")).toBe(b.weights.d2w.join(","));
+    expect(neural.meanLogLoss(a.weights, test48)).toBeLessThan(Math.log(2) * .6);
+  });
+
+  test("CNN beats the summary-only structural head on trajectory-shaped data", () => {
+    const benchmark = evaluation.neuralBenchmark();
+    expect(benchmark.improved).toBe(true);
+    expect(benchmark.cnnLogLoss).toBeLessThan(benchmark.structuralLogLoss);
+  });
+
+  test("neural gate stays closed without enough real outcomes", () => {
+    expect(decisionStore.trainNeuralPredictor()).toBeNull();
+    expect(decisionStore.loadNeuralPredictor()).toBeNull();
+  });
+
+  test("a trusted CNN shifts the root response distribution", () => {
+    const beliefs = stateEngine.buildBeliefs([]);
+    const hypotheses = stateEngine.buildHypotheses(beliefs);
+    const strategies = planner.generateStrategies("nn-blend", "reply", "balanced", beliefs, hypotheses, []);
+    const grid = new Array(neural.GRID_CHANNELS * neural.GRID_STEPS).fill(0);
+    // Train a tiny net to always predict no_reply, then blend it in at trust .5.
+    const biased = neural.trainCnn(
+      Array.from({ length: 12 }, () => ({ grid: [...grid], extra: new Array(neural.EXTRA_FEATURES).fill(0), label: 3 })),
+      { seed: 4, epochs: 80 },
+    );
+    const plain = planner.simulateStrategies(strategies, hypotheses, beliefs, "balanced");
+    const blended = worldmodel.rolloutStrategies(strategies, hypotheses, beliefs, "balanced", {
+      neural: { weights: biased.weights, trust: .5, grid },
+    });
+    const meanNoReply = (branches: any[]) =>
+      branches.reduce((s, b) => s + (b.responseDistribution?.no_reply ?? 0), 0) / branches.length;
+    expect(meanNoReply(blended)).toBeGreaterThan(meanNoReply(plain) + .1);
   });
 });

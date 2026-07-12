@@ -3,7 +3,7 @@ import type {
   StrategyCandidate, StrategyFamily, UncertaintyReport, PatternSignal, WorldModelSnapshot,
 } from "./types";
 import { posteriorFor } from "./store";
-import { expectedValueOfInformation, rolloutStrategies } from "./worldmodel";
+import { expectedValueOfInformation, rolloutStrategies, type NeuralBlend } from "./worldmodel";
 
 const STRATEGY_LIBRARY: Record<StrategyFamily, Omit<StrategyCandidate, "id" | "prior" | "explorationBonus" | "score">> = {
   mirror: { family: "mirror", label: "顺着对方的节奏", intent: "维持同频，跟住当前节奏", tactic: "复用对方的语气和信息量", tone: "自然、短", risk: "可能推进较慢", informationGain: .28 },
@@ -118,8 +118,9 @@ export function simulateStrategies(
   states: BeliefState[],
   planningMode: PlanningMode,
   model?: WorldModelSnapshot,
+  neural?: NeuralBlend,
 ): SimulationBranch[] {
-  return rolloutStrategies(strategies, hypotheses, states, planningMode, { snapshot: model });
+  return rolloutStrategies(strategies, hypotheses, states, planningMode, { snapshot: model, neural });
 }
 
 export function evaluateStrategies(

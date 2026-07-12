@@ -1,6 +1,8 @@
 import type { ProviderConfig } from "../providers";
 import type { PipelineInput, DecisionReport, DecisionMetrics, EvidenceRef, PlanningMode, StrategyCandidate, StructuredObservation } from "./types";
-import { appendDecisionEvent, graphEvidence, loadWorldModel, posteriorFor, readDecisionEvents, readObservations, recordTemporalFact, saveDecisionReport, saveObservations, syncPatternRegistry } from "./store";
+import { appendDecisionEvent, graphEvidence, loadNeuralPredictor, loadWorldModel, posteriorFor, readDecisionEvents, readObservations, recordTemporalFact, saveDecisionReport, saveObservations, syncPatternRegistry } from "./store";
+import { actionFeatureVector, regimePosteriorVector, type NeuralBlend } from "./worldmodel";
+import { buildObservationGrid, predictResponse } from "./neural";
 import { extractObservations, retrieveEvidence, validateObservations } from "./evidence";
 import { buildBeliefs, buildHypotheses, detectChanges, discoverPatterns, missingInformation } from "./state";
 import { assessUncertainty, evaluateStrategies, generateStrategies, rewardWeightsFor, selectStrategy, simulateStrategies, strategyAlternatives } from "./planner";
@@ -91,12 +93,17 @@ dimension 只能是 engagement, trust, communication_willingness, emotional_pres
   metrics.evidenceSelected = evidence.length;
   const boldness = Math.max(0, Math.min(1, input.boldness ?? .5));
   const worldModel = stage(metrics, "world_model_load", () => loadWorldModel(input.profileSlug));
+  const neural = stage(metrics, "neural_load", (): NeuralBlend | undefined => {
+    const state = loadNeuralPredictor();
+    if (!state || state.trust <= 0) return undefined;
+    return { weights: state.weights, trust: state.trust, grid: buildObservationGrid(allObservations, createdAt) };
+  });
   let strategies = stage(metrics, "strategy_generation", () => generateStrategies(
     input.profileSlug, input.mode, input.planningMode, beliefs, hypotheses, missing, patterns,
     posteriorFor, worldModel, boldness,
   ));
   const simulations = stage(metrics, "simulation", () => simulateStrategies(
-    strategies, hypotheses, beliefs, input.planningMode, worldModel,
+    strategies, hypotheses, beliefs, input.planningMode, worldModel, neural,
   ));
   metrics.simulationCount = simulations.length;
   const critics = stage(metrics, "critics", () => evaluateStrategies(
@@ -109,6 +116,18 @@ dimension 只能是 engagement, trust, communication_willingness, emotional_pres
   const networkTrace = stage(metrics, "network_trace", () => buildNetworkTrace({
     states: beliefs, hypotheses, selected: selection.selected,
     branches: simulations, uncertainty, snapshot: worldModel,
+    neuralTrace: neural ? (() => {
+      const state = loadNeuralPredictor()!;
+      return {
+        trust: neural.trust,
+        probs: predictResponse(neural.weights, neural.grid,
+          [...actionFeatureVector(selection.selected.family), ...regimePosteriorVector(hypotheses)]),
+        samples: state.samples,
+        advantage: state.holdoutModel !== null && state.holdoutBase !== null
+          ? state.holdoutBase - state.holdoutModel : 0,
+        params: state.params,
+      };
+    })() : undefined,
   }));
   metrics.durationMs = nowMs() - started;
   const report: DecisionReport = {

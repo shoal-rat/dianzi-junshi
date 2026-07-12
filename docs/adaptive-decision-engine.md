@@ -53,6 +53,7 @@ flowchart LR
 - 本次使用证据的历史用途
 - 时间信念观察
 - 世界模型：对应（体制, 策略族）的响应计数、转移残差，以及模型对基础频率的对数损失优势
+- 时序 CNN：按时间序重训并重新做保留集对照，只有保留集优势超过门槛才参与根节点混合
 - 结果事件与可回放审计记录
 
 世界模型学到的参数只经收缩闸门生效：没有数据时规划完全由结构先验驱动，几十条真实结果之后经验频率才逐渐主导。诊断接口可以查看模型是否真的比基础频率预测得更准。
@@ -74,6 +75,7 @@ flowchart LR
 | `decision/evidence.ts` | 观察提取与 BM25 ⊕ 向量 ⊕ RRF 混合检索 |
 | `decision/state.ts` | 时间状态、假设、变化和模式 |
 | `decision/worldmodel.ts` | 体制切换动力学、响应头、卡尔曼更新、rollout 与 EVOI |
+| `decision/neural.ts` | 纯 TS 时序卷积响应预测器：前向/反向、Adam、观测网格特征化 |
 | `decision/planner.ts` | 策略生成、批评器、奖励、不确定性和选择 |
 | `decision/pipeline.ts` | 阶段编排与表达契约 |
 | `decision/structured.ts` | 结构化 LLM 适配：原生约束解码优先，修复回退 |

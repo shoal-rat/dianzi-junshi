@@ -2,10 +2,10 @@
 
 把聊天贴进来。它先用本地世界模型想清楚，再帮你回——每一步计算都能点开看。
 
-[![Release](https://img.shields.io/badge/release-v5.2.0-177766)](docs/releases/v5.2.0.md)
+[![Release](https://img.shields.io/badge/release-v5.3.0-177766)](docs/releases/v5.3.0.md)
 [![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-3d6d62)](desktop/README.md)
 [![Local first](https://img.shields.io/badge/data-local--first-8d5b30)](docs/新手指南.md)
-[![Tests](https://img.shields.io/badge/tests-20%20passing-2f855a)](app/decision.test.ts)
+[![Tests](https://img.shields.io/badge/tests-25%20passing-2f855a)](app/decision.test.ts)
 
 电子军师是一款桌面聊天辅助应用。你不需要会写提示词，也不需要先整理完整故事。贴一段文字或一批截图，它会找回相关旧资料、比较几种可能解释、用世界模型向前推演几步，再给出能直接发送的说法。资料默认保存在你的电脑上。
 
@@ -85,6 +85,8 @@ flowchart LR
 
 - **思考深度**：快速 / 平衡 / 深入，对应推演深度 1/2/3 步与 2/3/4 个体制分支
 - **胆量**（0–100）：重塑目标函数——风险惩罚、推进加成、追问成本、收手门槛都随它变化。急着推进往右，想稳往左；模型的预测本身保持诚实，变的只是你愿意接受的风险
+
+当时序卷积预测器通过保留集门槛后，图中会出现「时序卷积 CNN」节点，标注它的混合权重、参数量、训练样本和保留集优势——它对各回应类别的推拉也画成边。
 
 刷新页面后面板会自动带回最近一次决策；地址加 `#thinking` 可以直接深链到这里。
 
@@ -166,7 +168,7 @@ cd app
 bun run verify
 ```
 
-当前验证包含 20 个单元与集成测试，以及一组合成决策情境。离线评测不调用模型，也不读取真实用户资料。前端资源在启动时内嵌进服务进程，改动 `app/public/` 后需要重启开发服务器。
+当前验证包含 25 个单元与集成测试、一组合成决策情境和一个时序 CNN 对照基准。离线评测不调用模型，也不读取真实用户资料。前端资源在启动时内嵌进服务进程，改动 `app/public/` 后需要重启开发服务器。
 
 桌面开发：
 
@@ -188,7 +190,7 @@ GitHub Actions 手动触发跨平台安装包构建（macOS、Windows、Linux）
 - [决策引擎评测](docs/decision-engine-evaluation.md)
 - [隐私校准与系统凭据库](docs/privacy-calibration-and-keychain.md)
 - [桌面签名、公证与原生 CI](docs/release-signing.md)
-- [v5.2.0 发行说明](docs/releases/v5.2.0.md)
+- [v5.3.0 发行说明](docs/releases/v5.3.0.md)
 - [更新记录](CHANGELOG.md)
 
 ## 技术结构
@@ -202,6 +204,7 @@ GitHub Actions 手动触发跨平台安装包构建（macOS、Windows、Linux）
 | 长期检索 | BM25 + 特征哈希向量余弦，Reciprocal Rank Fusion 融合；sqlite-vec 可选加速 |
 | 决策 | 双时间尺度信念、竞争假设、学习型世界模型（体制切换动力学 + 校准响应头 + 信念空间回溯）、模型化 EVOI、多批评器 |
 | 决策控制 | 思考深度滑杆（推演深度 / 体制分支）+ 胆量滑杆（风险偏好重塑目标函数，按档案保存） |
+| 神经预测器 | 纯 TypeScript 时序卷积网络（1252 参数，本机训练、种子确定），保留集对数损失门控，只在证明更准时参与混合 |
 | 可视化 | 每轮决策的分层激活网络（零依赖 SVG），节点可点击审计参数 |
 | 学习 | 世界模型响应计数 / 转移残差 / 对数损失门控 + 时间衰减 Beta contextual bandit + 证据用途反馈 |
 | 结构化输出 | API 级约束解码（Anthropic 强制 tool schema / OpenAI 兼容 response_format），失败才回退提示修复 |
@@ -211,7 +214,7 @@ GitHub Actions 手动触发跨平台安装包构建（macOS、Windows、Linux）
 
 ## 理论附录：它在优化什么
 
-以下内容完整描述 v5.2 决策引擎实现的数学结构。每个公式都对应仓库中的具体代码（主要在 `app/decision/worldmodel.ts`、`state.ts`、`evidence.ts`、`planner.ts`、`store.ts`），不是愿景描述。
+以下内容完整描述 v5.3 决策引擎实现的数学结构。每个公式都对应仓库中的具体代码（主要在 `app/decision/worldmodel.ts`、`neural.ts`、`state.ts`、`evidence.ts`、`planner.ts`、`store.ts`），不是愿景描述。
 
 ### 0. 问题的形式化：部分可观测决策过程
 
@@ -306,6 +309,31 @@ p(o\mid s',h,f)=(1-w)p_0(o\mid s')+w\hat p(o\mid h,f)
 $$
 
 零数据时是纯结构先验，几十条真实结果后经验频率主导——这是小样本条件下唯一诚实的标定方式。
+
+### 4.5 世界模型 III：时序卷积响应预测器
+
+结构头只看得到当前状态的概要，对轨迹形状是盲的——升到 0.5 的投入和从 0.9 降到 0.5 的投入，在概要里是同一个数。v5.3 增加一个小型一维卷积网络直接读原始观测时间线：输入 $X\in\mathbb{R}^{10\times 16}$（九个维度按 2.8 天分桶的加权均值，加一条观测密度通道——沉默间隔在这里是信号），两层 valid 卷积（核宽 3，感受野 5 桶约 14 天）：
+
+$$
+Y^{(1)}_{c,t}=\mathrm{ReLU}\left(b^{(1)}_c+\sum_{i=1}^{10}\sum_{k=0}^{2}W^{(1)}_{c,i,k}X_{i,t+k}\right)
+$$
+
+第二层同构；时间维全局平均池化 $z_c=\frac{1}{T}\sum_t Y^{(2)}_{c,t}$ 后拼接动作特征 $\phi(a)$ 与体制后验 $q(h)$，经两层全连接输出四类 softmax。共 1252 个参数，纯 TypeScript 实现前向与反向传播（反向经数值梯度校验），Adam 优化，种子确定使回放可复现。训练目标是带标签平滑与类平衡权重的交叉熵加 L2：
+
+$$
+\mathcal{L}(\theta)=-\frac{1}{N}\sum_{n=1}^{N}\omega_{y_n}\sum_{o}\tilde y_{n,o}\ln p_{\theta}(o\mid X_n,\phi_n,q_n)+\lambda\lVert\theta\rVert_2^2
+$$
+
+其中软目标 $\tilde y$ 在真实类上取 $1-\epsilon$、其余均分 $\epsilon$（$\epsilon=0.06$），$\omega$ 为截断的逆频率类权重。
+
+CNN 只经门控进入决策。按时间顺序留出最后 25% 的真实结果，比较它与当时响应头的保留集对数损失，只有优势超过 0.02 nats 才获得混合权重：
+
+$$
+p(o)=(1-w_{\mathrm{nn}})p_{\mathrm{head}}(o)+w_{\mathrm{nn}}p_{\theta}(o),\qquad
+w_{\mathrm{nn}}=\min\left(0.5,\frac{n}{n+12}\right)[L_{\mathrm{head}}-L_{\mathrm{cnn}}>0.02]
+$$
+
+混合发生在推演树的根节点（真实时间线可得处），逐分支线性实现以保持边际一致；深层延拓与体制似然仍由结构头负责。离线基准（`bun run evaluate`，种子固定可复现）构造「当前概要相同、轨迹形状不同」的序列：CNN 保留集对数损失约 $0.05$ nats，概要结构头 $1.61$ nats——概要看不出的形状，卷积看得出。数据不足或不比头更准时，$w_{\mathrm{nn}}=0$，引擎行为与 v5.2 完全一致。
 
 ### 5. 想象观测的信念更新
 

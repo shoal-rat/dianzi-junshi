@@ -28,8 +28,12 @@ import {
   type UncertaintyReport, type WorldModelSnapshot, type LearnedRegimeFamily,
 } from "./types";
 import { REGIME_SCORING } from "./state";
+import { GRID_WINDOW_DAYS, predictResponse, type CnnWeights } from "./neural";
 
 export const RESPONSE_CLASSES: ResponseClass[] = ["positive", "neutral", "negative", "no_reply"];
+
+/** Fixed regime order shared with the neural predictor's input encoding. */
+export const REGIME_ORDER = ["receptive", "uncertain", "pressured", "disengaging"] as const;
 
 const D = BELIEF_DIMENSIONS.length;
 const INDEX: Record<BeliefDimension, number> = Object.fromEntries(
@@ -332,8 +336,29 @@ function branchRisk(distribution: Record<ResponseClass, number>, predicted: Gaus
 const DISCOUNT = .68;
 const CONTINUATION_FAMILIES: StrategyFamily[] = ["mirror", "warm", "invite", "give_space", "clarify"];
 
+/** φ(a) in the fixed feature order, for the neural predictor's input. */
+export function actionFeatureVector(family: StrategyFamily): number[] {
+  const features = FAMILY_FEATURES[family];
+  return ACTION_FEATURES.map((feature) => features[feature] ?? 0);
+}
+
+/** q(h) in REGIME_ORDER, for the neural predictor's input. */
+export function regimePosteriorVector(hypotheses: StateHypothesis[]): number[] {
+  return REGIME_ORDER.map((id) => hypotheses.find((h) => h.id === id)?.probability ?? 0);
+}
+
+export interface NeuralBlend {
+  weights: CnnWeights;
+  /** Gated mixture weight in [0, .5]; zero when the CNN has not proven itself. */
+  trust: number;
+  /** Observation grid at decision time (buildObservationGrid). */
+  grid: number[];
+}
+
 export interface WorldModelOptions {
   snapshot?: WorldModelSnapshot;
+  /** Optional temporal-CNN refinement of the root response distribution. */
+  neural?: NeuralBlend;
 }
 
 function learnedFor(snapshot: WorldModelSnapshot | undefined, regime: string, family: StrategyFamily): LearnedRegimeFamily | undefined {
@@ -405,12 +430,24 @@ export function rolloutStrategies(
   const depth = rolloutDepth(planningMode);
   const regimeLimit = planningMode === "fast" ? 2 : planningMode === "balanced" ? 3 : 4;
   const mass = horizonMass(depth);
+  const neural = options.neural && options.neural.trust > 0 ? options.neural : undefined;
+  const regimeVector = neural ? regimePosteriorVector(hypotheses) : [];
   const branches: SimulationBranch[] = [];
   for (const strategy of strategies) {
+    // The CNN predicts the marginal response distribution from the raw
+    // timeline; blending it into every root branch preserves that marginal.
+    const cnnDistribution = neural
+      ? predictResponse(neural.weights, neural.grid, [...actionFeatureVector(strategy.family), ...regimeVector])
+      : null;
     for (const hypothesis of hypotheses.slice(0, regimeLimit)) {
       const learned = learnedFor(options.snapshot, hypothesis.id, strategy.family);
       const predicted = transition(belief, strategy.family, hypothesis.id, learned);
-      const distribution = responseDistribution(predicted, learned);
+      let distribution = responseDistribution(predicted, learned);
+      if (cnnDistribution && neural) {
+        distribution = Object.fromEntries(RESPONSE_CLASSES.map((cls, index) => [
+          cls, (1 - neural.trust) * distribution[cls] + neural.trust * cnnDistribution[index],
+        ])) as Record<ResponseClass, number>;
+      }
       let value = 0;
       let immediate = 0;
       let secondMoment = 0;
@@ -558,8 +595,10 @@ export function buildNetworkTrace(options: {
   branches: SimulationBranch[];
   uncertainty: UncertaintyReport;
   snapshot?: WorldModelSnapshot;
+  /** Present when the temporal CNN participated in this decision. */
+  neuralTrace?: { trust: number; probs: number[]; samples: number; advantage: number; params: number };
 }): NetworkTrace {
-  const { states, hypotheses, selected, branches, uncertainty, snapshot } = options;
+  const { states, hypotheses, selected, branches, uncertainty, snapshot, neuralTrace } = options;
   const edges: TraceEdge[] = [];
   const pushEdge = (from: string, to: string, weight: number) => {
     if (Math.abs(weight) >= .04) edges.push({ from, to, weight: Math.max(-1, Math.min(1, weight)) });
@@ -627,6 +666,18 @@ export function buildNetworkTrace(options: {
   for (const feature of activeFeatures) {
     pushEdge(strategyNode.id, `f:${feature}`, Number(features[feature]));
   }
+  if (neuralTrace) {
+    featureNodes.push({
+      id: "nn:cnn", label: "时序卷积 CNN",
+      activation: neuralTrace.trust,
+      detail: [
+        `混合权重 ${neuralTrace.trust.toFixed(2)}（保留集优势 ${neuralTrace.advantage.toFixed(3)} nats 才生效）`,
+        `${neuralTrace.params} 参数 · 训练样本 ${neuralTrace.samples} 条`,
+        `读取最近 ${GRID_WINDOW_DAYS} 天的观测时间线（含沉默间隔），预测边际回应分布`,
+      ],
+    });
+    pushEdge(strategyNode.id, "nn:cnn", neuralTrace.trust);
+  }
 
   const regimeMixture = hypotheses.map((h) => ({ id: h.id, probability: h.probability }));
   const mixedPredicted: Partial<Record<BeliefDimension, number>> = {};
@@ -683,6 +734,11 @@ export function buildNetworkTrace(options: {
       if (!predictedDims.includes(dimension as BeliefDimension)) continue;
       pushEdge(`p:${dimension}`, `o:${cls}`, Number(loading) / .95 * .8);
     }
+  }
+  if (neuralTrace) {
+    RESPONSE_CLASSES.forEach((cls, index) => {
+      pushEdge("nn:cnn", `o:${cls}`, neuralTrace.trust * (neuralTrace.probs[index] - (mixedResponse[cls] ?? 0)) * 2.5);
+    });
   }
 
   const expectedValue = selectedBranches.reduce((sum, branch) => sum + (branch.probability / branchMass) * branch.delayedReward, 0);
