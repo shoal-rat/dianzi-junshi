@@ -4,13 +4,13 @@
 
 A local-first desktop assistant for understanding Chinese dating chats and drafting natural replies.
 
-[![Release](https://img.shields.io/badge/release-v5.4.0-177766)](docs/releases/v5.4.0.md)
-[![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-177766)](#download)
+[![Release](https://img.shields.io/badge/release-v5.5.0-2563eb)](docs/releases/v5.5.0.md)
+[![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-2563eb)](#download)
 [![中文](https://img.shields.io/badge/中文-README-red)](README.md)
 
 </div>
 
-![The desktop app: profiles, copyable replies, thinking-depth and boldness sliders, and the insight panel](assets/app-home-v7.png)
+![Version 5.5: a white-first desktop UI with profiles, copyable replies, level-aware sliders, and an insight panel](assets/app-home-v8.png)
 
 ## Download
 
@@ -41,7 +41,9 @@ The app can reuse an existing Codex or Claude Code login without storing another
 - Retrieval combines vector similarity, lexical overlap, importance, weak recency, and related-memory links.
 - Original text and screenshots remain available because no summary is truly lossless.
 
-After sending a suggested reply, the user can record what actually happened. The app learns bounded strategy weights and keeps separate short-term and long-term estimates for responsiveness, initiative, follow-through, remembering details, and warmth. Old evidence decays; repeated outcomes increase confidence; recent divergence is presented as change, not as a rewritten permanent personality.
+After sending a suggested reply, the user can record what actually happened. The sent text is editable, and up to six follow-up screenshots can be attached; a vision-capable provider extracts the reply, selects the outcome and delay, and checks only clearly evidenced interaction signals. Every automatic choice remains editable until the user saves it. The app then learns bounded strategy weights and keeps separate short-term and long-term estimates for responsiveness, initiative, follow-through, remembering details, and warmth. Old evidence decays; repeated outcomes increase confidence; recent divergence is presented as change, not as a rewritten permanent personality.
+
+![Editable, screenshot-assisted outcome feedback in version 5.5](assets/app-feedback-v5.png)
 
 This design is informed by [PersonaMem](https://arxiv.org/abs/2504.14225), [Memoria](https://arxiv.org/abs/2512.12686), [A-MEM](https://arxiv.org/abs/2502.12110), [RAPTOR](https://proceedings.iclr.cc/paper_files/paper/2024/hash/8a2acd174940dbca361a6398a4f9df91-Abstract-Conference.html), [sqlite-vec](https://alexgarcia.xyz/sqlite-vec/), and [Tauri 2](https://v2.tauri.app/).
 
@@ -61,7 +63,7 @@ bun install
 bun run build
 ```
 
-The cross-platform release workflow is dispatched manually from GitHub Actions at a chosen tag and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v5.4.0 notes](docs/releases/v5.4.0.md).
+The cross-platform release workflow is dispatched manually from GitHub Actions at a chosen tag and creates a draft GitHub Release with Windows, macOS, and Linux installers. See [desktop release instructions](docs/发布桌面安装包.md) and the [v5.5.0 notes](docs/releases/v5.5.0.md).
 
 Version 5 added an event-sourced decision pipeline with temporal beliefs, competing hypotheses, decision-oriented retrieval, independent critics, uncertainty-aware abstention, linked outcome learning, replay, and offline evaluation. Version 5.1 replaced the static simulation table with a learned generative world model: regime-switching linear-Gaussian latent dynamics, a calibrated response head (structural softmax shrunk against decayed Dirichlet–multinomial outcome counts), diagonal-Kalman belief updates on imagined responses, finite-horizon belief-space rollouts, an exactly-computed expected value of information for clarifying questions, and online learning gated by predictive log-loss against base rates. Evidence retrieval is hybrid (Okapi BM25 ⊕ feature-hashed embeddings ⊕ Reciprocal Rank Fusion), and structured LLM calls use API-level constrained decoding with prompt-repair only as a fallback.
 
@@ -70,6 +72,8 @@ Version 5.2 adds an interactive decision-network visualization — the layered d
 Version 5.3 adds a temporal convolutional response predictor written in pure TypeScript (1,252 parameters, hand-written forward and backward passes verified against numeric gradients, Adam, label smoothing, seeded and replay-deterministic). It reads the raw observation timeline — nine belief dimensions bucketed over the last 45 days plus an observation-density channel, so silence gaps are visible signal — and only earns mixture weight through an honesty gate: retrained on every recorded outcome with a time-ordered 75/25 split, it must beat the existing response head by 0.02 nats of holdout log-loss before it can influence a decision. On the built-in benchmark of trajectory-shaped sequences (same present summary, different history) it scores about 0.05 nats versus 1.61 for the summary-only head. It also ships dictionary-based Chinese word segmentation (the engine-built-in `Intl.Segmenter`, zero dependencies) so BM25 statistics land on real words with character-bigram recall as a supplement, per-profile adaptive timescales (the canonical 21/240/120-day half-lives scale with each profile's median gap between exchanges, persisted per decision and honored by learning and replay), and named boldness gears in the UI (很稳 / 偏稳 / 平衡 / 偏敢 / 放胆冲) instead of a bare number. The full mathematical specification is in the README theory appendix.
 
 Version 5.4 makes screenshots a first-class input: a vision structured call reads the partner's last message, a short transcript and nine-dimension signals out of the image, and all of it flows into the same local decision pipeline — send a screenshot with no text at all and still get copy-ready options with a recommendation. Tokenization and embeddings now share one dictionary-segmented token space (mixed Chinese-English handled uniformly; stored vectors are re-embedded once by an idempotent startup migration). Release details in the [v5.4.0 notes](docs/releases/v5.4.0.md).
+
+Version 5.5 redesigns the product around a calm white canvas, restrained blue actions, and compact slider cards whose color changes with each named level. The desktop, tablet, and phone layouts now share one visual system. Outcome feedback also accepts screenshots and uses the active vision-capable provider to preselect the response category, delay, extracted reply, and clearly supported signals; the actual sent text and every suggested selection remain editable. Release details are in the [v5.5.0 notes](docs/releases/v5.5.0.md).
 
 ## License
 

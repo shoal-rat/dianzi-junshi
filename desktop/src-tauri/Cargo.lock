@@ -766,7 +766,7 @@ dependencies = [
 
 [[package]]
 name = "dianzi-junshi-desktop"
-version = "5.0.0"
+version = "5.5.0"
 dependencies = [
  "keyring",
  "serde",

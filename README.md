@@ -2,18 +2,18 @@
 
 把聊天贴进来。它先用本地世界模型想清楚，再帮你回——每一步计算都能点开看。
 
-[![Release](https://img.shields.io/badge/release-v5.4.0-177766)](docs/releases/v5.4.0.md)
-[![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-3d6d62)](desktop/README.md)
-[![Local first](https://img.shields.io/badge/data-local--first-8d5b30)](docs/新手指南.md)
-[![Tests](https://img.shields.io/badge/tests-30%20passing-2f855a)](app/decision.test.ts)
+[![Release](https://img.shields.io/badge/release-v5.5.0-2563eb)](docs/releases/v5.5.0.md)
+[![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-2563eb)](desktop/README.md)
+[![Local first](https://img.shields.io/badge/data-local--first-4f6fe8)](docs/新手指南.md)
+[![Tests](https://img.shields.io/badge/tests-30%20passing-8b5cf6)](app/decision.test.ts)
 
 电子军师是一款桌面聊天辅助应用。你不需要会写提示词，也不需要先整理完整故事。贴一段文字或一批截图，它会找回相关旧资料、比较几种可能解释、用世界模型向前推演几步，再给出能直接发送的说法。资料默认保存在你的电脑上。
 
-![电子军师主界面：左侧档案、中间对话与可复制回复、顶栏思考深度与胆量滑杆、右侧判断面板](assets/app-home-v7.png)
+![电子军师 v5.5 主界面：白色画布、蓝色操作、可复制回复、彩色档位滑杆与右侧判断面板](assets/app-home-v8.png)
 
 ## 三步开始
 
-![三步开始使用电子军师](assets/desktop-three-steps-v4.svg)
+![三步开始使用电子军师](assets/desktop-three-steps-v5.svg)
 
 1. 新建一个聊天档案，只填昵称也可以。
 2. 贴上聊天文字、截图或以前的资料。
@@ -44,7 +44,7 @@
 
 也可以选择 Claude、DeepSeek、GLM 或自定义 OpenAI 兼容 API。API Key 保存在 macOS Keychain、Windows Credential Manager 或 Linux Secret Service，不写入 JSON 配置。旧版本留下的明文 Key 会在首次桌面启动时自动迁移。演示模式完全离线，用来先熟悉界面。
 
-![桌面平台与本机 AI](assets/desktop-platforms-v4.svg)
+![桌面平台与本机 AI](assets/desktop-platforms-v5.svg)
 
 ## 它和普通聊天机器人哪里不同
 
@@ -52,17 +52,17 @@
 
 电子军师把这些工作拆开，决策由本地引擎完成，模型只负责最后把话说自然：
 
-![决策引擎架构：观测时间线 → 信念滤波 → 体制假设 → 学习型世界模型（动力学 / 响应头 / 时序 CNN）→ 信念空间推演 → 批评器与胆量 → 表达，真实结果经门控回流](assets/engine-architecture-v7.svg)
+![决策引擎架构：观测时间线 → 信念滤波 → 体制假设 → 学习型世界模型 → 信念空间推演 → 批评与选择 → 自然表达，真实结果经门控回流](assets/engine-architecture-v8.svg)
 
 ## 决策网络：看得见的思考
 
-<img src="assets/app-network-v7.png" align="right" width="340" alt="决策网络面板：分层激活图、最后选择、竞争解释与方案得分">
+<img src="assets/app-network-v8.png" align="right" width="310" alt="v5.5 决策网络面板：蓝紫分层激活图、最后选择、竞争解释与方案得分">
 
 生成回复时，卡片上就有「看它的决策网络」；回复完成后按钮常驻。点开右侧面板，你看到的是引擎本轮**真实执行的那次计算**，逐层展开：
 
 **状态信念 → 体制假设 → 选中策略 → 动作特征 → 预测状态 → 回应分布 → 输出**
 
-- 节点大小和颜色对应真实激活值（青色为正、橙色为负）
+- 节点大小和颜色对应真实激活值（蓝色为正、紫色为负）
 - 边的粗细对应贡献强度，权重取自真实系数：信念到假设用打分权重，特征到状态用体制混合增益，状态到回应用响应头载荷
 - 点任意节点查看参数：均值与方差、有效样本量、后验概率、该情境的真实学习计数、最强的流入/流出贡献
 - 图下方依次是最后选择、仍在竞争的解释、比较过的方案与本轮证据
@@ -70,7 +70,7 @@
 顶栏两个滑杆直接控制引擎，按档案分别保存：
 
 - **思考深度**：快速 / 平衡 / 深入，对应推演深度 1/2/3 步与 2/3/4 个体制分支
-- **胆量**：五个有名字的档位——很稳 / 偏稳 / 平衡 / 偏敢 / 放胆冲。选的是态度，界面不摆数字；档位重塑目标函数——风险惩罚、推进加成、追问成本、收手门槛都随它变化。模型的预测本身保持诚实，变的只是你愿意接受的风险
+- **胆量**：五个有名字的档位——很稳 / 偏稳 / 平衡 / 偏敢 / 放胆冲。选的是态度，界面不摆数字；档位重塑目标函数——风险惩罚、推进加成、追问成本、收手门槛都随它变化。滑杆从冷静灰蓝过渡到蓝、紫与橙色，模型的预测本身保持诚实，变的只是你愿意接受的风险
 
 当时序卷积预测器通过保留集门槛后，图中会出现「时序卷积 CNN」节点，标注它的混合权重、参数量、训练样本和保留集优势——它对各回应类别的推拉也画成边。
 
@@ -94,7 +94,7 @@
 
 原文负责完整留存，结构化记忆负责定位，当前上下文只负责本轮决策。近期的 Codex 和 Claude 产品也在使用上下文压缩、外部记忆与主动上下文管理来延长任务，本项目把可回指原文作为最终依据：[Codex compaction](https://openai.com/index/introducing-upgrades-to-codex/)、[Claude context management](https://www.anthropic.com/news/claude-opus-4-5)。
 
-![批量截图整理进度](assets/app-batch-progress-v3.png)
+![v5.5 批量截图整理进度](assets/app-batch-progress-v5.png)
 
 ## 从真实结果中学习
 
@@ -106,7 +106,9 @@
 - 约好的事情有没有做到
 - 有没有记得以前的细节
 
-![记录真实后续结果](assets/app-feedback-v4.png)
+「你当时发的是」可以改成最后真正发送的版本。对方的后续也不用手抄：粘贴或加入最多 6 张聊天截图，当前支持视觉的 AI 会自动提取关键回复、选择结果类别和回复时间，并勾选截图里有明确证据的互动信号。界面会显示置信度和理由；所有选择都能修改，只有点「记下这次结果」后才进入学习。
+
+![v5.5 通过回复截图自动选择真实结果，发送内容仍可编辑](assets/app-feedback-v5.png)
 
 每次结果都会关联当时的决策、策略和实际发送文案。系统分别观察短期变化和长期习惯；新结果的权重更高，旧结果缓慢衰减。单次结果只小幅调整估计，重复出现的结果才形成稳定模式。
 
@@ -182,7 +184,7 @@ GitHub Actions 手动触发跨平台安装包构建（macOS、Windows、Linux）
 - [决策引擎评测](docs/decision-engine-evaluation.md)
 - [隐私校准与系统凭据库](docs/privacy-calibration-and-keychain.md)
 - [桌面签名、公证与原生 CI](docs/release-signing.md)
-- [v5.4.0 发行说明](docs/releases/v5.4.0.md)
+- [v5.5.0 发行说明](docs/releases/v5.5.0.md)
 - [更新记录](CHANGELOG.md)
 
 ## 技术结构

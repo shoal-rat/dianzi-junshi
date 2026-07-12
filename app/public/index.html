@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light">
 <title>电子军师 · 先想清楚，再帮你回</title>
-  <link rel="stylesheet" href="/style.css?v=5.2.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='9' fill='%23177766'/%3E%3Cpath d='M9 16l4.5 4.5L23 10.5' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css?v=5.5.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='9' fill='%232563EB'/%3E%3Ccircle cx='11' cy='11' r='2.2' fill='white'/%3E%3Ccircle cx='21' cy='10' r='2.2' fill='white'/%3E%3Ccircle cx='16' cy='21' r='2.2' fill='white'/%3E%3Cpath d='M12.7 12.2l2.2 6.7m4.3-7.1l-2.1 7.1M13 11h5.8' stroke='white' stroke-width='1.8' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E">
 </head>
 <body>
 <div id="app">
@@ -42,14 +42,12 @@
       </div>
       <div class="chat-actions">
         <label class="compact-field slider-field" title="想得多深：快速直觉、平衡，或者深入多想几步">
-          <span>思考深度</span>
+          <span class="slider-copy"><span>思考深度</span><b id="planning-value">平衡</b></span>
           <input type="range" id="planning-slider" min="0" max="2" step="1" value="1" aria-label="思考深度" autocomplete="off">
-          <b id="planning-value">平衡</b>
         </label>
         <label class="compact-field slider-field" title="这段关系里你想多敢：影响风险偏好、推进力度和出手速度">
-          <span>胆量</span>
+          <span class="slider-copy"><span>胆量</span><b id="boldness-value">平衡</b></span>
           <input type="range" id="boldness-slider" min="0" max="4" step="1" value="2" aria-label="胆量" autocomplete="off" disabled>
-          <b id="boldness-value">平衡</b>
         </label>
         <label class="compact-field">
           <span>关系进度</span>
@@ -256,10 +254,10 @@
       </div>
       <button id="feedback-close" type="button" class="icon-btn" aria-label="关闭">×</button>
     </div>
-    <div class="feedback-sent">
-      <span>你当时发的是</span>
-      <div id="feedback-reply"></div>
-    </div>
+    <label class="feedback-sent">
+      <span>你当时发的是 <i>可以修改</i></span>
+      <textarea id="feedback-reply" rows="2" aria-label="你当时实际发的是" placeholder="写下你最后实际发送的内容"></textarea>
+    </label>
     <fieldset class="feedback-outcomes">
       <legend>后来大概是哪种情况？</legend>
       <label><input type="radio" name="outcome" value="positive"><span><b>聊得更好了</b><small>ta 接住了，也愿意继续</small></span></label>
@@ -268,10 +266,20 @@
       <label><input type="radio" name="outcome" value="no_reply"><span><b>一直没回</b><small>这次没有收到回复</small></span></label>
     </fieldset>
     <div class="feedback-grid">
-      <label class="field">
-        <span>ta 实际回了什么 <i>可选</i></span>
-        <textarea id="feedback-response" rows="4" placeholder="可以把后来的回复贴在这里…"></textarea>
-      </label>
+      <div class="feedback-response-field">
+        <label class="field">
+          <span>ta 实际回了什么 <i>文字或截图都可以</i></span>
+          <textarea id="feedback-response" rows="4" placeholder="粘贴回复文字，或直接加入聊天截图…"></textarea>
+        </label>
+        <div class="feedback-vision-actions">
+          <button id="feedback-attach" type="button" class="mini-btn">＋ 加回复截图</button>
+          <input type="file" id="feedback-file-input" accept="image/png,image/jpeg,image/webp,image/gif" hidden multiple>
+          <button id="feedback-analyze" type="button" class="mini-btn" hidden>重新识别</button>
+          <span>添加后，AI 会自动选择上面的情况和下面的信号</span>
+        </div>
+        <div id="feedback-attach-strip" class="feedback-attach-strip" hidden></div>
+        <div id="feedback-analysis-status" class="feedback-analysis-status" role="status" aria-live="polite" hidden></div>
+      </div>
       <label class="field">
         <span>大约多久回复</span>
         <select id="feedback-delay">
@@ -304,6 +312,6 @@
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <button id="drawer-backdrop" class="drawer-backdrop" type="button" aria-label="关闭侧边页面" hidden></button>
 
-<script type="module" src="/app.js?v=5.2.0"></script>
+<script type="module" src="/app.js?v=5.5.0"></script>
 </body>
 </html>

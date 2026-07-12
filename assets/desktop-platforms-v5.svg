@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">三个桌面平台，一个下载页面</title>
+  <desc id="desc">Windows、macOS 和 Linux 安装包均由 GitHub Release 提供。</desc>
+  <defs><filter id="s" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#183b76" flood-opacity=".08"/></filter></defs>
+  <rect width="1200" height="420" rx="32" fill="#f8fafc"/>
+  <g font-family="Inter, PingFang SC, Microsoft YaHei, sans-serif">
+    <text x="56" y="62" fill="#111827" font-size="28" font-weight="750">一个下载页面，覆盖三种电脑</text>
+    <text x="56" y="92" fill="#7b8492" font-size="15">安装包已经带好桌面 App 与本地后端，普通用户不需要安装 Bun、Rust 或数据库。</text>
+    <g filter="url(#s)">
+      <rect x="56" y="132" width="338" height="230" rx="24" fill="#fff" stroke="#e5eaf1"/>
+      <rect x="431" y="132" width="338" height="230" rx="24" fill="#fff" stroke="#e5eaf1"/>
+      <rect x="806" y="132" width="338" height="230" rx="24" fill="#fff" stroke="#e5eaf1"/>
+    </g>
+    <g transform="translate(86 162)">
+      <rect width="58" height="58" rx="17" fill="#eaf2ff"/>
+      <g fill="#2563eb"><path d="M14 16l13-2v14H14zM30 13l14-2v17H30zM14 31h13v14l-13-2zM30 31h14v17l-14-2z"/></g>
+      <text x="0" y="98" fill="#111827" font-size="22" font-weight="750">Windows</text>
+      <text x="0" y="127" fill="#667085" font-size="15">Windows 10 / 11</text>
+      <rect y="151" width="112" height="34" rx="17" fill="#f4f6f8"/><text x="56" y="173" fill="#475467" font-size="12" text-anchor="middle">Setup.exe</text>
+      <rect x="120" y="151" width="70" height="34" rx="17" fill="#f4f6f8"/><text x="155" y="173" fill="#475467" font-size="12" text-anchor="middle">MSI</text>
+    </g>
+    <g transform="translate(461 162)">
+      <rect width="58" height="58" rx="17" fill="#f1f3f6"/>
+      <path d="M36 19c-2.5 0-5.4 1.5-6.8 1.5-1.6 0-3.9-1.4-6.5-1.3-3.3 0-6.4 1.9-8.1 4.9-3.5 6.1-.9 15.1 2.5 20 1.7 2.4 3.7 5.1 6.3 5 2.5-.1 3.5-1.6 6.5-1.6 3 0 3.8 1.6 6.5 1.5 2.7-.1 4.4-2.4 6.1-4.9 1.9-2.8 2.7-5.5 2.8-5.6-.1 0-5.3-2-5.3-8 0-5 4.1-7.4 4.3-7.5-2.3-3.5-6-3.8-7.3-3.9zm-1.7-6.4c1.4-1.7 2.4-4.1 2.1-6.5-2 .1-4.5 1.4-5.9 3.1-1.3 1.5-2.5 3.9-2.2 6.2 2.3.2 4.6-1.1 6-2.8z" fill="#344054" transform="scale(.72) translate(8 5)"/>
+      <text x="0" y="98" fill="#111827" font-size="22" font-weight="750">macOS</text>
+      <text x="0" y="127" fill="#667085" font-size="15">Apple Silicon 与 Intel</text>
+      <rect y="151" width="82" height="34" rx="17" fill="#f4f6f8"/><text x="41" y="173" fill="#475467" font-size="12" text-anchor="middle">DMG</text>
+      <rect x="90" y="151" width="104" height="34" rx="17" fill="#eff6ff"/><text x="142" y="173" fill="#2563eb" font-size="12" text-anchor="middle">自动识别芯片</text>
+    </g>
+    <g transform="translate(836 162)">
+      <rect width="58" height="58" rx="17" fill="#f4f0ff"/>
+      <rect x="12" y="13" width="34" height="32" rx="8" fill="none" stroke="#7c3aed" stroke-width="2.5"/>
+      <path d="M20 24l5 5-5 5m10 0h8" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="0" y="98" fill="#111827" font-size="22" font-weight="750">Linux</text>
+      <text x="0" y="127" fill="#667085" font-size="15">Ubuntu / Debian 与其他发行版</text>
+      <rect y="151" width="104" height="34" rx="17" fill="#f4f6f8"/><text x="52" y="173" fill="#475467" font-size="12" text-anchor="middle">AppImage</text>
+      <rect x="112" y="151" width="68" height="34" rx="17" fill="#f4f6f8"/><text x="146" y="173" fill="#475467" font-size="12" text-anchor="middle">DEB</text>
+    </g>
+  </g>
+</svg>

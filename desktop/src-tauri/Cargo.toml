@@ -1,6 +1,6 @@
 [package]
 name = "dianzi-junshi-desktop"
-version = "5.0.0"
+version = "5.5.0"
 description = "电子军师桌面应用"
 authors = ["shoal-rat contributors"]
 edition = "2021"
