@@ -23,6 +23,16 @@ function nearestGear(boldness) {
   return best;
 }
 
+const PLANNING_COLORS = ["#38bdf8", "#2563eb", "#8b5cf6"];
+const BOLDNESS_COLORS = ["#94a3b8", "#06b6d4", "#2563eb", "#8b5cf6", "#f97316"];
+function paintSlider(slider, index, colors) {
+  const max = Math.max(1, Number(slider.max) - Number(slider.min));
+  const progress = ((index - Number(slider.min)) / max) * 100;
+  slider.style.setProperty("--range-progress", `${progress}%`);
+  slider.style.setProperty("--slider-color", colors[index] ?? colors[0]);
+  slider.closest(".slider-field")?.style.setProperty("--slider-color", colors[index] ?? colors[0]);
+}
+
 const state = {
   partners: [],
   slug: null,
@@ -34,6 +44,9 @@ const state = {
   presets: null,
   attachments: [], // {mediaType, dataBase64, previewUrl}
   profileAttachments: [],
+  feedbackAttachments: [],
+  feedbackAnalyzeTimer: null,
+  feedbackAnalyzing: false,
   localStatus: null,
   activeMaterialJobId: null,
   materialPollTimer: null,
@@ -269,6 +282,7 @@ async function selectPartner(slug) {
   $("#boldness-slider").disabled = false;
   $("#boldness-slider").value = String(gear);
   $("#boldness-value").textContent = BOLDNESS_GEARS[gear].label;
+  paintSlider($("#boldness-slider"), gear, BOLDNESS_COLORS);
   $("#sidebar").classList.remove("open");
   closeDrawers();
   await loadMessages(slug);
@@ -382,10 +396,11 @@ function openFeedback(replyText, block = null) {
     strategyId: block.dataset.strategyId || undefined,
     replyId: block.dataset.replyId || undefined,
   } : null;
-  $("#feedback-reply").textContent = replyText;
+  $("#feedback-reply").value = replyText;
   $("#feedback-response").value = "";
   $("#feedback-delay").value = "6";
   document.querySelectorAll("#feedback-form input[type=radio], #feedback-form input[type=checkbox]").forEach((input) => { input.checked = false; });
+  clearFeedbackAttachments();
   showFormError("#feedback-error", "");
   $("#dlg-feedback").showModal();
 }
@@ -867,6 +882,89 @@ function clearAttachments() {
   renderAttachments();
 }
 
+function setFeedbackAnalysisStatus(message = "", kind = "") {
+  const node = $("#feedback-analysis-status");
+  node.textContent = message;
+  node.hidden = !message;
+  node.className = `feedback-analysis-status${kind ? ` ${kind}` : ""}`;
+}
+
+function renderFeedbackAttachments() {
+  const strip = $("#feedback-attach-strip");
+  strip.innerHTML = "";
+  strip.hidden = state.feedbackAttachments.length === 0;
+  $("#feedback-analyze").hidden = state.feedbackAttachments.length === 0;
+  state.feedbackAttachments.forEach((item, index) => {
+    const thumb = el(`<div class="attach-thumb"><img src="${item.previewUrl}" alt="${esc(item.name)}"><button type="button" title="移除">×</button></div>`);
+    thumb.querySelector("button").onclick = () => {
+      state.feedbackAttachments.splice(index, 1);
+      renderFeedbackAttachments();
+      setFeedbackAnalysisStatus("");
+    };
+    strip.appendChild(thumb);
+  });
+}
+
+function clearFeedbackAttachments() {
+  clearTimeout(state.feedbackAnalyzeTimer);
+  state.feedbackAttachments = [];
+  state.feedbackAnalyzing = false;
+  renderFeedbackAttachments();
+  setFeedbackAnalysisStatus("");
+}
+
+function scheduleFeedbackAnalysis() {
+  clearTimeout(state.feedbackAnalyzeTimer);
+  state.feedbackAnalyzeTimer = setTimeout(() => void analyzeFeedback(), 320);
+}
+
+function addFeedbackAttachment(file) {
+  if (state.feedbackAttachments.length >= 6) { toast("一次最多加入 6 张回复截图"); return; }
+  addImageFile(file, state.feedbackAttachments, () => {
+    renderFeedbackAttachments();
+    scheduleFeedbackAnalysis();
+  });
+}
+
+async function analyzeFeedback() {
+  if (state.feedbackAnalyzing || !state.slug) return;
+  const replyText = $("#feedback-reply").value.trim();
+  const partnerResponse = $("#feedback-response").value.trim();
+  if (!replyText) { setFeedbackAnalysisStatus("先写清楚你当时实际发了什么。", "error"); return; }
+  if (!partnerResponse && !state.feedbackAttachments.length) { setFeedbackAnalysisStatus("请贴上 ta 的回复文字或截图。", "error"); return; }
+  state.feedbackAnalyzing = true;
+  $("#feedback-analyze").disabled = true;
+  setFeedbackAnalysisStatus("正在读截图并判断实际反应…", "loading");
+  try {
+    const result = await api("/api/feedback/analyze", {
+      method: "POST",
+      body: {
+        slug: state.slug,
+        replyText,
+        partnerResponse,
+        images: state.feedbackAttachments.map(({ name, mediaType, dataBase64 }) => ({ name, mediaType, dataBase64 })),
+      },
+    });
+    const outcomeInput = document.querySelector(`#feedback-form input[name=outcome][value=${result.outcome}]`);
+    if (outcomeInput) outcomeInput.checked = true;
+    if (!partnerResponse && result.partnerResponse) $("#feedback-response").value = result.partnerResponse;
+    if (["0.2", "1", "6", "24", "72", "168"].includes(String(result.responseDelayHours))) {
+      $("#feedback-delay").value = String(result.responseDelayHours);
+    }
+    for (const name of ["continued", "initiated", "followedThrough", "brokePromise", "rememberedDetail", "forgotDetail"]) {
+      const input = document.querySelector(`#feedback-form input[name=${name}]`);
+      if (input) input.checked = result.signals?.[name] === true;
+    }
+    const confidence = Math.round((Number(result.confidence) || 0) * 100);
+    setFeedbackAnalysisStatus(`已自动选择 · 把握 ${confidence}%${result.reason ? ` · ${result.reason}` : ""}`);
+  } catch (error) {
+    setFeedbackAnalysisStatus(friendlyError(error), "error");
+  } finally {
+    state.feedbackAnalyzing = false;
+    $("#feedback-analyze").disabled = false;
+  }
+}
+
 function renderProfileAttachments() {
   const strip = $("#np-file-list");
   strip.innerHTML = "";
@@ -1252,18 +1350,22 @@ function bind() {
   const planningIndex = PLANNING_LEVELS.indexOf(state.planningMode);
   planningSlider.value = String(planningIndex >= 0 ? planningIndex : 1);
   $("#planning-value").textContent = PLANNING_LABELS[state.planningMode] ?? "平衡";
+  paintSlider(planningSlider, Number(planningSlider.value), PLANNING_COLORS);
   planningSlider.oninput = () => {
     state.planningMode = PLANNING_LEVELS[Number(planningSlider.value)] ?? "balanced";
     $("#planning-value").textContent = PLANNING_LABELS[state.planningMode];
+    paintSlider(planningSlider, Number(planningSlider.value), PLANNING_COLORS);
     localStorage.setItem("dj-planning-mode", state.planningMode);
   };
 
   // 胆量档位：显示档位名，停止拨动后写入档案并作用于下一次决策
   const boldnessSlider = $("#boldness-slider");
+  paintSlider(boldnessSlider, Number(boldnessSlider.value), BOLDNESS_COLORS);
   boldnessSlider.oninput = () => {
     const gear = BOLDNESS_GEARS[Number(boldnessSlider.value)] ?? BOLDNESS_GEARS[2];
     state.boldness = gear.value;
     $("#boldness-value").textContent = gear.label;
+    paintSlider(boldnessSlider, Number(boldnessSlider.value), BOLDNESS_COLORS);
     clearTimeout(state.boldnessTimer);
     state.boldnessTimer = setTimeout(async () => {
       if (!state.slug) return;
@@ -1404,8 +1506,22 @@ function bind() {
   // 实际结果反馈：把真实后续变成有时间权重的学习信号
   $("#feedback-close").onclick = () => $("#dlg-feedback").close();
   $("#feedback-cancel").onclick = () => $("#dlg-feedback").close();
+  $("#feedback-attach").onclick = () => $("#feedback-file-input").click();
+  $("#feedback-file-input").onchange = (e) => {
+    for (const file of e.target.files) addFeedbackAttachment(file);
+    e.target.value = "";
+  };
+  $("#feedback-analyze").onclick = () => void analyzeFeedback();
+  $("#feedback-response").addEventListener("paste", (e) => {
+    for (const item of e.clipboardData?.items ?? []) {
+      if (item.type.startsWith("image/")) { addFeedbackAttachment(item.getAsFile()); e.preventDefault(); }
+    }
+  });
+  $("#dlg-feedback").addEventListener("close", clearFeedbackAttachments);
   $("#feedback-form").onsubmit = async (e) => {
     e.preventDefault();
+    const actualReply = $("#feedback-reply").value.trim();
+    if (!actualReply) { showFormError("#feedback-error", "先写一下你当时实际发了什么。"); return; }
     const outcome = document.querySelector("#feedback-form input[name=outcome]:checked")?.value;
     if (!outcome) { showFormError("#feedback-error", "先选一下 ta 后来的反应。"); return; }
     const btn = $("#feedback-save");
@@ -1417,7 +1533,7 @@ function bind() {
         method: "POST",
         body: {
           ...(state.selectedDecision || {}),
-          replyText: state.selectedReply,
+          replyText: actualReply,
           partnerResponse: $("#feedback-response").value,
           outcome,
           responseDelayHours: Number($("#feedback-delay").value),

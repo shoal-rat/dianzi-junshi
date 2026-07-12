@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
+  <title id="title">电子军师三步上手</title>
+  <desc id="desc">下载安装、建立聊天档案、复制回复并记录真实结果。</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#183b76" flood-opacity=".08"/></filter>
+    <linearGradient id="line" x1="0" x2="1"><stop stop-color="#38bdf8"/><stop offset=".55" stop-color="#2563eb"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+  </defs>
+  <rect width="1200" height="500" rx="32" fill="#f8fafc"/>
+  <text x="58" y="64" fill="#111827" font-family="Inter, PingFang SC, Microsoft YaHei, sans-serif" font-size="28" font-weight="750">第一次使用，只要三步</text>
+  <text x="58" y="94" fill="#7b8492" font-family="Inter, PingFang SC, Microsoft YaHei, sans-serif" font-size="15">不用配置开发环境；下载安装到记录结果，全部在一个桌面 App 里完成。</text>
+  <path d="M260 278H930" fill="none" stroke="url(#line)" stroke-width="4" stroke-linecap="round" opacity=".35"/>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="132" width="330" height="308" rx="24" fill="#fff" stroke="#e5eaf1"/>
+    <rect x="435" y="132" width="330" height="308" rx="24" fill="#fff" stroke="#e5eaf1"/>
+    <rect x="816" y="132" width="330" height="308" rx="24" fill="#fff" stroke="#e5eaf1"/>
+  </g>
+
+  <g font-family="Inter, PingFang SC, Microsoft YaHei, sans-serif">
+    <g transform="translate(82 162)">
+      <rect width="56" height="56" rx="17" fill="#eff6ff"/>
+      <path d="M18 31h20v10H18zM28 13v20m-8-8l8 8 8-8" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="271" cy="16" r="16" fill="#2563eb"/><text x="271" y="22" fill="#fff" font-size="17" font-weight="750" text-anchor="middle">1</text>
+      <text x="0" y="94" fill="#111827" font-size="22" font-weight="750">下载安装</text>
+      <text x="0" y="126" fill="#667085" font-size="15">从 GitHub Release 选择系统对应文件</text>
+      <rect x="0" y="154" width="86" height="30" rx="15" fill="#f3f4f6"/><text x="43" y="174" fill="#4b5563" font-size="12" text-anchor="middle">Windows</text>
+      <rect x="94" y="154" width="76" height="30" rx="15" fill="#f3f4f6"/><text x="132" y="174" fill="#4b5563" font-size="12" text-anchor="middle">macOS</text>
+      <rect x="178" y="154" width="68" height="30" rx="15" fill="#f3f4f6"/><text x="212" y="174" fill="#4b5563" font-size="12" text-anchor="middle">Linux</text>
+      <text x="0" y="222" fill="#98a2b3" font-size="13">双击安装包即可开始</text>
+    </g>
+
+    <g transform="translate(463 162)">
+      <rect width="56" height="56" rx="17" fill="#eef5ff"/>
+      <circle cx="22" cy="25" r="7" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+      <path d="M10 45c1.5-8 8-12 14-12s12.5 4 14 12M35 17h11v11H35z" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="271" cy="16" r="16" fill="#4f6fe8"/><text x="271" y="22" fill="#fff" font-size="17" font-weight="750" text-anchor="middle">2</text>
+      <text x="0" y="94" fill="#111827" font-size="22" font-weight="750">建立聊天档案</text>
+      <text x="0" y="126" fill="#667085" font-size="15">只填称呼就能开始，截图可以批量加入</text>
+      <g transform="translate(0 151)">
+        <rect width="265" height="54" rx="14" fill="#f8fafc" stroke="#e5eaf1"/>
+        <rect x="12" y="11" width="32" height="32" rx="9" fill="#eaf2ff"/>
+        <path d="M18 34l7-8 5 5 4-4 5 7" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="56" y="25" fill="#344054" font-size="13" font-weight="650">过往聊天截图</text><text x="56" y="42" fill="#98a2b3" font-size="11">后台逐张整理 · 原图保留</text>
+      </g>
+      <text x="0" y="222" fill="#98a2b3" font-size="13">资料默认只在这台电脑上</text>
+    </g>
+
+    <g transform="translate(844 162)">
+      <rect width="56" height="56" rx="17" fill="#f4f0ff"/>
+      <path d="M16 19h24v16H26l-7 6v-6h-3z" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linejoin="round"/><path d="M23 27h10" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="271" cy="16" r="16" fill="#8b5cf6"/><text x="271" y="22" fill="#fff" font-size="17" font-weight="750" text-anchor="middle">3</text>
+      <text x="0" y="94" fill="#111827" font-size="22" font-weight="750">复制，再看后来</text>
+      <text x="0" y="126" fill="#667085" font-size="15">选择自然的回复，真实结果会更新判断</text>
+      <g transform="translate(0 151)">
+        <rect width="255" height="46" rx="15" fill="#edf4ff"/>
+        <text x="16" y="29" fill="#1e4b94" font-size="14" font-weight="620">周六见，我可不会放你鸽子</text>
+      </g>
+      <g transform="translate(0 207)"><circle cx="7" cy="7" r="7" fill="#22c55e"/><path d="M4 7l2 2 4-5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><text x="22" y="12" fill="#667085" font-size="13">记录结果，越用越贴合真实节奏</text></g>
+    </g>
+  </g>
+</svg>

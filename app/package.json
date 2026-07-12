@@ -1,6 +1,6 @@
 {
   "name": "dianzi-junshi-app",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "private": true,
   "description": "电子军师桌面后端：SQLite 时间画像、批量截图和本机 AI 连接",
   "type": "module",
