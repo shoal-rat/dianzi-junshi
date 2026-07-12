@@ -1222,8 +1222,8 @@ function makeDialogDismissible(dialog) {
 function updateModeCopy() {
   const sendLabels = { reply: "帮我想想", analyze: "帮我读懂", ask: "帮我看看", interest: "帮我判断" };
   const placeholders = {
-    reply: "把 ta 发来的话贴在这里…",
-    analyze: "贴上 ta 的消息或描述当时的情况…",
+    reply: "把 ta 发来的话贴在这里，或只发聊天截图，我看图帮你选…",
+    analyze: "贴消息、截图或描述当时的情况…",
     ask: "写下你准备发的话，我帮你看看…",
     interest: "贴几段最近的聊天，或说说 ta 最近做了什么…",
   };

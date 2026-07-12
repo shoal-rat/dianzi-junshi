@@ -1,6 +1,6 @@
 import type { EvidenceRef, PipelineInput, StructuredObservation, BeliefDimension } from "./types";
 import { usefulnessFor } from "./store";
-import { cosineSimilarity, embedText } from "../materials";
+import { cosineSimilarity, embedText } from "../embedding";
 import { retrievalTokens } from "./tokenize";
 
 const SIGNALS: Array<{

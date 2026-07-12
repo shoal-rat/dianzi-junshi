@@ -260,5 +260,9 @@ export interface PipelineInput {
   mode: "reply" | "analyze" | "ask" | "interest";
   planningMode: PlanningMode;
   text: string;
+  /** Screenshots sent this round: the engine reads them (vision structured
+   * call) so an image-only message still produces grounded observations. */
+  images?: Array<{ mediaType: string; dataBase64: string }>;
+  localImagePaths?: string[];
   evidence: EvidenceRef[];
 }

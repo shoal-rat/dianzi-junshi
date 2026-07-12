@@ -535,6 +535,8 @@ export interface StructuredCall {
   schemaName: string;
   /** JSON Schema，顶层必须是 object（Anthropic tool input 的要求）。 */
   schema: Record<string, unknown>;
+  /** 可选截图：支持看图的供应商会把它们作为输入的一部分。 */
+  images?: ImageAttachment[];
   maxTokens?: number;
 }
 
@@ -551,7 +553,15 @@ async function structuredClaude(cfg: ProviderConfig, call: StructuredCall): Prom
       model: cfg.model || PROVIDER_PRESETS.claude.defaultModel,
       max_tokens: call.maxTokens ?? 1024,
       system: call.system,
-      messages: [{ role: "user", content: call.user }],
+      messages: [{
+        role: "user",
+        content: [
+          ...(call.images ?? []).map((img) => ({
+            type: "image", source: { type: "base64", media_type: img.mediaType, data: img.dataBase64 },
+          })),
+          { type: "text", text: call.user },
+        ],
+      }],
       tools: [{
         name: "emit_structured",
         description: `返回符合 ${call.schemaName} 的结构化结果`,
@@ -578,7 +588,15 @@ async function structuredOpenAICompat(cfg: ProviderConfig, call: StructuredCall)
       model: cfg.model || PROVIDER_PRESETS[cfg.provider === "glm" ? "glm" : "deepseek"].defaultModel,
       messages: [
         { role: "system", content: `${call.system}\n输出必须是符合以下 JSON Schema（${call.schemaName}）的单个 JSON 对象：\n${JSON.stringify(call.schema)}` },
-        { role: "user", content: call.user },
+        {
+          role: "user",
+          content: call.images?.length && supportsVision(cfg)
+            ? [
+              ...call.images.map((img) => ({ type: "image_url", image_url: { url: `data:${img.mediaType};base64,${img.dataBase64}` } })),
+              { type: "text", text: call.user },
+            ]
+            : call.user,
+        },
       ],
       response_format: { type: "json_object" },
       max_tokens: call.maxTokens ?? 1024,
@@ -602,7 +620,7 @@ export async function completeOnce(
   cfg: ProviderConfig,
   system: string,
   user: string,
-  options: { workspaceDir?: string } = {},
+  options: { workspaceDir?: string; images?: ImageAttachment[]; localImagePaths?: string[] } = {},
 ): Promise<string> {
   if (cfg.provider === "demo") {
     // 演示模式：把句号去掉、超长行砍半，模拟一次修写
@@ -617,9 +635,10 @@ export async function completeOnce(
   const gen = streamChat(cfg, {
     systemBlocks: [{ text: system, cacheable: false }],
     userText: user,
-    images: [],
+    images: supportsVision(cfg) ? options.images ?? [] : [],
+    localImagePaths: options.localImagePaths,
     workspaceDir: options.workspaceDir,
-    maxTokens: 300,
+    maxTokens: options.images?.length || options.localImagePaths?.length ? 900 : 300,
   });
   for await (const chunk of gen) out += chunk;
   return out.trim();

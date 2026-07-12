@@ -2,10 +2,10 @@
 
 把聊天贴进来。它先用本地世界模型想清楚，再帮你回——每一步计算都能点开看。
 
-[![Release](https://img.shields.io/badge/release-v5.3.0-177766)](docs/releases/v5.3.0.md)
+[![Release](https://img.shields.io/badge/release-v5.4.0-177766)](docs/releases/v5.4.0.md)
 [![Desktop](https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-3d6d62)](desktop/README.md)
 [![Local first](https://img.shields.io/badge/data-local--first-8d5b30)](docs/新手指南.md)
-[![Tests](https://img.shields.io/badge/tests-27%20passing-2f855a)](app/decision.test.ts)
+[![Tests](https://img.shields.io/badge/tests-30%20passing-2f855a)](app/decision.test.ts)
 
 电子军师是一款桌面聊天辅助应用。你不需要会写提示词，也不需要先整理完整故事。贴一段文字或一批截图，它会找回相关旧资料、比较几种可能解释、用世界模型向前推演几步，再给出能直接发送的说法。资料默认保存在你的电脑上。
 
@@ -76,6 +76,10 @@
 
 刷新页面后面板会自动带回最近一次决策；地址加 `#thinking` 可以直接深链到这里。
 
+### 只发截图，也帮你选
+
+不想打字就直接发聊天截图（可以一个字都不写）。读图器先读出对方最后一句、整段对话和语气信号，这些观察进入同一条决策流水线——信念、假设、世界模型推演、批评器——最后照样给你几条能直接发送的说法和推荐理由。中英混排的聊天记录同样认识。
+
 <br clear="right">
 
 ## 会记住很久以前的内容
@@ -86,7 +90,7 @@
 2. 较早内容按当前问题检索。
 3. 截图生成带来源的记忆卡，并用本地向量与文字线索找回。
 
-检索前先分词：ICU 词典分词（`Intl.Segmenter`，引擎内建、零依赖、全本机）把「周六那家店订到位子了」切成 周六 / 那家 / 店 / 订到 / 位子，而字符 n-gram 只作召回补充——BM25 的词频统计落在真实词上。决策证据检索是三路混合：Okapi BM25、384 维特征哈希向量余弦、决策先验（时间、可靠度、重要性、历史用途），用 Reciprocal Rank Fusion 融合，再做嵌入空间去重、类别配额和反证覆盖。时间事实有有效区间；两条可靠信息互相冲突时，两条都会留下。
+检索前先分词：ICU 词典分词（`Intl.Segmenter`，引擎内建、零依赖、全本机）把「周六那家店订到位子了」切成 周六 / 那家 / 店 / 订到 / 位子，中英混排（「我们Friday见」）同样切得开，字符 n-gram 只作召回补充——BM25 的词频统计落在真实词上。同一套 token 空间也用于向量嵌入；升级时旧素材向量自动重嵌入，一个库里只有一种语义空间。决策证据检索是三路混合：Okapi BM25、384 维特征哈希向量余弦、决策先验（时间、可靠度、重要性、历史用途），用 Reciprocal Rank Fusion 融合，再做嵌入空间去重、类别配额和反证覆盖。时间事实有有效区间；两条可靠信息互相冲突时，两条都会留下。
 
 原文负责完整留存，结构化记忆负责定位，当前上下文只负责本轮决策。近期的 Codex 和 Claude 产品也在使用上下文压缩、外部记忆与主动上下文管理来延长任务，本项目把可回指原文作为最终依据：[Codex compaction](https://openai.com/index/introducing-upgrades-to-codex/)、[Claude context management](https://www.anthropic.com/news/claude-opus-4-5)。
 
@@ -156,7 +160,7 @@ cd app
 bun run verify
 ```
 
-当前验证包含 27 个单元与集成测试、一组合成决策情境和一个时序 CNN 对照基准。离线评测不调用模型，也不读取真实用户资料。前端资源在启动时内嵌进服务进程，改动 `app/public/` 后需要重启开发服务器。
+当前验证包含 30 个单元与集成测试、一组合成决策情境和一个时序 CNN 对照基准。离线评测不调用模型，也不读取真实用户资料。前端资源在启动时内嵌进服务进程，改动 `app/public/` 后需要重启开发服务器。
 
 桌面开发：
 
@@ -178,7 +182,7 @@ GitHub Actions 手动触发跨平台安装包构建（macOS、Windows、Linux）
 - [决策引擎评测](docs/decision-engine-evaluation.md)
 - [隐私校准与系统凭据库](docs/privacy-calibration-and-keychain.md)
 - [桌面签名、公证与原生 CI](docs/release-signing.md)
-- [v5.3.0 发行说明](docs/releases/v5.3.0.md)
+- [v5.4.0 发行说明](docs/releases/v5.4.0.md)
 - [更新记录](CHANGELOG.md)
 
 ## 技术结构
@@ -189,7 +193,7 @@ GitHub Actions 手动触发跨平台安装包构建（macOS、Windows、Linux）
 | 本地服务 | Bun 编译 sidecar + Server-Sent Events 流式响应 |
 | 数据 | SQLite WAL + 追加事件 + 版本迁移 |
 | 证据图 | 时间节点 + supports / contradicts / precedes / outcome_of 等有效期关系 |
-| 分词 | ICU 词典分词（Intl.Segmenter，零依赖）⊕ Han bigram 召回补充，n-gram 自动回退 |
+| 分词 | ICU 词典分词（Intl.Segmenter，零依赖）⊕ Han bigram 召回，中英混排一致处理；BM25 与向量嵌入共用一套 token 空间（升级自动重嵌入） |
 | 长期检索 | BM25 + 特征哈希向量余弦，Reciprocal Rank Fusion 融合；sqlite-vec 可选加速 |
 | 决策 | 双时间尺度信念（τ 按互动节奏自适应）、竞争假设、学习型世界模型（体制切换动力学 + 校准响应头 + 信念空间回溯）、模型化 EVOI、多批评器 |
 | 决策控制 | 思考深度滑杆（推演深度 / 体制分支）+ 胆量滑杆（风险偏好重塑目标函数，按档案保存） |
@@ -198,6 +202,7 @@ GitHub Actions 手动触发跨平台安装包构建（macOS、Windows、Linux）
 | 学习 | 世界模型响应计数 / 转移残差 / 对数损失门控 + 时间衰减 Beta contextual bandit + 证据用途反馈 |
 | 结构化输出 | API 级约束解码（Anthropic 强制 tool schema / OpenAI 兼容 response_format），失败才回退提示修复 |
 | 校准 | 明确同意、去标识化、本地导出/撤回、Brier 与分箱校准误差 |
+| 读图 | 截图经结构化读取（对方最后一句 + 对话摘录 + 状态信号）进入决策流水线；只发图不打字也能选 |
 | 模型 | Codex、Claude Code、Claude、DeepSeek、GLM、自定义 API、离线演示 |
 | 前端 | 无框架 HTML / CSS / JavaScript |
 

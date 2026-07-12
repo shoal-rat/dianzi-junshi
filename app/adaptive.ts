@@ -11,6 +11,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import * as sqliteVec from "sqlite-vec";
 import { DJ_HOME } from "./store";
+import { vectorize } from "./embedding";
 import { interactionTempo } from "./decision/state";
 import type { MaterialMemory } from "./materials";
 
@@ -204,6 +205,29 @@ function migrate(conn: Database): void {
   }
   conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (1, ?)")
     .run(new Date().toISOString());
+  reembedMaterialVectors(conn);
+}
+
+/** Migration v6: the tokenizer moved to dictionary segmentation, so every
+ * stored material vector is re-embedded from its retrieval text into the one
+ * current token space. Idempotent; runs once per database. */
+function reembedMaterialVectors(conn: Database): void {
+  if (conn.query("SELECT 1 FROM schema_migrations WHERE version=6").get()) return;
+  const rows = conn.query("SELECT rowid, profile_slug, memory_id, retrieval_text FROM material_memories").all() as any[];
+  const update = conn.query("UPDATE material_memories SET vector=? WHERE rowid=?");
+  conn.transaction(() => {
+    for (const row of rows) {
+      const vector = decodeBase64Vector(vectorize(String(row.retrieval_text ?? "")));
+      update.run(vector, row.rowid);
+      if (vectorExtension) {
+        conn.query("DELETE FROM material_vectors WHERE rowid=?").run(row.rowid);
+        conn.query("INSERT INTO material_vectors(rowid, embedding, profile_slug, memory_id) VALUES (?, ?, ?, ?)")
+          .run(row.rowid, vector, row.profile_slug, row.memory_id);
+      }
+    }
+    conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (6, ?)")
+      .run(new Date().toISOString());
+  })();
 }
 
 function parseJson<T>(value: unknown, fallback: T): T {

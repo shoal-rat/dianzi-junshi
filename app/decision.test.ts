@@ -302,6 +302,39 @@ describe("tokenizer and adaptive timescales", () => {
   });
 });
 
+describe("mixed-language tokenization and unified embedding", () => {
+  test("segments mixed Chinese-English text into words", () => {
+    const words = tokenize.segmentWords("她说OK 我们Friday见 一起看movie吧");
+    expect(words).toContain("ok");
+    expect(words).toContain("friday");
+    expect(words).toContain("movie");
+    expect(words).toContain("我们");
+  });
+
+  test("embedding is order-invariant and case-folded across languages", async () => {
+    const embedding = await import("./embedding.ts");
+    const a = embedding.embedText("周五 Friday 一起吃饭");
+    const b = embedding.embedText("friday 周五 一起吃饭");
+    expect(embedding.cosineSimilarity(a, b)).toBeGreaterThan(.95);
+    const query = embedding.embedText("friday 吃饭");
+    const match = embedding.cosineSimilarity(query, embedding.embedText("我们Friday见 吃饭吗"));
+    const unrelated = embedding.cosineSimilarity(query, embedding.embedText("今天加班好累啊"));
+    expect(match).toBeGreaterThan(unrelated);
+  });
+
+  test("image reading validator accepts transcripts and rejects junk", () => {
+    const valid = pipeline.validateImageReading({
+      lastPartnerMessage: "周六早点来哦",
+      transcript: "对方：周六早点来哦。用户：好嘞。",
+      observations: [{ dimension: "engagement", value: .6, confidence: .7, reliability: .7, rationale: "截图中对方主动约定时间" }],
+    });
+    expect(valid?.lastPartnerMessage).toBe("周六早点来哦");
+    expect(valid?.observations.length).toBe(1);
+    expect(pipeline.validateImageReading({ observations: [{ dimension: "nope", value: 9 }] })).toBeNull();
+    expect(pipeline.validateImageReading("junk")).toBeNull();
+  });
+});
+
 describe("temporal CNN response predictor", () => {
   test("hand-written backprop matches numeric gradients", () => {
     expect(neural.gradientCheck()).toBeLessThan(1e-3);

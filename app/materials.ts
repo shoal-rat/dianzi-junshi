@@ -15,8 +15,8 @@ import {
 import { streamChat, supportsVision, type ProviderConfig } from "./providers";
 import { readMaterialMemoriesDb, upsertMaterialMemory, vectorCandidates } from "./adaptive";
 import { retrievalTokens } from "./decision/tokenize";
+import { cosineSimilarity, decodeVector, embedText, vectorize } from "./embedding";
 
-const VECTOR_DIMS = 384;
 const activeJobs = new Set<string>();
 const jobs = new Map<string, MaterialJob>();
 const migratedProfiles = new Set<string>();
@@ -72,62 +72,7 @@ function cleanStrings(value: unknown, limit: number, itemLimit = 160): string[] 
   return value.map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, limit).map((x) => x.slice(0, itemLimit));
 }
 
-function fnv1a(text: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
-
-function tokens(text: string): string[] {
-  const normalized = text.normalize("NFKC").toLowerCase();
-  const out: string[] = normalized.match(/[a-z0-9]{2,}/g) ?? [];
-  for (const run of normalized.match(/[\p{Script=Han}]{2,}/gu) ?? []) {
-    for (let i = 0; i < run.length; i++) {
-      if (i + 1 < run.length) out.push(run.slice(i, i + 2));
-      if (i + 2 < run.length) out.push(run.slice(i, i + 3));
-    }
-  }
-  return out.slice(0, 8_000);
-}
-
-/** Pure feature-hashed embedding (signed FNV-1a buckets over word and Han
- * n-gram tokens, L2-normalized). Shared by material memories and decision
- * evidence retrieval so both rank in one vector space. */
-export function embedText(text: string): Float32Array {
-  const vector = new Float32Array(VECTOR_DIMS);
-  for (const token of tokens(text)) {
-    const hash = fnv1a(token);
-    const index = hash % VECTOR_DIMS;
-    const sign = (hash & 0x80000000) === 0 ? 1 : -1;
-    vector[index] += sign * (1 + Math.min(2, token.length / 4));
-  }
-  let norm = 0;
-  for (const value of vector) norm += value * value;
-  norm = Math.sqrt(norm) || 1;
-  for (let i = 0; i < vector.length; i++) vector[i] /= norm;
-  return vector;
-}
-
-export function vectorize(text: string): string {
-  return Buffer.from(embedText(text).buffer).toString("base64");
-}
-
-function decodeVector(encoded: string): Float32Array {
-  const bytes = Buffer.from(encoded, "base64");
-  if (bytes.byteLength !== VECTOR_DIMS * 4) return new Float32Array(VECTOR_DIMS);
-  return new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
-}
-
-function cosine(a: Float32Array, b: Float32Array): number {
-  let score = 0;
-  for (let i = 0; i < VECTOR_DIMS; i++) score += a[i] * b[i];
-  return Math.max(-1, Math.min(1, score));
-}
-
-export const cosineSimilarity = cosine;
+// Embedding lives in ./embedding (segmenter tokens, one space on disk).
 
 /** Lexical reranking uses the segmenting tokenizer (ephemeral, both sides
  * computed fresh); the hashed embedding above keeps its original token space
@@ -247,7 +192,7 @@ export function retrieveMaterialMemories(slug: string, query: string, limit = 6)
   const accelerated = vectorCandidates(slug, encodedQueryVector, Math.max(64, limit * 12));
   const now = Date.now();
   const ranked = memories.map((memory) => {
-    const vectorScore = accelerated?.get(memory.id) ?? Math.max(0, cosine(queryVector, decodeVector(memory.vector)));
+    const vectorScore = accelerated?.get(memory.id) ?? Math.max(0, cosineSimilarity(queryVector, decodeVector(memory.vector)));
     const lexical = lexicalOverlap(query, memory.retrievalText);
     const ageDays = Math.max(0, (now - new Date(memory.createdAt).getTime()) / 86_400_000);
     // Recency is deliberately weak: an important, semantically relevant old memory can still win.
@@ -314,7 +259,7 @@ async function analyzeOne(slug: string, item: MaterialJobItem, cfg: ProviderConf
 function linkRelated(slug: string, vector: string): string[] {
   const current = decodeVector(vector);
   return readMaterialMemories(slug)
-    .map((memory) => ({ id: memory.id, score: Math.max(0, cosine(current, decodeVector(memory.vector))) }))
+    .map((memory) => ({ id: memory.id, score: Math.max(0, cosineSimilarity(current, decodeVector(memory.vector))) }))
     .filter((x) => x.score >= 0.16)
     .sort((a, b) => b.score - a.score)
     .slice(0, 4)

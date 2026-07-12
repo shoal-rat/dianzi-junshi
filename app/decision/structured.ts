@@ -1,4 +1,4 @@
-import { completeOnce, completeStructuredNative, providerCapabilities, type ProviderConfig } from "../providers";
+import { completeOnce, completeStructuredNative, providerCapabilities, type ImageAttachment, type ProviderConfig } from "../providers";
 import { readDecisionCache, writeDecisionCache } from "./store";
 
 export interface StructuredResult<T> {
@@ -34,6 +34,9 @@ export async function completeStructured<T>(options: {
   user: string;
   /** JSON Schema (top-level object) enabling native constrained decoding. */
   schema?: Record<string, unknown>;
+  /** Screenshots for vision-capable providers (base64 for APIs, paths for CLIs). */
+  images?: ImageAttachment[];
+  localImagePaths?: string[];
   validate: (value: unknown) => T | null;
   fallback: () => T;
   workspaceDir?: string;
@@ -52,6 +55,7 @@ export async function completeStructured<T>(options: {
       const raw = await completeStructuredNative(options.provider, {
         system: options.system, user: options.user,
         schemaName: options.schemaName, schema: options.schema,
+        images: options.images,
       });
       const valid = options.validate(parseJsonWithRepair(raw));
       if (valid) {
@@ -65,7 +69,9 @@ export async function completeStructured<T>(options: {
     try {
       const user = attempt === 1 ? options.user
         : `${options.user}\n\n你刚才的输出无法通过 ${options.schemaName} 校验。只返回一个合法 JSON 值，不要 Markdown，不要解释。上次输出：\n${last.slice(0, 2000)}`;
-      last = await completeOnce(options.provider, `${options.system}\n只输出合法 JSON。`, user, { workspaceDir: options.workspaceDir });
+      last = await completeOnce(options.provider, `${options.system}\n只输出合法 JSON。`, user, {
+        workspaceDir: options.workspaceDir, images: options.images, localImagePaths: options.localImagePaths,
+      });
       const valid = options.validate(parseJsonWithRepair(last));
       if (valid) {
         writeDecisionCache(options.cacheKey, valid, options.provider.provider, options.schemaName);

@@ -143,7 +143,10 @@ async function handleChat(req: Request): Promise<Response> {
   const pipelineInput = {
     profileSlug: slug, partnerName: partner.name, stage: partner.stage,
     antiSimp: partner.antiSimp, boldness: partner.boldness ?? .5, mode, planningMode,
-    text: text?.trim() || "（只发了图片）", evidence,
+    text: text?.trim() ?? "",
+    images: supportsVision(cfg) && !isLocalCli ? images : undefined,
+    localImagePaths: isLocalCli ? currentImagePaths : undefined,
+    evidence,
   };
   const decision = await runDecisionPipeline(pipelineInput, {
     provider: cfg, workspaceDir: getPartnerDataDir(slug) ?? DJ_HOME,
