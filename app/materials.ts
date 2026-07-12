@@ -14,6 +14,7 @@ import {
 } from "./store";
 import { streamChat, supportsVision, type ProviderConfig } from "./providers";
 import { readMaterialMemoriesDb, upsertMaterialMemory, vectorCandidates } from "./adaptive";
+import { retrievalTokens } from "./decision/tokenize";
 
 const VECTOR_DIMS = 384;
 const activeJobs = new Set<string>();
@@ -128,9 +129,12 @@ function cosine(a: Float32Array, b: Float32Array): number {
 
 export const cosineSimilarity = cosine;
 
+/** Lexical reranking uses the segmenting tokenizer (ephemeral, both sides
+ * computed fresh); the hashed embedding above keeps its original token space
+ * so vectors stored by earlier versions stay comparable. */
 function lexicalOverlap(query: string, document: string): number {
-  const q = new Set(tokens(query));
-  const d = new Set(tokens(document));
+  const q = new Set(retrievalTokens(query));
+  const d = new Set(retrievalTokens(document));
   if (!q.size || !d.size) return 0;
   let matches = 0;
   for (const token of q) if (d.has(token)) matches++;

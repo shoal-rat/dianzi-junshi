@@ -499,7 +499,7 @@ export function recordLinkedOutcome(profileSlug: string, input: LinkedOutcome): 
       value: observation.value, confidence: observation.confidence, reliability: observation.reliability,
       rationale: observation.rationale,
     }, { observedAt, causationId: id });
-    if (strategyFamily) updatePosterior(profileSlug, contextKey(decision), strategyFamily, input.outcome, observedAt);
+    if (strategyFamily) updatePosterior(profileSlug, contextKey(decision), strategyFamily, input.outcome, observedAt, decision?.timescales?.learningDays ?? 120);
     if (decision) {
       updateEvidenceUsefulness(profileSlug, decision.evidence, input.outcome, observedAt);
       updateWorldModel(profileSlug, decision, { outcome: input.outcome, strategyId: input.strategyId }, observedAt);
@@ -542,12 +542,12 @@ function outcomeValue(outcome: LinkedOutcome["outcome"]): number {
   return { positive: 1, neutral: 0.55, negative: 0.08, no_reply: 0.15 }[outcome];
 }
 
-function updatePosterior(profileSlug: string, context: string, family: string, outcome: LinkedOutcome["outcome"], observedAt: string): void {
+function updatePosterior(profileSlug: string, context: string, family: string, outcome: LinkedOutcome["outcome"], observedAt: string, halfLifeDays = 120): void {
   const conn = db();
   const row = conn.query(`SELECT alpha, beta, effective_samples, updated_at FROM strategy_posteriors
     WHERE profile_slug=? AND context_key=? AND strategy_family=?`).get(profileSlug, context, family) as any;
   const ageDays = row ? Math.max(0, (Date.parse(observedAt) - Date.parse(row.updated_at)) / 86_400_000) : 0;
-  const decay = Math.pow(0.5, ageDays / 120);
+  const decay = Math.pow(0.5, ageDays / halfLifeDays);
   const alpha = row ? 1.5 + (Number(row.alpha) - 1.5) * decay : 1.5;
   const beta = row ? 1.5 + (Number(row.beta) - 1.5) * decay : 1.5;
   const value = outcomeValue(outcome);
@@ -750,7 +750,8 @@ export function updateWorldModel(
   const row = conn.query(`SELECT counts_json, delta_json, effective, updated_at FROM world_model_stats
     WHERE profile_slug=? AND regime=? AND strategy_family=?`).get(profileSlug, regime, family) as any;
   const ageDays = row ? Math.max(0, (Date.parse(observedAt) - Date.parse(row.updated_at)) / 86_400_000) : 0;
-  const decay = Math.pow(.5, ageDays / WORLD_HALF_LIFE_DAYS);
+  const halfLife = report.timescales?.learningDays ?? WORLD_HALF_LIFE_DAYS;
+  const decay = Math.pow(.5, ageDays / halfLife);
   const counts = parseJson<Partial<Record<ResponseClass, number>>>(row?.counts_json, {});
   for (const cls of RESPONSE_CLASSES) counts[cls] = (counts[cls] ?? 0) * decay;
   counts[outcome.outcome] = (counts[outcome.outcome] ?? 0) + 1;
@@ -785,7 +786,7 @@ export function updateWorldModel(
 
   const gate = conn.query(`SELECT log_loss_model, log_loss_base, samples FROM world_model_gate
     WHERE profile_slug=?`).get(profileSlug) as any;
-  const gateDecay = Math.pow(.5, ageDays / WORLD_HALF_LIFE_DAYS);
+  const gateDecay = Math.pow(.5, ageDays / halfLife);
   conn.query(`INSERT INTO world_model_gate(profile_slug, log_loss_model, log_loss_base, samples, updated_at)
     VALUES (?, ?, ?, ?, ?) ON CONFLICT(profile_slug) DO UPDATE SET
     log_loss_model=excluded.log_loss_model, log_loss_base=excluded.log_loss_base,
@@ -884,17 +885,17 @@ export function strategyPerformance(profileSlug: string) {
       ON r.profile_slug=o.profile_slug AND r.id=o.decision_id
     WHERE o.profile_slug=? ORDER BY o.observed_at`).all(profileSlug) as any[];
   const now = Date.now();
-  const families = new Map<string, Array<{ value: number; at: number }>>();
+  const families = new Map<string, Array<{ value: number; at: number; halfLife: number }>>();
   for (const row of rows) {
     const report = row.report_json ? parseJson<DecisionReport | null>(row.report_json, null) : null;
     const family = report?.strategies.find((item) => item.id === row.strategy_id)?.family
       ?? report?.selectedStrategy.family ?? "unknown";
     const list = families.get(family) ?? [];
-    list.push({ value: outcomeValue(row.outcome), at: Date.parse(row.observed_at) });
+    list.push({ value: outcomeValue(row.outcome), at: Date.parse(row.observed_at), halfLife: report?.timescales?.learningDays ?? 120 });
     families.set(family, list);
   }
   const summary = [...families.entries()].map(([family, values]) => {
-    const decayed = values.map((item) => ({ ...item, weight: Math.pow(.5, Math.max(0, now - item.at) / 86_400_000 / 120) }));
+    const decayed = values.map((item) => ({ ...item, weight: Math.pow(.5, Math.max(0, now - item.at) / 86_400_000 / item.halfLife) }));
     const alpha = 1.5 + decayed.reduce((sum, item) => sum + item.value * item.weight, 0);
     const beta = 1.5 + decayed.reduce((sum, item) => sum + (1 - item.value) * item.weight, 0);
     const recent = values.filter((item) => now - item.at <= 30 * 86_400_000);
@@ -1026,7 +1027,7 @@ export function rebuildDerivedState(profileSlug: string): { events: number; outc
     for (const row of outcomes) {
       const report = row.decision_id ? getDecisionReport(profileSlug, row.decision_id) : null;
       const family = report?.strategies.find((s) => s.id === row.strategy_id)?.family ?? report?.selectedStrategy.family;
-      if (family) updatePosterior(profileSlug, contextKey(report), family, row.outcome, row.observed_at);
+      if (family) updatePosterior(profileSlug, contextKey(report), family, row.outcome, row.observed_at, report?.timescales?.learningDays ?? 120);
       if (report) {
         updateEvidenceUsefulness(profileSlug, report.evidence, row.outcome, row.observed_at);
         updateWorldModel(profileSlug, report, { outcome: row.outcome, strategyId: row.strategy_id ?? undefined }, row.observed_at);

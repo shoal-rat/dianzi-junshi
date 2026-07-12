@@ -10,7 +10,7 @@ A local-first desktop assistant for understanding Chinese dating chats and draft
 
 </div>
 
-![The desktop app: profiles, copyable replies, thinking-depth and boldness sliders, and the insight panel](assets/app-home-v6.png)
+![The desktop app: profiles, copyable replies, thinking-depth and boldness sliders, and the insight panel](assets/app-home-v7.png)
 
 ## Download
 
@@ -67,7 +67,7 @@ Version 5 added an event-sourced decision pipeline with temporal beliefs, compet
 
 Version 5.2 adds an interactive decision-network visualization — the layered dataflow the engine actually computed each round (beliefs → regime hypotheses → action features → predicted state → response distribution → outputs), with clickable nodes exposing activations, parameters and contribution weights — plus two header sliders that control the engine directly: thinking depth (rollout horizon and regime branching) and boldness (a scalar that reshapes the objective: risk penalty, advance bonuses, clarifying-question cost and the abstention bar), persisted per chat profile.
 
-Version 5.3 adds a temporal convolutional response predictor written in pure TypeScript (1,252 parameters, hand-written forward and backward passes verified against numeric gradients, Adam, label smoothing, seeded and replay-deterministic). It reads the raw observation timeline — nine belief dimensions bucketed over the last 45 days plus an observation-density channel, so silence gaps are visible signal — and only earns mixture weight through an honesty gate: retrained on every recorded outcome with a time-ordered 75/25 split, it must beat the existing response head by 0.02 nats of holdout log-loss before it can influence a decision. On the built-in benchmark of trajectory-shaped sequences (same present summary, different history) it scores about 0.05 nats versus 1.61 for the summary-only head. The full mathematical specification is in the README theory appendix; release details in the [v5.3.0 notes](docs/releases/v5.3.0.md).
+Version 5.3 adds a temporal convolutional response predictor written in pure TypeScript (1,252 parameters, hand-written forward and backward passes verified against numeric gradients, Adam, label smoothing, seeded and replay-deterministic). It reads the raw observation timeline — nine belief dimensions bucketed over the last 45 days plus an observation-density channel, so silence gaps are visible signal — and only earns mixture weight through an honesty gate: retrained on every recorded outcome with a time-ordered 75/25 split, it must beat the existing response head by 0.02 nats of holdout log-loss before it can influence a decision. On the built-in benchmark of trajectory-shaped sequences (same present summary, different history) it scores about 0.05 nats versus 1.61 for the summary-only head. It also ships dictionary-based Chinese word segmentation (the engine-built-in `Intl.Segmenter`, zero dependencies) so BM25 statistics land on real words with character-bigram recall as a supplement, per-profile adaptive timescales (the canonical 21/240/120-day half-lives scale with each profile's median gap between exchanges, persisted per decision and honored by learning and replay), and named boldness gears in the UI (很稳 / 偏稳 / 平衡 / 偏敢 / 放胆冲) instead of a bare number. The full mathematical specification is in the README theory appendix; release details in the [v5.3.0 notes](docs/releases/v5.3.0.md).
 
 ## License
 

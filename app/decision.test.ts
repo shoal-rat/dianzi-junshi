@@ -18,6 +18,7 @@ const evaluation = await import("./decision/evaluation.ts");
 const worldmodel = await import("./decision/worldmodel.ts");
 const evidenceModule = await import(`./decision/evidence.ts?decision=${Date.now()}`);
 const neural = await import("./decision/neural.ts");
+const tokenize = await import("./decision/tokenize.ts");
 const { BELIEF_DIMENSIONS } = await import("./decision/types.ts");
 
 const DIM = (name: string) => BELIEF_DIMENSIONS.indexOf(name as never);
@@ -274,6 +275,30 @@ describe("learned world model", () => {
     const selected = evidenceModule.retrieveEvidence("retrieval-test", "周末一起吃饭的邀约", items, 3);
     expect(selected[0].id).toBe("food-plan");
     expect(selected.some((item: any) => item.id === "food-plan-dup")).toBe(false);
+  });
+});
+
+describe("tokenizer and adaptive timescales", () => {
+  test("dictionary segmentation divides Chinese into words, with bigram recall", () => {
+    const words = tokenize.segmentWords("她说周六那家店订到位子了");
+    expect(words).toContain("周六");
+    expect(words).toContain("位子");
+    const tokens = tokenize.retrievalTokens("看电影");
+    expect(tokens).toContain("电影");
+    expect(tokens).toContain("看电");
+  });
+
+  test("timescales stretch for slow-tempo profiles and stay canonical for daily ones", () => {
+    const now = Date.now();
+    const daily = Array.from({ length: 30 }, (_, i) => ({ observedAt: new Date(now - i * 86_400_000).toISOString() }));
+    const sparse = Array.from({ length: 30 }, (_, i) => ({ observedAt: new Date(now - i * 3 * 86_400_000).toISOString() }));
+    const fast = stateEngine.adaptiveTimescales(daily);
+    const slow = stateEngine.adaptiveTimescales(sparse);
+    expect(fast.shortDays).toBe(21);
+    expect(fast.longDays).toBe(240);
+    expect(slow.shortDays).toBeGreaterThan(fast.shortDays);
+    expect(slow.learningDays).toBeGreaterThan(fast.learningDays);
+    expect(stateEngine.adaptiveTimescales([]).shortDays).toBe(21);
   });
 });
 

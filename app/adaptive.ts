@@ -11,6 +11,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import * as sqliteVec from "sqlite-vec";
 import { DJ_HOME } from "./store";
+import { interactionTempo } from "./decision/state";
 import type { MaterialMemory } from "./materials";
 
 const VECTOR_DIMS = 384;
@@ -371,8 +372,10 @@ function decayedMean(rows: any[], halfLifeDays: number): { mean: number; mass: n
 function traitSnapshot(slug: string, key: string): AdaptiveTrait {
   const rows = db().query(`SELECT value, confidence, observed_at FROM trait_observations
     WHERE profile_slug=? AND trait_key=? ORDER BY observed_at DESC LIMIT 240`).all(slug, key) as any[];
-  const recent = decayedMean(rows, 21);
-  const long = decayedMean(rows, 240);
+  // The 21/240-day clocks scale with this profile's own interaction tempo.
+  const { tempo } = interactionTempo(rows.map((row) => Date.parse(String(row.observed_at))));
+  const recent = decayedMean(rows, Math.max(7, Math.min(60, 21 * tempo)));
+  const long = decayedMean(rows, Math.max(90, Math.min(480, 240 * tempo)));
   const recentConfidence = 1 - Math.exp(-recent.mass / 2.2);
   const confidence = 1 - Math.exp(-long.mass / 4);
   const gap = Math.abs(recent.mean - long.mean);

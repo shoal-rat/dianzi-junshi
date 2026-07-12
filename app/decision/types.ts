@@ -20,6 +20,16 @@ export interface WorldModelSnapshot {
   gate: { logLossModel: number; logLossBase: number; samples: number };
 }
 
+/** Per-profile clocks derived from the interaction tempo: canonical half-lives
+ * (21/240/120 days) scaled by the median gap between this person's exchanges. */
+export interface ProfileTimescales {
+  shortDays: number;
+  longDays: number;
+  learningDays: number;
+  tempo: number;
+  medianGapDays: number;
+}
+
 /** One node of the decision network trace: an actual quantity the engine
  * computed this round, with its activation and inspectable parameters. */
 export interface TraceNode {
@@ -214,6 +224,7 @@ export interface DecisionReport {
   replyId: string;
   metrics: DecisionMetrics;
   networkTrace?: NetworkTrace;
+  timescales?: ProfileTimescales;
 }
 
 export interface DecisionEvent {

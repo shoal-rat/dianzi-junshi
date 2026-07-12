@@ -1,9 +1,44 @@
 import { BELIEF_DIMENSIONS, type BeliefDimension, type BeliefState, type ChangeSignal,
-  type PatternSignal, type StateHypothesis, type StructuredObservation } from "./types";
+  type PatternSignal, type ProfileTimescales, type StateHypothesis, type StructuredObservation } from "./types";
 import type { DecisionEvent } from "./types";
 
 function clamp(value: number, min = -1, max = 1): number {
   return Math.max(min, Math.min(max, value));
+}
+
+export const DEFAULT_TIMESCALES: ProfileTimescales = {
+  shortDays: 21, longDays: 240, learningDays: 120, tempo: 1, medianGapDays: 1,
+};
+
+/** Median gap (days) between distinct interaction timestamps → tempo multiplier.
+ * Someone who talks daily and someone who talks weekly should not share one
+ * clock: the same number of exchanges carries the information, not the same
+ * number of days. Tempo is clamped to [1/3, 3] so half-lives stay sane. */
+export function interactionTempo(timestamps: number[]): { tempo: number; medianGapDays: number } {
+  const distinct = [...new Set(timestamps.filter(Number.isFinite))].sort((a, b) => a - b);
+  if (distinct.length < 5) return { tempo: 1, medianGapDays: 1 };
+  const gaps: number[] = [];
+  for (let i = 1; i < distinct.length; i += 1) {
+    const days = (distinct[i] - distinct[i - 1]) / 86_400_000;
+    if (days > .02) gaps.push(days); // ignore same-burst observations
+  }
+  if (gaps.length < 4) return { tempo: 1, medianGapDays: 1 };
+  gaps.sort((a, b) => a - b);
+  const median = gaps[Math.floor(gaps.length / 2)];
+  return { tempo: Math.max(1 / 3, Math.min(3, median)), medianGapDays: median };
+}
+
+/** Per-profile clocks: the canonical 21/240/120-day half-lives scale with the
+ * profile's own interaction tempo, clamped to sensible ranges. */
+export function adaptiveTimescales(observations: Array<{ observedAt: string }>): ProfileTimescales {
+  const { tempo, medianGapDays } = interactionTempo(observations.map((o) => Date.parse(o.observedAt)));
+  return {
+    tempo,
+    medianGapDays: Math.round(medianGapDays * 100) / 100,
+    shortDays: Math.round(Math.max(7, Math.min(60, 21 * tempo))),
+    longDays: Math.round(Math.max(90, Math.min(480, 240 * tempo))),
+    learningDays: Math.round(Math.max(45, Math.min(360, 120 * tempo))),
+  };
 }
 
 function weightedStats(rows: StructuredObservation[], halfLifeDays: number): { mean: number; variance: number; mass: number; ids: string[] } {
@@ -22,11 +57,11 @@ function weightedStats(rows: StructuredObservation[], halfLifeDays: number): { m
   return { mean, variance, mass, ids: weighted.filter((x) => x.weight >= .08).slice(0, 12).map((x) => x.row.id) };
 }
 
-export function buildBeliefs(observations: StructuredObservation[]): BeliefState[] {
+export function buildBeliefs(observations: StructuredObservation[], scales: ProfileTimescales = DEFAULT_TIMESCALES): BeliefState[] {
   return BELIEF_DIMENSIONS.map((dimension) => {
     const rows = observations.filter((item) => item.dimension === dimension);
-    const short = weightedStats(rows, 21);
-    const long = weightedStats(rows, 240);
+    const short = weightedStats(rows, scales.shortDays);
+    const long = weightedStats(rows, scales.longDays);
     const confidence = 1 - Math.exp(-long.mass / 3.2);
     const shortConfidence = 1 - Math.exp(-short.mass / 1.8);
     const gap = Math.abs(short.mean - long.mean);
@@ -40,7 +75,7 @@ export function buildBeliefs(observations: StructuredObservation[]): BeliefState
       dimension, mean, variance: Math.min(1, long.variance), confidence,
       shortTerm: short.mean, longTerm: long.mean, effectiveSampleSize: long.mass,
       evidenceCount: rows.length, changing, conflicted,
-      stale: Boolean(last && Date.now() - last > 120 * 86_400_000), evidenceIds: long.ids,
+      stale: Boolean(last && Date.now() - last > scales.longDays / 2 * 86_400_000), evidenceIds: long.ids,
     };
   });
 }

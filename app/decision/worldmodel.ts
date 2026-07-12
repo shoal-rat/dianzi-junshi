@@ -597,8 +597,10 @@ export function buildNetworkTrace(options: {
   snapshot?: WorldModelSnapshot;
   /** Present when the temporal CNN participated in this decision. */
   neuralTrace?: { trust: number; probs: number[]; samples: number; advantage: number; params: number };
+  /** Per-profile adaptive clocks, shown on the uncertainty node. */
+  timescales?: { shortDays: number; longDays: number; learningDays: number; tempo: number };
 }): NetworkTrace {
-  const { states, hypotheses, selected, branches, uncertainty, snapshot, neuralTrace } = options;
+  const { states, hypotheses, selected, branches, uncertainty, snapshot, neuralTrace, timescales } = options;
   const edges: TraceEdge[] = [];
   const pushEdge = (from: string, to: string, weight: number) => {
     if (Math.abs(weight) >= .04) edges.push({ from, to, weight: Math.max(-1, Math.min(1, weight)) });
@@ -763,6 +765,7 @@ export function buildNetworkTrace(options: {
       detail: [
         `总体 ${uncertainty.total.toFixed(2)} · 体制熵 ${uncertainty.stateEntropy.toFixed(2)}`,
         `rollout 全方差 ${uncertainty.simulationVariance.toFixed(3)} · 证据覆盖 ${(uncertainty.evidenceCoverage * 100).toFixed(0)}%`,
+        ...(timescales ? [`节奏自适应时间尺度：τs ${timescales.shortDays} 天 / τl ${timescales.longDays} 天 / 学习 ${timescales.learningDays} 天（tempo ×${timescales.tempo.toFixed(2)}）`] : []),
         ...(uncertainty.abstain ? [`触发收敛动作：${uncertainty.reason ?? "先补信息"}`] : []),
       ],
     },

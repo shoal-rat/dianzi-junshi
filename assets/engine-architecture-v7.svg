@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 400" font-family="'PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#177766"/>
+    </marker>
+    <marker id="arrw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e79a43"/>
+    </marker>
+  </defs>
+
+  <rect x="1" y="1" width="938" height="398" rx="22" fill="#fffdf9" stroke="#e0ddd5"/>
+  <text x="36" y="46" font-size="19" font-weight="700" fill="#202522">决策引擎 v5.3：先想清楚，再开口</text>
+  <text x="36" y="68" font-size="11.5" fill="#626a65">决策全部在本机完成；大模型只把选定的策略写成人话</text>
+
+  <!-- input: observation timeline -->
+  <rect x="36" y="96" width="150" height="92" rx="12" fill="#f4f9f7" stroke="#bfd9d2"/>
+  <text x="111" y="118" font-size="12.5" font-weight="700" fill="#177766" text-anchor="middle">观测时间线</text>
+  <polyline points="52,158 68,150 84,155 100,142 116,147 132,136 148,141 164,131" fill="none" stroke="#177766" stroke-width="2" stroke-linecap="round"/>
+  <polyline points="52,173 68,171 84,175 100,169 116,175 132,171 148,176 164,172" fill="none" stroke="#e79a43" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <text x="111" y="182" font-size="9" fill="#8b928d" text-anchor="middle"></text>
+  <text x="111" y="200" font-size="9.5" fill="#8b928d" text-anchor="middle">分词检索 · 沉默间隔也是信号</text>
+
+  <!-- belief filter -->
+  <rect x="222" y="96" width="140" height="92" rx="12" fill="#ffffff" stroke="#dedbd3"/>
+  <text x="292" y="120" font-size="12.5" font-weight="700" fill="#202522" text-anchor="middle">信念滤波</text>
+  <text x="292" y="140" font-size="10" fill="#626a65" text-anchor="middle">九维 · 双时间尺度</text>
+  <text x="292" y="157" font-size="10" fill="#177766" text-anchor="middle">τ 按互动节奏自适应</text>
+  <text x="292" y="174" font-size="10" fill="#626a65" text-anchor="middle">方差随证据收缩</text>
+
+  <!-- regimes -->
+  <rect x="398" y="96" width="140" height="92" rx="12" fill="#ffffff" stroke="#dedbd3"/>
+  <text x="468" y="120" font-size="12.5" font-weight="700" fill="#202522" text-anchor="middle">体制假设 ×4</text>
+  <text x="468" y="140" font-size="10" fill="#626a65" text-anchor="middle">愿意继续 · 观望</text>
+  <text x="468" y="156" font-size="10" fill="#626a65" text-anchor="middle">压力高 · 意愿降低</text>
+  <text x="468" y="174" font-size="10" fill="#177766" text-anchor="middle">softmax 后验并存</text>
+
+  <!-- world model big box -->
+  <rect x="574" y="84" width="330" height="116" rx="14" fill="#f4f9f7" stroke="#177766" stroke-width="1.4"/>
+  <text x="739" y="106" font-size="13" font-weight="700" fill="#177766" text-anchor="middle">学习型世界模型</text>
+  <rect x="588" y="118" width="94" height="68" rx="9" fill="#ffffff" stroke="#bfd9d2"/>
+  <text x="635" y="140" font-size="10.5" font-weight="700" fill="#202522" text-anchor="middle">切换动力学</text>
+  <text x="635" y="156" font-size="9" fill="#626a65" text-anchor="middle">G_h·φ(a)</text>
+  <text x="635" y="171" font-size="9" fill="#626a65" text-anchor="middle">协方差传播</text>
+  <rect x="692" y="118" width="94" height="68" rx="9" fill="#ffffff" stroke="#bfd9d2"/>
+  <text x="739" y="140" font-size="10.5" font-weight="700" fill="#202522" text-anchor="middle">校准响应头</text>
+  <text x="739" y="156" font-size="9" fill="#626a65" text-anchor="middle">softmax ⊕ 计数</text>
+  <text x="739" y="171" font-size="9" fill="#626a65" text-anchor="middle">收缩混合</text>
+  <rect x="796" y="118" width="94" height="68" rx="9" fill="#ffffff" stroke="#e79a43"/>
+  <text x="843" y="140" font-size="10.5" font-weight="700" fill="#202522" text-anchor="middle">时序 CNN</text>
+  <text x="843" y="156" font-size="9" fill="#626a65" text-anchor="middle">1252 参数</text>
+  <text x="843" y="171" font-size="9" fill="#e79a43" text-anchor="middle">保留集门控</text>
+
+  <!-- planning row -->
+  <rect x="222" y="236" width="200" height="86" rx="12" fill="#ffffff" stroke="#dedbd3"/>
+  <text x="322" y="260" font-size="12.5" font-weight="700" fill="#202522" text-anchor="middle">信念空间推演</text>
+  <text x="322" y="280" font-size="10" fill="#626a65" text-anchor="middle">卡尔曼 + Bayes 想象更新</text>
+  <text x="322" y="296" font-size="10" fill="#626a65" text-anchor="middle">深度 1–3 · EVOI 决定是否先问</text>
+  <text x="322" y="312" font-size="10" fill="#177766" text-anchor="middle">风险 = 模型量的函数</text>
+
+  <rect x="458" y="236" width="180" height="86" rx="12" fill="#ffffff" stroke="#dedbd3"/>
+  <text x="548" y="260" font-size="12.5" font-weight="700" fill="#202522" text-anchor="middle">批评器 × 胆量</text>
+  <text x="548" y="280" font-size="10" fill="#626a65" text-anchor="middle">目标 · 证据 · 自然度 · 信息</text>
+  <text x="548" y="296" font-size="10" fill="#e79a43" text-anchor="middle">胆量 β 重塑风险偏好</text>
+  <text x="548" y="312" font-size="10" fill="#626a65" text-anchor="middle">不确定时选可逆动作</text>
+
+  <rect x="674" y="236" width="150" height="86" rx="12" fill="#177766"/>
+  <text x="749" y="268" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">自然中文表达</text>
+  <text x="749" y="288" font-size="10" fill="#d8f2e4" text-anchor="middle">唯一一次大模型调用</text>
+  <text x="749" y="304" font-size="10" fill="#d8f2e4" text-anchor="middle">发送前人话检查</text>
+
+  <!-- flows -->
+  <line x1="186" y1="142" x2="216" y2="142" stroke="#177766" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="362" y1="142" x2="392" y2="142" stroke="#177766" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="538" y1="142" x2="568" y2="142" stroke="#177766" stroke-width="2" marker-end="url(#arr)"/>
+  <path d="M 739 200 C 739 222 440 210 355 232" fill="none" stroke="#177766" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="422" y1="279" x2="452" y2="279" stroke="#177766" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="638" y1="279" x2="668" y2="279" stroke="#177766" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- feedback loop -->
+  <path d="M 749 322 C 749 366 460 366 300 366 C 180 366 110 320 110 192" fill="none" stroke="#e79a43" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrw)"/>
+  <text x="430" y="358" font-size="10.5" fill="#8a641d" text-anchor="middle">记录真实结果 → 响应计数 · 转移残差 · CNN 重训（全部经对数损失门控）</text>
+
+  <!-- corner note -->
+  <text x="904" y="384" font-size="9.5" fill="#8b928d" text-anchor="end">每一步可在「决策网络」里逐节点审计</text>
+</svg>

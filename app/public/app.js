@@ -7,6 +7,21 @@ const OIL_CAPS = [0, 1.5, 2, 2.5, 3.5, 3, 1.5, 0.5];
 
 const PLANNING_LEVELS = ["fast", "balanced", "deep"];
 const PLANNING_LABELS = { fast: "快速", balanced: "平衡", deep: "深入" };
+// 胆量按档位命名——用户选的是态度，不是数字
+const BOLDNESS_GEARS = [
+  { label: "很稳", value: .1 },
+  { label: "偏稳", value: .3 },
+  { label: "平衡", value: .5 },
+  { label: "偏敢", value: .7 },
+  { label: "放胆冲", value: .9 },
+];
+function nearestGear(boldness) {
+  let best = 2;
+  BOLDNESS_GEARS.forEach((gear, index) => {
+    if (Math.abs(gear.value - boldness) < Math.abs(BOLDNESS_GEARS[best].value - boldness)) best = index;
+  });
+  return best;
+}
 
 const state = {
   partners: [],
@@ -249,10 +264,11 @@ async function selectPartner(slug) {
   $("#anti-simp").disabled = false;
   $("#stage-select").value = String(p.stage);
   $("#anti-simp").checked = p.antiSimp;
-  state.boldness = Math.round((p.boldness ?? .5) * 100);
+  const gear = nearestGear(p.boldness ?? .5);
+  state.boldness = BOLDNESS_GEARS[gear].value;
   $("#boldness-slider").disabled = false;
-  $("#boldness-slider").value = String(state.boldness);
-  $("#boldness-value").textContent = String(state.boldness);
+  $("#boldness-slider").value = String(gear);
+  $("#boldness-value").textContent = BOLDNESS_GEARS[gear].label;
   $("#sidebar").classList.remove("open");
   closeDrawers();
   await loadMessages(slug);
@@ -764,7 +780,8 @@ function renderDecisionPanel(report) {
     for (const item of evidence) list.appendChild(el(`<li>${esc(item.text)} <small>${Math.round(item.reliability * 100)}% 可靠</small></li>`));
     wrap.appendChild(list);
   }
-  wrap.appendChild(el(`<p class="decision-metrics">本地规划 ${Math.round(report.metrics.durationMs)}ms · 检索 ${report.metrics.evidenceSelected}/${report.metrics.evidenceScanned} 条证据 · 模拟 ${report.metrics.simulationCount} 个分支</p>`));
+  const clocks = report.timescales ? ` · 节奏自适应 τ ${report.timescales.shortDays}/${report.timescales.longDays} 天` : "";
+  wrap.appendChild(el(`<p class="decision-metrics">本地规划 ${Math.round(report.metrics.durationMs)}ms · 检索 ${report.metrics.evidenceSelected}/${report.metrics.evidenceScanned} 条证据 · 模拟 ${report.metrics.simulationCount} 个分支${clocks}</p>`));
 }
 
 function beliefLabel(key) {
@@ -1241,20 +1258,21 @@ function bind() {
     localStorage.setItem("dj-planning-mode", state.planningMode);
   };
 
-  // 胆量滑杆：即时显示，停止拖动后写入档案并作用于下一次决策
+  // 胆量档位：显示档位名，停止拨动后写入档案并作用于下一次决策
   const boldnessSlider = $("#boldness-slider");
   boldnessSlider.oninput = () => {
-    state.boldness = Number(boldnessSlider.value);
-    $("#boldness-value").textContent = boldnessSlider.value;
+    const gear = BOLDNESS_GEARS[Number(boldnessSlider.value)] ?? BOLDNESS_GEARS[2];
+    state.boldness = gear.value;
+    $("#boldness-value").textContent = gear.label;
     clearTimeout(state.boldnessTimer);
     state.boldnessTimer = setTimeout(async () => {
       if (!state.slug) return;
       try {
         await api(`/api/partners/${encodeURIComponent(state.slug)}`, {
-          method: "POST", body: { boldness: state.boldness / 100 },
+          method: "POST", body: { boldness: state.boldness },
         });
         const partner = state.partners.find((p) => p.slug === state.slug);
-        if (partner) partner.boldness = state.boldness / 100;
+        if (partner) partner.boldness = state.boldness;
       } catch (error) { toast(friendlyError(error)); }
     }, 450);
   };

@@ -1,6 +1,7 @@
 import type { EvidenceRef, PipelineInput, StructuredObservation, BeliefDimension } from "./types";
 import { usefulnessFor } from "./store";
 import { cosineSimilarity, embedText } from "../materials";
+import { retrievalTokens } from "./tokenize";
 
 const SIGNALS: Array<{
   dimension: BeliefDimension; positive: RegExp; negative: RegExp; confidence: number; rationale: string;
@@ -61,14 +62,10 @@ export function validateObservations(items: StructuredObservation[]): Structured
   });
 }
 
+/** BM25 terms come from the hybrid tokenizer: ICU dictionary words when the
+ * engine provides a zh segmenter, plus Han bigrams for recall. */
 function terms(text: string): string[] {
-  const out: string[] = [];
-  const lower = text.normalize("NFKC").toLowerCase();
-  for (const word of lower.match(/[a-z0-9]{2,}/g) ?? []) out.push(word);
-  for (const run of lower.match(/[\p{Script=Han}]{2,}/gu) ?? []) {
-    for (let i = 0; i < run.length - 1 && out.length < 600; i++) out.push(run.slice(i, i + 2));
-  }
-  return out;
+  return retrievalTokens(text);
 }
 
 function recency(observedAt: string): number {

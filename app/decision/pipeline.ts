@@ -4,7 +4,7 @@ import { appendDecisionEvent, graphEvidence, loadNeuralPredictor, loadWorldModel
 import { actionFeatureVector, regimePosteriorVector, type NeuralBlend } from "./worldmodel";
 import { buildObservationGrid, predictResponse } from "./neural";
 import { extractObservations, retrieveEvidence, validateObservations } from "./evidence";
-import { buildBeliefs, buildHypotheses, detectChanges, discoverPatterns, missingInformation } from "./state";
+import { adaptiveTimescales, buildBeliefs, buildHypotheses, detectChanges, discoverPatterns, missingInformation } from "./state";
 import { assessUncertainty, evaluateStrategies, generateStrategies, rewardWeightsFor, selectStrategy, simulateStrategies, strategyAlternatives } from "./planner";
 import { buildNetworkTrace } from "./worldmodel";
 import { completeStructured } from "./structured";
@@ -73,7 +73,8 @@ dimension 只能是 engagement, trust, communication_willingness, emotional_pres
   }, { observedAt: observation.observedAt, causationId: source.id });
 
   const allObservations = readObservations(input.profileSlug);
-  const beliefs = stage(metrics, "belief", () => buildBeliefs(allObservations));
+  const timescales = stage(metrics, "timescales", () => adaptiveTimescales(allObservations));
+  const beliefs = stage(metrics, "belief", () => buildBeliefs(allObservations, timescales));
   const hypotheses = stage(metrics, "hypotheses", () => buildHypotheses(beliefs));
   const changes = stage(metrics, "change_detection", () => detectChanges(beliefs));
   const patterns = stage(metrics, "pattern_discovery", () => syncPatternRegistry(
@@ -115,7 +116,7 @@ dimension 只能是 engagement, trust, communication_willingness, emotional_pres
     ...strategies.filter((item) => item.id !== selection.selected.id && !strategyAlternatives(strategies, selection.selected.id).some((alt) => alt.id === item.id))];
   const networkTrace = stage(metrics, "network_trace", () => buildNetworkTrace({
     states: beliefs, hypotheses, selected: selection.selected,
-    branches: simulations, uncertainty, snapshot: worldModel,
+    branches: simulations, uncertainty, snapshot: worldModel, timescales,
     neuralTrace: neural ? (() => {
       const state = loadNeuralPredictor()!;
       return {
@@ -135,7 +136,7 @@ dimension 只能是 engagement, trust, communication_willingness, emotional_pres
     goal: goalFor(input.mode), observations, beliefs, hypotheses, changes, patterns,
     missingInformation: missing, evidence, strategies, simulations, critics, uncertainty,
     selectedStrategy: selection.selected, selectionReason: selection.reason,
-    replyId: crypto.randomUUID(), metrics, networkTrace,
+    replyId: crypto.randomUUID(), metrics, networkTrace, timescales,
   };
   saveDecisionReport(report);
   return report;
