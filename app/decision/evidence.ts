@@ -74,8 +74,9 @@ function recency(observedAt: string): number {
 }
 
 /** Okapi BM25 over the candidate set, with document frequencies computed from
- * the same set — no global index needed at this scale. */
-function bm25Scores(queryTerms: string[], documents: string[][]): number[] {
+ * the same set — no global index needed at this scale. Shared with the
+ * long-term memory bank's keyword retriever. */
+export function bm25Scores(queryTerms: string[], documents: string[][]): number[] {
   const n = documents.length;
   if (!n || !queryTerms.length) return documents.map(() => 0);
   const df = new Map<string, number>();

@@ -17,6 +17,8 @@ export interface Settings {
   provider: ProviderConfig["provider"];
   providers: Record<string, { apiKey?: string; hasKey?: boolean; removeApiKey?: boolean; model?: string; baseUrl?: string }>;
   calibrationConsent?: { enabled: boolean; version: string; enabledAt?: string };
+  /** Optional local semantic embedding engine (Ollama / OpenAI-compatible). */
+  semanticEmbedding?: { mode: "auto" | "off" | "custom"; baseUrl?: string; model?: string };
 }
 
 export interface PartnerMeta {
@@ -112,6 +114,13 @@ export function writeSettings(patch: Partial<Settings>): Settings {
       return [key, { ...safe, hasKey: safe.hasKey || Boolean(apiKey) }];
     })),
     calibrationConsent: patch.calibrationConsent ?? cur.calibrationConsent,
+    semanticEmbedding: patch.semanticEmbedding && ["auto", "off", "custom"].includes(patch.semanticEmbedding.mode)
+      ? {
+        mode: patch.semanticEmbedding.mode,
+        baseUrl: typeof patch.semanticEmbedding.baseUrl === "string" ? patch.semanticEmbedding.baseUrl.slice(0, 300) : undefined,
+        model: typeof patch.semanticEmbedding.model === "string" ? patch.semanticEmbedding.model.slice(0, 120) : undefined,
+      }
+      : cur.semanticEmbedding,
   };
   if (patch.providers) {
     for (const [k, v] of Object.entries(patch.providers)) {

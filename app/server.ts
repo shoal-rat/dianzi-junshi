@@ -20,7 +20,8 @@ import {
   importPartnerContext, validatePartnerImport, saveUploadedImage, type IncomingImage, type StoredAttachment,
 } from "./store";
 import {
-  getLatestMaterialJob, getMaterialJob, readMaterialMemories, retrieveMaterialMemories,
+  deleteEventEntry, deleteMemoryEntry, getLatestMaterialJob, getMaterialJob, memoryCenterData,
+  readMaterialMemories, retrieveMaterialMemoriesDetailed, updateEventEntry, updateMemoryEntry,
   resumeMaterialJob, resumePendingMaterialJobs, startMaterialJob,
 } from "./materials";
 import {
@@ -36,6 +37,7 @@ import {
 } from "./decision/store";
 import type { EvidenceRef, PlanningMode } from "./decision/types";
 import { deleteProviderKey, initializeProviderKeychain, keychainBackend, saveProviderKey } from "./keychain";
+import { semanticStatus } from "./semantic";
 import { rmSync } from "node:fs";
 
 // @ts-ignore  bun text import
@@ -78,7 +80,8 @@ async function handleChat(req: Request): Promise<Response> {
   const allBefore = readMessages(slug, 10_000);
   const packed = buildContextPack(slug, text ?? "");
   const indexedMaterials = readMaterialMemories(slug);
-  const materialMemories = retrieveMaterialMemories(slug, text ?? "", 6);
+  const materialRetrieval = await retrieveMaterialMemoriesDetailed(slug, text ?? "", 6);
+  const materialMemories = materialRetrieval.items;
   const adaptiveProfile = getAdaptiveProfile(slug);
   let savedImages;
   try {
@@ -136,7 +139,7 @@ async function handleChat(req: Request): Promise<Response> {
     })),
     ...materialMemories.map((memory) => ({
       id: `material:${memory.id}`, kind: "material" as const,
-      text: [memory.summary, ...memory.facts].join("；"), observedAt: memory.createdAt,
+      text: [memory.summary, ...memory.facts.filter((f) => f.status === "active").map((f) => f.text)].join("；"), observedAt: memory.createdAt,
       reliability: memory.provider === "demo" ? .45 : .72,
       importance: memory.importance, sourceId: memory.id,
     })),
@@ -169,6 +172,7 @@ async function handleChat(req: Request): Promise<Response> {
           vision: supportsVision(cfg),
           capabilities: providerCapabilities(cfg),
           decision,
+          memoryTrace: materialRetrieval.trace,
           context: {
             ...packed.stats,
             materialsIndexed: indexedMaterials.length,
@@ -319,9 +323,15 @@ const server = Bun.serve({
         const masked = maskedSettings();
         return json({ ...masked, presets: PROVIDER_PRESETS, keychain: {
           ...keychainStatus, backend: keychainBackend(),
-        }, calibration: calibrationReport() });
+        }, calibration: calibrationReport(), semantic: await semanticStatus() });
       }
+      if (path === "/api/semantic-status") return json(await semanticStatus(true));
       if (path === "/api/providers/local") return json(await detectLocalProviders());
+      const mMemoryCenter = path.match(/^\/api\/partners\/([^/]+)\/memory-center$/);
+      if (mMemoryCenter) {
+        const slug = decodeURIComponent(mMemoryCenter[1]);
+        return getPartner(slug) ? json(await memoryCenterData(slug)) : json({ error: "对象不存在" }, 404);
+      }
       if (path === "/api/partners") return json(listPartners().map((p) => ({ ...p, stageName: stageInfo(p.stage).name })));
       const mLatestJob = path.match(/^\/api\/partners\/([^/]+)\/material-jobs\/latest$/);
       if (mLatestJob) return json(getLatestMaterialJob(decodeURIComponent(mLatestJob[1])));
@@ -500,6 +510,40 @@ const server = Bun.serve({
       if (mRebuild) {
         const slug = decodeURIComponent(mRebuild[1]);
         return getPartner(slug) ? json(rebuildDerivedState(slug)) : json({ error: "对象不存在" }, 404);
+      }
+      const mMemoryDelete = path.match(/^\/api\/partners\/([^/]+)\/memories\/([^/]+)\/delete$/);
+      if (mMemoryDelete) {
+        const slug = decodeURIComponent(mMemoryDelete[1]);
+        if (!getPartner(slug)) return json({ error: "对象不存在" }, 404);
+        return deleteMemoryEntry(slug, decodeURIComponent(mMemoryDelete[2]))
+          ? json({ ok: true }) : json({ error: "记忆不存在" }, 404);
+      }
+      const mMemoryUpdate = path.match(/^\/api\/partners\/([^/]+)\/memories\/([^/]+)$/);
+      if (mMemoryUpdate) {
+        const slug = decodeURIComponent(mMemoryUpdate[1]);
+        if (!getPartner(slug)) return json({ error: "对象不存在" }, 404);
+        try {
+          const patch = await req.json();
+          return updateMemoryEntry(slug, decodeURIComponent(mMemoryUpdate[2]), patch)
+            ? json({ ok: true }) : json({ error: "记忆不存在或没有可更新的字段" }, 404);
+        } catch (e: any) { return json({ error: String(e?.message ?? e) }, 400); }
+      }
+      const mEventDelete = path.match(/^\/api\/partners\/([^/]+)\/events\/([^/]+)\/delete$/);
+      if (mEventDelete) {
+        const slug = decodeURIComponent(mEventDelete[1]);
+        if (!getPartner(slug)) return json({ error: "对象不存在" }, 404);
+        return deleteEventEntry(slug, decodeURIComponent(mEventDelete[2]))
+          ? json({ ok: true }) : json({ error: "事件不存在" }, 404);
+      }
+      const mEventUpdate = path.match(/^\/api\/partners\/([^/]+)\/events\/([^/]+)$/);
+      if (mEventUpdate) {
+        const slug = decodeURIComponent(mEventUpdate[1]);
+        if (!getPartner(slug)) return json({ error: "对象不存在" }, 404);
+        try {
+          const patch = await req.json();
+          return updateEventEntry(slug, decodeURIComponent(mEventUpdate[2]), patch)
+            ? json({ ok: true }) : json({ error: "事件不存在或状态不合法" }, 404);
+        } catch (e: any) { return json({ error: String(e?.message ?? e) }, 400); }
       }
       const mUpd = path.match(/^\/api\/partners\/([^/]+)$/);
       if (mUpd) {

@@ -199,8 +199,9 @@ export interface ComposeInput {
   history: Array<{ role: string; text: string; mode?: string; attachmentNames?: string[] }>;
   contextStats?: { total: number; included: number; omitted: number; recent: number; relevant: number };
   materialMemories?: Array<{
-    sourceName: string; createdAt: string; summary: string; facts: string[];
-    keywords: string[]; dates: string[]; score: number;
+    sourceName: string; createdAt: string; summary: string;
+    facts: Array<{ text: string; type?: string; status?: string; confidence?: number }>;
+    keywords: string[]; dates: string[]; score: number; kind?: string; reason?: string;
   }>;
   adaptiveContext?: string;
 }
@@ -259,9 +260,14 @@ export function compose(input: ComposeInput): Composed {
     ? `\n上下文整理：完整记录共 ${input.contextStats.total} 条，原文都保存在本机；本次按当前问题带入最近 ${input.contextStats.recent} 条和相关旧记录 ${input.contextStats.relevant} 条。`
     : "";
   const materialLines = (input.materialMemories ?? []).map((memory) => {
-    const facts = memory.facts.slice(0, 5).map((fact) => `    - ${fact}`).join("\n");
+    const facts = memory.facts
+      .filter((fact) => (fact.status ?? "active") === "active")
+      .slice(0, 5)
+      .map((fact) => `    - ${fact.text}${fact.type === "preference" ? "（长期偏好）" : fact.type === "one_time" || fact.type === "availability" ? "（一次性安排）" : fact.type === "agreement" ? "（明确约定）" : ""}`)
+      .join("\n");
     const dates = memory.dates.length ? `；时间线索：${memory.dates.join("、")}` : "";
-    return `- 来源「${memory.sourceName}」（语义相关度 ${memory.score.toFixed(2)}${dates}）\n  摘要：${memory.summary}${facts ? `\n  可回指事实：\n${facts}` : ""}`;
+    const label = memory.kind === "event" ? "事件记忆" : "来源";
+    return `- ${label}「${memory.sourceName}」（相关度 ${memory.score.toFixed(2)}${dates}）\n  摘要：${memory.summary}${facts ? `\n  可回指事实：\n${facts}` : ""}`;
   });
   if (materialLines.length) {
     dyn.push(`# 从长期素材库按语义找回的补充资料\n\n这些是后台逐张读取截图后建立的记忆卡。它们可能来自很久以前；只在与当前问题有关时使用，并把摘要视为可回到原图核对的辅助信息。\n\n${materialLines.join("\n")}`);

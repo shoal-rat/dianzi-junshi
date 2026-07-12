@@ -23,6 +23,13 @@
     <div class="sidebar-label">最近聊过</div>
     <div id="partner-list" class="partner-list"></div>
     <div class="sidebar-foot">
+      <button id="btn-memory-center" class="provider-pill" title="查看和管理长期记忆" style="margin-bottom:8px">
+        <span class="dot" aria-hidden="true" style="background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent)"></span>
+        <span class="provider-copy">
+          <span style="font-size:12.5px;font-weight:650">记忆中心</span>
+          <small>看看它记住了什么、为什么被用到</small>
+        </span>
+      </button>
       <button id="btn-settings" class="provider-pill" title="更换 AI 连接">
         <span class="dot" aria-hidden="true"></span>
         <span class="provider-copy">
@@ -143,6 +150,10 @@
       <h4>发现的互动模式</h4>
       <div id="panel-patterns" class="panel-meta muted">模式需要多个结果支持，也可以由你暂停、恢复或标记为不适用。</div>
     </section>
+    <section class="panel-sec">
+      <h4>本次用到的长期记忆</h4>
+      <div id="panel-memory" class="panel-meta muted">发来内容后，这里会列出这次找回了哪些旧记忆、以及每一条被选中的原因。</div>
+    </section>
     <details class="panel-sec decision-details" id="decision-details">
       <summary>决策网络与完整思考过程</summary>
       <p class="muted">本地决策引擎每一轮真实计算的数据流：状态信念 → 体制假设 → 动作特征 → 预测状态 → 回应分布 → 输出。点任意节点看参数。</p>
@@ -236,6 +247,22 @@
         <button id="calibration-delete" type="button" class="mini-btn">删除本机校准数据</button>
       </div>
     </section>
+    <section class="calibration-card">
+      <label class="field" style="margin-bottom:8px">
+        <span><b>语义嵌入（可选，本机模型）</b></span>
+        <select id="semantic-mode" class="select" style="width:100%">
+          <option value="auto">自动检测本机 Ollama（推荐）</option>
+          <option value="custom">自定义 OpenAI 兼容端点</option>
+          <option value="off">关闭，只用零依赖特征哈希</option>
+        </select>
+        <small>装了本地嵌入模型（如 <code>ollama pull bge-m3</code>）就能让「态度变冷」匹配到「没以前热情」这类同义记忆；没装也完全能用。</small>
+      </label>
+      <div id="semantic-custom" hidden>
+        <label class="field"><span>Base URL</span><input id="semantic-base" type="text" placeholder="http://127.0.0.1:1234/v1"></label>
+        <label class="field"><span>模型名</span><input id="semantic-model" type="text" placeholder="text-embedding-bge-m3"></label>
+      </div>
+      <div id="semantic-status" class="muted" style="font-size:11px">正在检查…</div>
+    </section>
     <div id="settings-error" class="form-error" role="alert" hidden></div>
     <div class="dlg-actions">
       <button id="settings-cancel" type="button" class="btn">取消</button>
@@ -307,6 +334,22 @@
       <button id="feedback-save" type="submit" class="btn btn-primary">记下这次结果</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="dlg-memory">
+  <div class="dlg dlg-memory">
+    <div class="dlg-head">
+      <div>
+        <p class="eyebrow">长期记忆管理</p>
+        <h3>记忆中心</h3>
+        <p>每条记忆都能看到来源截图、提取的事实、被使用的次数和原因。记错的可以改、可以停用、也可以删掉。</p>
+      </div>
+      <button id="memory-close" type="button" class="icon-btn" aria-label="关闭">×</button>
+    </div>
+    <div id="memory-semantic" class="connection-note">正在检查语义嵌入…</div>
+    <div id="memory-events"></div>
+    <div id="memory-list" class="memory-list"><p class="muted">正在读取…</p></div>
+  </div>
 </dialog>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>

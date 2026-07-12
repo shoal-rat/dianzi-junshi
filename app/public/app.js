@@ -515,6 +515,7 @@ async function send() {
   const card = appendJunshiCard();
   card.body.innerHTML = `<p class="muted"><span class="streaming-dot">军师读局中</span> · <button type="button" class="thinking-link">看它的决策网络</button></p>`;
   card.body.querySelector(".thinking-link").onclick = openThinking;
+  state.lastMemoryTrace = null;
 
   let raw = "";
   let lintBlocks = null;
@@ -570,6 +571,7 @@ async function send() {
           if (event === "meta") {
             state.currentDecision = data.decision || null;
             renderPanelMeta(data);
+            renderMemoryTrace(data.memoryTrace);
             renderDecisionPanel(data.decision);
           }
           else if (event === "delta") { raw += data.text; scheduleRender(); }
@@ -584,6 +586,15 @@ async function send() {
     }
     finished = true;
     renderJunshiMarkdown(raw, card.body, lintBlocks);
+    if (state.lastMemoryTrace?.items?.length) {
+      const n = state.lastMemoryTrace.items.length;
+      const memoryBtn = el(`<button class="mini-btn memory-usage-chip">📎 用到 ${n} 条长期记忆</button>`);
+      memoryBtn.onclick = () => {
+        if (window.matchMedia("(max-width: 1120px)").matches) openDrawer("#panel");
+        $("#panel-memory").scrollIntoView({ behavior: "smooth", block: "center" });
+      };
+      card.body.appendChild(memoryBtn);
+    }
     if (state.currentDecision) {
       const thinkBtn = el(`<button class="mini-btn">🧠 思考过程与决策网络</button>`);
       thinkBtn.onclick = openThinking;
@@ -616,7 +627,7 @@ function renderPanelMeta(meta) {
     const c = meta.context;
     wrap.appendChild(el(`<p>这次参考了最近 ${c.recent} 条记录${c.relevant ? `，还找回 ${c.relevant} 条相关旧内容` : ""}。${c.omitted ? `其余 ${c.omitted} 条原文仍保存在本机。` : ""}</p>`));
     if (c.materialsIndexed) {
-      wrap.appendChild(el(`<p>素材记忆库里有 ${c.materialsIndexed} 张已整理截图；这次按语义向量、人物和事件线索找回 ${c.materialsRetrieved} 张。</p>`));
+      wrap.appendChild(el(`<p>素材记忆库里有 ${c.materialsIndexed} 张已整理截图；这次经两阶段检索找回 ${c.materialsRetrieved} 条（详见下方「本次用到的长期记忆」）。</p>`));
     }
     if (c.feedbackCount) {
       const comparison = c.actionEvidenceWeight > c.responseEvidenceWeight + 0.12 ? "这次会更重视实际行动" : "这次会同时参考表达和行动";
@@ -629,6 +640,26 @@ function renderPanelMeta(meta) {
     }
   } else {
     wrap.appendChild(el(`<p class="muted">没有发现需要单独解释的网络用语；如果语气有歧义，回复里会说明。</p>`));
+  }
+}
+
+const QUERY_TYPE_LABELS = { factual: "事实型", date: "日期型", person: "人物型", trend: "趋势型", general: "一般" };
+
+function renderMemoryTrace(trace) {
+  state.lastMemoryTrace = trace || null;
+  const wrap = $("#panel-memory");
+  wrap.innerHTML = "";
+  if (!trace || !trace.items?.length) {
+    wrap.classList.add("muted");
+    wrap.textContent = trace
+      ? `扫描了 ${trace.scanned} 条长期记忆，这次没有足够相关的可用。`
+      : "发来内容后，这里会列出这次找回了哪些旧记忆、以及每一条被选中的原因。";
+    return;
+  }
+  wrap.classList.remove("muted");
+  wrap.appendChild(el(`<p>这次用到 ${trace.items.length} 条长期记忆（问题判定为「${QUERY_TYPE_LABELS[trace.queryType] || trace.queryType}」，${trace.semantic ? "已启用本机语义模型" : "使用特征哈希"}）。</p>`));
+  for (const item of trace.items) {
+    wrap.appendChild(el(`<div class="memory-reason"><b>${item.kind === "event" ? "🗂 " : "🖼 "}${esc(item.sourceName)}</b><br>${esc(item.reason)}</div>`));
   }
 }
 
@@ -1150,6 +1181,118 @@ async function restoreMaterialProgress(slug) {
 }
 
 // ---------------------------------------------------------------------------
+// 记忆中心
+// ---------------------------------------------------------------------------
+
+const FACT_TYPE_LABELS = { one_time: "一次性", availability: "档期", preference: "长期偏好",
+  speculation: "用户猜测", inference: "AI 推断", agreement: "明确约定", observation: "观察" };
+const FACT_STATUS_LABELS = { active: "生效中", superseded: "已被更新", contradicted: "已被推翻", retired: "已停用" };
+
+async function openMemoryCenter() {
+  if (!state.slug) { toast("先选择一个聊天档案"); return; }
+  $("#dlg-memory").showModal();
+  $("#memory-list").innerHTML = `<p class="muted">正在读取…</p>`;
+  $("#memory-events").innerHTML = "";
+  await loadMemoryCenter();
+}
+
+async function loadMemoryCenter() {
+  const slug = state.slug;
+  try {
+    const data = await api(`/api/partners/${encodeURIComponent(slug)}/memory-center`);
+    const sem = data.semantic;
+    $("#memory-semantic").textContent = sem?.available
+      ? `语义嵌入已启用：${sem.detail}。同义说法也能被找回。`
+      : `语义嵌入未启用：${sem?.detail || "使用零依赖特征哈希"}。可在设置里开启本机模型。`;
+    const eventsWrap = $("#memory-events");
+    eventsWrap.innerHTML = "";
+    for (const event of data.events || []) {
+      const node = el(`<div class="memory-event">
+        <div class="memory-meta">事件记忆 · ${esc(event.eventType)} · ${esc(event.status)} · 来自 ${event.sourceMemoryIds.length} 张截图</div>
+        <b>${esc(event.summary)}</b>
+        <div class="memory-actions"></div>
+      </div>`);
+      const del = el(`<button class="mini-btn">删除事件</button>`);
+      del.onclick = async () => {
+        if (!window.confirm("删除这个事件记忆？源截图记忆不受影响。")) return;
+        await api(`/api/partners/${encodeURIComponent(slug)}/events/${encodeURIComponent(event.id)}/delete`, { method: "POST", body: {} });
+        toast("事件记忆已删除"); await loadMemoryCenter();
+      };
+      node.querySelector(".memory-actions").appendChild(del);
+      eventsWrap.appendChild(node);
+    }
+    const list = $("#memory-list");
+    list.innerHTML = "";
+    if (!data.memories.length) { list.innerHTML = `<p class="muted">这个档案还没有截图记忆。新建或打开档案时批量导入截图即可。</p>`; return; }
+    for (const memory of data.memories) list.appendChild(renderMemoryCard(slug, memory));
+  } catch (error) {
+    $("#memory-list").innerHTML = `<p class="muted">读取失败：${esc(friendlyError(error))}</p>`;
+  }
+}
+
+function renderMemoryCard(slug, memory) {
+  const card = el(`<div class="memory-card ${memory.status === "retired" ? "retired" : ""}"></div>`);
+  const src = `/api/partners/${encodeURIComponent(slug)}/imports/${encodeURIComponent(memory.fileName)}`;
+  const thumb = el(`<img class="memory-thumb" src="${esc(src)}" alt="${esc(memory.sourceName)}" loading="lazy">`);
+  thumb.onclick = () => window.open(src, "_blank", "noopener");
+  thumb.onerror = () => { thumb.style.visibility = "hidden"; };
+  const body = el(`<div></div>`);
+  const usage = memory.retrievalCount
+    ? `被用到 ${memory.retrievalCount} 次${memory.lastRetrievalReason ? ` · 最近原因：${esc(memory.lastRetrievalReason)}` : ""}`
+    : "还没有在回复里被用到";
+  body.appendChild(el(`<div class="memory-head"><b>${esc(memory.sourceName)}</b>${memory.duplicateOf ? '<span class="chip chip-warn">近似重复</span>' : ""}${memory.status === "retired" ? '<span class="chip chip-plain">已停用</span>' : ""}</div>`));
+  body.appendChild(el(`<div class="memory-meta">${new Date(memory.createdAt).toLocaleString()} · 重要度 ${Math.round(memory.importance * 100)}% · ${esc(memory.people.join("、") || "未标注人物")}</div>`));
+  body.appendChild(el(`<div class="memory-summary">${esc(memory.summary)}</div>`));
+
+  if (memory.facts?.length) {
+    const factsWrap = el(`<div class="memory-facts"></div>`);
+    for (const fact of memory.facts) {
+      const row = el(`<div class="fact-row ${fact.status === "active" ? "" : "inactive"}"><span class="fact-type">${esc(FACT_TYPE_LABELS[fact.type] || fact.type)}</span><span class="fact-text">${esc(fact.text)}</span></div>`);
+      const sel = el(`<select class="select" title="事实状态"></select>`);
+      for (const [value, label] of Object.entries(FACT_STATUS_LABELS)) {
+        const opt = el(`<option value="${value}">${label}</option>`);
+        if (fact.status === value) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      sel.onchange = async () => {
+        try {
+          await api(`/api/partners/${encodeURIComponent(slug)}/memories/${encodeURIComponent(memory.id)}`, {
+            method: "POST", body: { facts: [{ id: fact.id, status: sel.value }] },
+          });
+          toast("事实状态已更新"); await loadMemoryCenter();
+        } catch (e) { toast(friendlyError(e)); }
+      };
+      row.appendChild(sel);
+      factsWrap.appendChild(row);
+    }
+    body.appendChild(factsWrap);
+  }
+  body.appendChild(el(`<div class="memory-reason">${usage}</div>`));
+
+  const actions = el(`<div class="memory-actions"></div>`);
+  const toggle = el(`<button class="mini-btn">${memory.status === "retired" ? "恢复使用" : "停用这条记忆"}</button>`);
+  toggle.onclick = async () => {
+    await api(`/api/partners/${encodeURIComponent(slug)}/memories/${encodeURIComponent(memory.id)}`, {
+      method: "POST", body: { status: memory.status === "retired" ? "active" : "retired" },
+    });
+    toast(memory.status === "retired" ? "已恢复" : "已停用，不再进入检索"); await loadMemoryCenter();
+  };
+  const del = el(`<button class="mini-btn">删除</button>`);
+  del.onclick = async () => {
+    if (!window.confirm("彻底删除这条记忆？原始截图文件仍保留在磁盘上。")) return;
+    await api(`/api/partners/${encodeURIComponent(slug)}/memories/${encodeURIComponent(memory.id)}/delete`, { method: "POST", body: {} });
+    toast("记忆已删除"); await loadMemoryCenter();
+  };
+  actions.appendChild(toggle);
+  actions.appendChild(del);
+  body.appendChild(actions);
+
+  card.appendChild(thumb);
+  card.appendChild(body);
+  return card;
+}
+
+// ---------------------------------------------------------------------------
 // 设置
 // ---------------------------------------------------------------------------
 
@@ -1169,7 +1312,20 @@ async function openSettings() {
   $("#calibration-status").textContent = samples
     ? `本机已有 ${samples} 条去标识化样本${data.calibration.brierScore === null ? "" : ` · 校准误差 ${data.calibration.calibrationError.toFixed(3)}`}`
     : "尚未加入本机校准样本。开启后也只记录未来的新反馈。";
+  const semanticMode = data.semanticEmbedding?.mode || "auto";
+  $("#semantic-mode").value = semanticMode;
+  $("#semantic-base").value = data.semanticEmbedding?.baseUrl || "";
+  $("#semantic-model").value = data.semanticEmbedding?.model || "";
+  $("#semantic-custom").hidden = semanticMode !== "custom";
+  renderSemanticStatus(data.semantic);
   $("#dlg-settings").showModal();
+}
+
+function renderSemanticStatus(status) {
+  const node = $("#semantic-status");
+  if (!status) { node.textContent = ""; return; }
+  node.textContent = status.available ? `✓ ${status.detail}` : status.detail;
+  node.style.color = status.available ? "var(--pass)" : "var(--text-3)";
 }
 
 function renderLocalStatus() {
@@ -1272,8 +1428,14 @@ async function saveSettings() {
     };
   }
   patch.calibrationConsent = { enabled: $("#calibration-consent").checked };
+  patch.semanticEmbedding = {
+    mode: $("#semantic-mode").value,
+    baseUrl: $("#semantic-base")?.value?.trim() || undefined,
+    model: $("#semantic-model")?.value?.trim() || undefined,
+  };
   await api("/api/settings", { method: "POST", body: patch });
   await refreshProviderPill();
+  try { renderSemanticStatus(await api("/api/semantic-status")); } catch {}
 }
 
 async function refreshProviderPill() {
@@ -1473,6 +1635,9 @@ function bind() {
 
   // 设置
   $("#btn-settings").onclick = () => openSettings().catch((e) => toast(friendlyError(e)));
+  $("#btn-memory-center").onclick = () => openMemoryCenter().catch((e) => toast(friendlyError(e)));
+  $("#memory-close").onclick = () => $("#dlg-memory").close();
+  $("#semantic-mode").onchange = (e) => { $("#semantic-custom").hidden = e.target.value !== "custom"; };
   $("#settings-close").onclick = () => $("#dlg-settings").close();
   $("#settings-cancel").onclick = () => $("#dlg-settings").close();
   $("#calibration-export").onclick = () => { window.location.href = "/api/calibration/export"; };
@@ -1563,6 +1728,7 @@ function bind() {
   // 所有浮层都可以通过关闭按钮、背景或 Esc 退出
   makeDialogDismissible($("#dlg-partner"));
   makeDialogDismissible($("#dlg-settings"));
+  makeDialogDismissible($("#dlg-memory"));
   makeDialogDismissible($("#dlg-feedback"));
   $("#btn-sidebar").onclick = () => openDrawer("#sidebar");
   $("#btn-panel").onclick = () => openDrawer("#panel");

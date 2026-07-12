@@ -206,6 +206,75 @@ function migrate(conn: Database): void {
   conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (1, ?)")
     .run(new Date().toISOString());
   reembedMaterialVectors(conn);
+  upgradeMemoryBank(conn);
+}
+
+/** Migration v7: the memory bank grows lifecycle, provenance and event layers.
+ * Column adds are individually guarded so reruns and fresh databases both work;
+ * string facts are wrapped into structured fact objects exactly once. */
+function upgradeMemoryBank(conn: Database): void {
+  const addColumn = (sql: string) => { try { conn.exec(sql); } catch { /* column exists */ } };
+  addColumn("ALTER TABLE material_memories ADD COLUMN content_hash TEXT");
+  addColumn("ALTER TABLE material_memories ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+  addColumn("ALTER TABLE material_memories ADD COLUMN duplicate_of TEXT");
+  addColumn("ALTER TABLE material_memories ADD COLUMN retrieval_count INTEGER NOT NULL DEFAULT 0");
+  addColumn("ALTER TABLE material_memories ADD COLUMN last_retrieved_at TEXT");
+  addColumn("ALTER TABLE material_memories ADD COLUMN last_retrieval_reason TEXT");
+  addColumn("ALTER TABLE material_memories ADD COLUMN semantic_vector BLOB");
+  addColumn("ALTER TABLE material_memories ADD COLUMN semantic_model TEXT");
+  conn.exec(`
+    CREATE TABLE IF NOT EXISTS event_memories (
+      id TEXT NOT NULL, profile_slug TEXT NOT NULL, event_type TEXT NOT NULL,
+      participants_json TEXT NOT NULL, started_at TEXT, ended_at TEXT,
+      status TEXT NOT NULL DEFAULT 'recorded', facts_json TEXT NOT NULL,
+      source_memory_ids_json TEXT NOT NULL, summary TEXT NOT NULL,
+      retrieval_text TEXT NOT NULL, vector BLOB NOT NULL,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+      PRIMARY KEY(profile_slug, id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_event_memories_profile
+      ON event_memories(profile_slug, started_at DESC);
+    CREATE TABLE IF NOT EXISTS embedding_cache (
+      hash TEXT PRIMARY KEY, model TEXT NOT NULL, dims INTEGER NOT NULL,
+      vector BLOB NOT NULL, created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS memory_retrieval_log (
+      id TEXT PRIMARY KEY, profile_slug TEXT NOT NULL, query TEXT NOT NULL,
+      memory_id TEXT NOT NULL, kind TEXT NOT NULL, reason TEXT NOT NULL,
+      score REAL NOT NULL, at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_retrieval_log_profile
+      ON memory_retrieval_log(profile_slug, at DESC);
+  `);
+  if (conn.query("SELECT 1 FROM schema_migrations WHERE version=7").get()) return;
+  const rows = conn.query("SELECT rowid, memory_id, file_name, observed_at, facts_json FROM material_memories").all() as any[];
+  const update = conn.query("UPDATE material_memories SET facts_json=? WHERE rowid=?");
+  conn.transaction(() => {
+    for (const row of rows) {
+      let facts: unknown;
+      try { facts = JSON.parse(String(row.facts_json)); } catch { facts = []; }
+      if (!Array.isArray(facts) || facts.every((f) => f && typeof f === "object")) continue;
+      const wrapped = (facts as unknown[]).filter((f) => typeof f === "string" && f).map((text) => ({
+        id: crypto.randomUUID(), text: String(text).slice(0, 400),
+        type: inferLegacyFactType(String(text)), confidence: .6,
+        observedAt: String(row.observed_at ?? "") || undefined,
+        sourceImage: String(row.file_name ?? "") || undefined,
+        status: "active",
+      }));
+      update.run(JSON.stringify(wrapped), row.rowid);
+    }
+    conn.query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (7, ?)")
+      .run(new Date().toISOString());
+  })();
+}
+
+/** Legacy strings carry no type; a conservative keyword pass sorts them. */
+function inferLegacyFactType(text: string): string {
+  if (/答应|约定|说好|约好|确定[了在]/.test(text)) return "agreement";
+  if (/一直|每次|总是|喜欢|不喜欢|讨厌|偏好|习惯/.test(text)) return "preference";
+  if (/可能|大概|似乎|应该是|我觉得|估计/.test(text)) return "speculation";
+  if (/有空|没空|方便|不方便|周[一二三四五六日末]|明天|后天|\d+[月号点]/.test(text)) return "one_time";
+  return "observation";
 }
 
 /** Migration v6: the tokenizer moved to dictionary segmentation, so every
@@ -258,8 +327,9 @@ export function upsertMaterialMemory(slug: string, memory: MaterialMemory): void
     conn.query(`INSERT INTO material_memories(
       profile_slug, memory_id, file_name, source_name, media_type, observed_at, provider,
       summary, facts_json, keywords_json, people_json, dates_json, sentiment, importance,
-      retrieval_text, vector, related_ids_json, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      retrieval_text, vector, related_ids_json, updated_at,
+      content_hash, status, duplicate_of
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(profile_slug, memory_id) DO UPDATE SET
       file_name=excluded.file_name, source_name=excluded.source_name, media_type=excluded.media_type,
       observed_at=excluded.observed_at, provider=excluded.provider, summary=excluded.summary,
@@ -267,12 +337,14 @@ export function upsertMaterialMemory(slug: string, memory: MaterialMemory): void
       people_json=excluded.people_json, dates_json=excluded.dates_json,
       sentiment=excluded.sentiment, importance=excluded.importance,
       retrieval_text=excluded.retrieval_text, vector=excluded.vector,
-      related_ids_json=excluded.related_ids_json, updated_at=excluded.updated_at`)
+      related_ids_json=excluded.related_ids_json, updated_at=excluded.updated_at,
+      content_hash=excluded.content_hash, status=excluded.status, duplicate_of=excluded.duplicate_of`)
       .run(
         slug, memory.id, memory.fileName, memory.sourceName, memory.mediaType, memory.createdAt,
         memory.provider, memory.summary, JSON.stringify(memory.facts), JSON.stringify(memory.keywords),
         JSON.stringify(memory.people), JSON.stringify(memory.dates), memory.sentiment, memory.importance,
         memory.retrievalText, vector, JSON.stringify(memory.relatedIds), now,
+        memory.contentHash ?? null, memory.status ?? "active", memory.duplicateOf ?? null,
       );
     if (vectorExtension) {
       const row = conn.query("SELECT rowid FROM material_memories WHERE profile_slug=? AND memory_id=?")
@@ -290,7 +362,8 @@ export function upsertMaterialMemory(slug: string, memory: MaterialMemory): void
 export function readMaterialMemoriesDb(slug: string): MaterialMemory[] {
   const rows = db().query(`SELECT memory_id, file_name, source_name, media_type, observed_at, provider,
     summary, facts_json, keywords_json, people_json, dates_json, sentiment, importance,
-    retrieval_text, vector, related_ids_json
+    retrieval_text, vector, related_ids_json,
+    content_hash, status, duplicate_of, retrieval_count, last_retrieved_at, last_retrieval_reason
     FROM material_memories WHERE profile_slug=? ORDER BY observed_at`).all(slug) as any[];
   return rows.map((row) => ({
     id: String(row.memory_id), fileName: String(row.file_name), sourceName: String(row.source_name),
@@ -299,7 +372,147 @@ export function readMaterialMemoriesDb(slug: string): MaterialMemory[] {
     people: parseJson(row.people_json, []), dates: parseJson(row.dates_json, []),
     sentiment: String(row.sentiment), importance: Number(row.importance), retrievalText: String(row.retrieval_text),
     vector: encodeVector(row.vector), relatedIds: parseJson(row.related_ids_json, []),
+    contentHash: row.content_hash ? String(row.content_hash) : undefined,
+    status: (row.status === "retired" ? "retired" : "active") as "active" | "retired",
+    duplicateOf: row.duplicate_of ? String(row.duplicate_of) : undefined,
+    retrievalCount: Number(row.retrieval_count ?? 0),
+    lastRetrievedAt: row.last_retrieved_at ? String(row.last_retrieved_at) : undefined,
+    lastRetrievalReason: row.last_retrieval_reason ? String(row.last_retrieval_reason) : undefined,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Memory bank v7 helpers: semantic vectors, events, retrieval log, lifecycle
+// ---------------------------------------------------------------------------
+
+export function saveSemanticVector(slug: string, memoryId: string, vector: Float32Array, model: string): void {
+  db().query(`UPDATE material_memories SET semantic_vector=?, semantic_model=?
+    WHERE profile_slug=? AND memory_id=?`)
+    .run(new Uint8Array(vector.buffer.slice(0)), model, slug, memoryId);
+}
+
+export function readSemanticVectors(slug: string, model: string): Map<string, Float32Array> {
+  const rows = db().query(`SELECT memory_id, semantic_vector FROM material_memories
+    WHERE profile_slug=? AND semantic_model=? AND semantic_vector IS NOT NULL`).all(slug, model) as any[];
+  const out = new Map<string, Float32Array>();
+  for (const row of rows) {
+    const bytes = row.semantic_vector as Uint8Array;
+    out.set(String(row.memory_id), new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));
+  }
+  return out;
+}
+
+export interface EventMemoryRow {
+  id: string;
+  eventType: string;
+  participants: string[];
+  startedAt?: string;
+  endedAt?: string;
+  status: string;
+  facts: unknown[];
+  sourceMemoryIds: string[];
+  summary: string;
+  retrievalText: string;
+  vector: string;
+  createdAt: string;
+}
+
+export function upsertEventMemory(slug: string, event: EventMemoryRow): void {
+  db().query(`INSERT INTO event_memories(
+    id, profile_slug, event_type, participants_json, started_at, ended_at, status,
+    facts_json, source_memory_ids_json, summary, retrieval_text, vector, created_at, updated_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(profile_slug, id) DO UPDATE SET event_type=excluded.event_type,
+    participants_json=excluded.participants_json, started_at=excluded.started_at,
+    ended_at=excluded.ended_at, status=excluded.status, facts_json=excluded.facts_json,
+    source_memory_ids_json=excluded.source_memory_ids_json, summary=excluded.summary,
+    retrieval_text=excluded.retrieval_text, vector=excluded.vector, updated_at=excluded.updated_at`)
+    .run(
+      event.id, slug, event.eventType, JSON.stringify(event.participants),
+      event.startedAt ?? null, event.endedAt ?? null, event.status,
+      JSON.stringify(event.facts), JSON.stringify(event.sourceMemoryIds),
+      event.summary, event.retrievalText, decodeBase64Vector(event.vector),
+      event.createdAt, new Date().toISOString(),
+    );
+}
+
+export function readEventMemories(slug: string): EventMemoryRow[] {
+  const rows = db().query(`SELECT id, event_type, participants_json, started_at, ended_at, status,
+    facts_json, source_memory_ids_json, summary, retrieval_text, vector, created_at
+    FROM event_memories WHERE profile_slug=? ORDER BY started_at DESC`).all(slug) as any[];
+  return rows.map((row) => ({
+    id: String(row.id), eventType: String(row.event_type),
+    participants: parseJson(row.participants_json, []),
+    startedAt: row.started_at ? String(row.started_at) : undefined,
+    endedAt: row.ended_at ? String(row.ended_at) : undefined,
+    status: String(row.status), facts: parseJson(row.facts_json, []),
+    sourceMemoryIds: parseJson(row.source_memory_ids_json, []),
+    summary: String(row.summary), retrievalText: String(row.retrieval_text),
+    vector: encodeVector(row.vector), createdAt: String(row.created_at),
+  }));
+}
+
+export function deleteEventMemoryRow(slug: string, id: string): boolean {
+  return Number(db().query("DELETE FROM event_memories WHERE profile_slug=? AND id=?").run(slug, id).changes ?? 0) > 0;
+}
+
+/** Bumps usage counters and stores the human-readable reason a memory was used. */
+export function recordMemoryRetrieval(
+  slug: string, query: string,
+  items: Array<{ id: string; kind: "memory" | "event"; reason: string; score: number }>,
+): void {
+  if (!items.length) return;
+  const conn = db();
+  const now = new Date().toISOString();
+  const bump = conn.query(`UPDATE material_memories SET retrieval_count=retrieval_count+1,
+    last_retrieved_at=?, last_retrieval_reason=? WHERE profile_slug=? AND memory_id=?`);
+  const log = conn.query(`INSERT INTO memory_retrieval_log(id, profile_slug, query, memory_id, kind, reason, score, at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+  conn.transaction(() => {
+    for (const item of items) {
+      if (item.kind === "memory") bump.run(now, item.reason.slice(0, 400), slug, item.id);
+      log.run(crypto.randomUUID(), slug, query.slice(0, 300), item.id, item.kind, item.reason.slice(0, 400), item.score, now);
+    }
+    // Keep the per-profile log bounded.
+    conn.query(`DELETE FROM memory_retrieval_log WHERE profile_slug=? AND id NOT IN (
+      SELECT id FROM memory_retrieval_log WHERE profile_slug=? ORDER BY at DESC LIMIT 300
+    )`).run(slug, slug);
+  })();
+}
+
+export function updateMaterialMemoryFields(
+  slug: string, memoryId: string,
+  patch: { summary?: string; status?: "active" | "retired"; factsJson?: string; retrievalText?: string },
+): boolean {
+  const sets: string[] = [];
+  const args: unknown[] = [];
+  if (patch.summary !== undefined) { sets.push("summary=?"); args.push(patch.summary.slice(0, 500)); }
+  if (patch.status !== undefined) { sets.push("status=?"); args.push(patch.status); }
+  if (patch.factsJson !== undefined) { sets.push("facts_json=?"); args.push(patch.factsJson); }
+  if (patch.retrievalText !== undefined) { sets.push("retrieval_text=?"); args.push(patch.retrievalText.slice(0, 8000)); }
+  if (!sets.length) return false;
+  sets.push("updated_at=?");
+  args.push(new Date().toISOString(), slug, memoryId);
+  const result = db().query(`UPDATE material_memories SET ${sets.join(", ")} WHERE profile_slug=? AND memory_id=?`)
+    .run(...(args as [string]));
+  return Number(result.changes ?? 0) > 0;
+}
+
+export function deleteMaterialMemoryRow(slug: string, memoryId: string): boolean {
+  const conn = db();
+  let removed = false;
+  conn.transaction(() => {
+    const row = conn.query("SELECT rowid FROM material_memories WHERE profile_slug=? AND memory_id=?")
+      .get(slug, memoryId) as { rowid: number } | null;
+    if (!row) return;
+    if (vectorExtension) {
+      try { conn.query("DELETE FROM material_vectors WHERE rowid=?").run(row.rowid); } catch { /* index optional */ }
+    }
+    conn.query("DELETE FROM material_memories WHERE rowid=?").run(row.rowid);
+    conn.query("DELETE FROM memory_retrieval_log WHERE profile_slug=? AND memory_id=?").run(slug, memoryId);
+    removed = true;
+  })();
+  return removed;
 }
 
 /** Returns cosine similarity candidates from sqlite-vec, or null for the JS fallback. */

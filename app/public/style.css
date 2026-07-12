@@ -560,3 +560,27 @@ dialog::backdrop { background: rgba(18,25,38,.34); backdrop-filter: blur(6px); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Memory Center */
+.dlg-memory { width: 860px; max-height: 88vh; }
+.memory-list { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.memory-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.memory-card.retired { opacity: .55; }
+.memory-thumb { width: 96px; height: 96px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); cursor: zoom-in; background: var(--surface-3); }
+.memory-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.memory-head b { font-size: 13px; }
+.memory-meta { color: var(--text-3); font-size: 10.5px; margin-top: 2px; }
+.memory-summary { margin: 6px 0; font-size: 12.5px; line-height: 1.55; }
+.memory-facts { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.fact-row { display: flex; align-items: center; gap: 6px; font-size: 11.5px; line-height: 1.45; }
+.fact-row .select { font-size: 10px; padding: 2px 6px; width: auto; }
+.fact-row.inactive span.fact-text { text-decoration: line-through; color: var(--text-3); }
+.fact-type { flex: none; font-size: 9.5px; padding: 1px 7px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-deep); }
+.memory-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+.memory-reason { margin-top: 6px; padding: 7px 9px; border-radius: 9px; background: var(--brand-soft); font-size: 10.5px; line-height: 1.5; color: var(--brand-deep); }
+.memory-event { border-left: 3px solid var(--accent); border-radius: 10px 14px 14px 10px; padding: 10px 12px; margin-top: 12px; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.memory-event b { font-size: 12.5px; }
+.memory-event .memory-meta { margin-bottom: 4px; }
+.memory-usage-chip { cursor: pointer; }
+#panel-memory .memory-reason { background: var(--surface-2); color: var(--text-2); }
+@media (max-width: 760px) { .memory-card { grid-template-columns: 64px minmax(0,1fr); } .memory-thumb { width: 64px; height: 64px; } }
