@@ -679,14 +679,17 @@ function renderPanelLint(blocks) {
 // 决策网络图：引擎本轮真实计算的数据流，节点可点击查看参数
 // ---------------------------------------------------------------------------
 
-function renderNetworkGraph(trace, container) {
-  container.innerHTML = "";
-  if (!trace?.layers?.length) return;
+/** Builds the SVG dataflow graph. `opts.large` uses roomier geometry and bigger
+ * labels for the expanded modal; both variants share node inspection. Returns
+ * the graph box, the svg element and its intrinsic size (for pan/zoom). */
+function buildNetworkGraph(trace, opts = {}) {
+  const large = Boolean(opts.large);
   const layers = trace.layers.filter((layer) => layer.nodes.length);
-  const colWidth = 92;
-  const rowHeight = 40;
-  const padX = 46;
-  const padY = 30;
+  const colWidth = large ? 168 : 92;
+  const rowHeight = large ? 62 : 40;
+  const padX = large ? 78 : 46;
+  const padY = large ? 44 : 30;
+  const fontScale = large ? 1.7 : 1;
   const width = padX * 2 + (layers.length - 1) * colWidth;
   const maxRows = Math.max(...layers.map((layer) => layer.nodes.length));
   const height = padY * 2 + Math.max(1, maxRows - 1) * rowHeight;
@@ -714,7 +717,7 @@ function renderNetworkGraph(trace, container) {
     path.setAttribute("d", `M ${a.x} ${a.y} C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x} ${b.y}`);
     path.setAttribute("class", "trace-edge");
     path.setAttribute("stroke", edge.weight >= 0 ? brand : accent);
-    path.setAttribute("stroke-width", String(.6 + Math.abs(edge.weight) * 2.6));
+    path.setAttribute("stroke-width", String((.6 + Math.abs(edge.weight) * 2.6) * (large ? 1.4 : 1)));
     path.style.opacity = String(.14 + Math.abs(edge.weight) * .5);
     path.dataset.from = edge.from;
     path.dataset.to = edge.to;
@@ -725,60 +728,123 @@ function renderNetworkGraph(trace, container) {
   layers.forEach((layer, col) => {
     const title = document.createElementNS(svgNS, "text");
     title.setAttribute("x", String(padX + col * colWidth));
-    title.setAttribute("y", "13");
+    title.setAttribute("y", String(large ? 20 : 13));
     title.setAttribute("text-anchor", "middle");
     title.setAttribute("class", "layer-title");
+    title.style.fontSize = `${8 * fontScale}px`;
     title.textContent = layer.label;
     svg.appendChild(title);
   });
 
   const detail = el(`<div class="network-detail" hidden></div>`);
-  const nodeEls = new Map();
   for (const { x, y, node } of pos.values()) {
     const g = document.createElementNS(svgNS, "g");
     g.setAttribute("class", "trace-node");
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", String(x));
     circle.setAttribute("cy", String(y));
-    circle.setAttribute("r", String(3.4 + Math.min(1, Math.abs(node.activation)) * 4.6));
+    circle.setAttribute("r", String((3.4 + Math.min(1, Math.abs(node.activation)) * 4.6) * (large ? 1.5 : 1)));
     circle.setAttribute("fill", node.activation >= 0 ? brand : accent);
     circle.style.opacity = String(.38 + Math.min(1, Math.abs(node.activation)) * .62);
     const text = document.createElementNS(svgNS, "text");
     text.setAttribute("x", String(x));
-    text.setAttribute("y", String(y + 17));
+    text.setAttribute("y", String(y + (large ? 26 : 17)));
     text.setAttribute("text-anchor", "middle");
+    text.style.fontSize = `${8.5 * fontScale}px`;
     text.textContent = node.label;
     g.appendChild(circle);
     g.appendChild(text);
-    g.onclick = () => {
+    g.onclick = (e) => {
+      e.stopPropagation();
       const selected = g.classList.contains("selected");
       svg.querySelectorAll(".trace-node.selected").forEach((n) => n.classList.remove("selected"));
-      edgeEls.forEach((e) => e.classList.remove("dimmed"));
+      edgeEls.forEach((edge) => edge.classList.remove("dimmed"));
       if (selected) { detail.hidden = true; return; }
       g.classList.add("selected");
-      edgeEls.forEach((e) => e.classList.toggle("dimmed", e.dataset.from !== node.id && e.dataset.to !== node.id));
-      const inbound = trace.edges.filter((e) => e.to === node.id).sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight)).slice(0, 5);
-      const outbound = trace.edges.filter((e) => e.from === node.id).sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight)).slice(0, 5);
+      edgeEls.forEach((edge) => edge.classList.toggle("dimmed", edge.dataset.from !== node.id && edge.dataset.to !== node.id));
+      const inbound = trace.edges.filter((edge) => edge.to === node.id).sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight)).slice(0, 6);
+      const outbound = trace.edges.filter((edge) => edge.from === node.id).sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight)).slice(0, 6);
       const nodeLabel = (id) => { const p = pos.get(id); return p ? p.node.label : id; };
       detail.innerHTML = `<b>${esc(node.label)} · 激活 ${node.activation.toFixed(2)}</b>
         ${node.detail.map((line) => `<div>${esc(line)}</div>`).join("")}
-        ${inbound.length ? `<ul>${inbound.map((e) => `<li>← ${esc(nodeLabel(e.from))} · 权重 ${e.weight.toFixed(2)}</li>`).join("")}</ul>` : ""}
-        ${outbound.length ? `<ul>${outbound.map((e) => `<li>→ ${esc(nodeLabel(e.to))} · 权重 ${e.weight.toFixed(2)}</li>`).join("")}</ul>` : ""}`;
+        ${inbound.length ? `<ul>${inbound.map((edge) => `<li>← ${esc(nodeLabel(edge.from))} · 权重 ${edge.weight.toFixed(2)}</li>`).join("")}</ul>` : ""}
+        ${outbound.length ? `<ul>${outbound.map((edge) => `<li>→ ${esc(nodeLabel(edge.to))} · 权重 ${edge.weight.toFixed(2)}</li>`).join("")}</ul>` : ""}`;
       detail.hidden = false;
     };
     svg.appendChild(g);
-    nodeEls.set(node.id, g);
   }
 
-  const graphBox = el(`<div class="network-graph"></div>`);
+  const graphBox = el(`<div class="network-graph${large ? " network-graph-large" : ""}"></div>`);
   graphBox.appendChild(svg);
   graphBox.appendChild(el(`<div class="network-legend">
     <i><span class="swatch" style="background:${brand}"></span>正向权重 / 激活</i>
     <i><span class="swatch" style="background:${accent}"></span>负向权重 / 激活</i>
     <i>粗细 = 贡献强度 · 点节点看参数</i>
   </div>`));
+  return { graphBox, svg, detail, width, height };
+}
+
+function renderNetworkGraph(trace, container) {
+  container.innerHTML = "";
+  if (!trace?.layers?.length) return;
+  const { graphBox } = buildNetworkGraph(trace);
+  const expand = el(`<button type="button" class="network-expand" title="放大并交互">⤢ 放大</button>`);
+  expand.onclick = (e) => { e.stopPropagation(); openNetworkModal(); };
+  graphBox.appendChild(expand);
+  const svgEl = graphBox.querySelector("svg");
+  if (svgEl) svgEl.addEventListener("click", (e) => { if (!e.target.closest(".trace-node")) openNetworkModal(); });
   container.appendChild(graphBox);
-  container.appendChild(detail);
+}
+
+/** Adds wheel-zoom (around the cursor) and drag-pan by mutating the viewBox. */
+function enableNetworkPanZoom(svg, width, height) {
+  const vb = { x: 0, y: 0, w: width, h: height };
+  const apply = () => svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  svg.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const mx = vb.x + (e.clientX - rect.left) / rect.width * vb.w;
+    const my = vb.y + (e.clientY - rect.top) / rect.height * vb.h;
+    const factor = e.deltaY < 0 ? 0.85 : 1.18;
+    const nw = Math.max(width * 0.3, Math.min(width * 2.2, vb.w * factor));
+    const nh = nw * (height / width);
+    vb.x = mx - (mx - vb.x) * (nw / vb.w);
+    vb.y = my - (my - vb.y) * (nh / vb.h);
+    vb.w = nw; vb.h = nh; apply();
+  }, { passive: false });
+  let drag = null;
+  svg.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".trace-node")) return;
+    drag = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y };
+    svg.setPointerCapture(e.pointerId);
+    svg.style.cursor = "grabbing";
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const rect = svg.getBoundingClientRect();
+    vb.x = drag.vx - (e.clientX - drag.x) / rect.width * vb.w;
+    vb.y = drag.vy - (e.clientY - drag.y) / rect.height * vb.h;
+    apply();
+  });
+  const end = () => { drag = null; svg.style.cursor = "grab"; };
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+  svg.style.cursor = "grab";
+  svg._resetView = () => { vb.x = 0; vb.y = 0; vb.w = width; vb.h = height; apply(); };
+  apply();
+}
+
+function openNetworkModal() {
+  const trace = state.currentDecision?.networkTrace;
+  if (!trace?.layers?.length) { toast("这次没有可展开的决策网络"); return; }
+  const host = $("#network-modal-body");
+  host.innerHTML = "";
+  const { graphBox, svg, detail, width, height } = buildNetworkGraph(trace, { large: true });
+  host.appendChild(graphBox);
+  host.appendChild(detail);
+  enableNetworkPanZoom(svg, width, height);
+  $("#network-reset").onclick = () => svg._resetView?.();
+  $("#dlg-network").showModal();
 }
 
 function openThinking() {
@@ -1184,9 +1250,10 @@ async function restoreMaterialProgress(slug) {
 // 记忆中心
 // ---------------------------------------------------------------------------
 
-const FACT_TYPE_LABELS = { one_time: "一次性", availability: "档期", preference: "长期偏好",
+const FACT_TYPE_LABELS = { one_time: "一次性", availability: "档期", attribute: "持久属性", preference: "长期偏好",
   speculation: "用户猜测", inference: "AI 推断", agreement: "明确约定", observation: "观察" };
-const FACT_STATUS_LABELS = { active: "生效中", superseded: "已被更新", contradicted: "已被推翻", retired: "已停用" };
+const FACT_STATUS_LABELS = { active: "生效中", superseded: "已被更新", contradicted: "已被推翻", retired: "已停用", expired: "已过期" };
+const DURABLE_TYPES = new Set(["attribute", "preference", "agreement"]);
 
 async function openMemoryCenter() {
   if (!state.slug) { toast("先选择一个聊天档案"); return; }
@@ -1637,6 +1704,8 @@ function bind() {
   $("#btn-settings").onclick = () => openSettings().catch((e) => toast(friendlyError(e)));
   $("#btn-memory-center").onclick = () => openMemoryCenter().catch((e) => toast(friendlyError(e)));
   $("#memory-close").onclick = () => $("#dlg-memory").close();
+  $("#network-close").onclick = () => $("#dlg-network").close();
+  makeDialogDismissible($("#dlg-network"));
   $("#semantic-mode").onchange = (e) => { $("#semantic-custom").hidden = e.target.value !== "custom"; };
   $("#settings-close").onclick = () => $("#dlg-settings").close();
   $("#settings-cancel").onclick = () => $("#dlg-settings").close();

@@ -336,6 +336,23 @@
   </form>
 </dialog>
 
+<dialog id="dlg-network">
+  <div class="dlg dlg-network">
+    <div class="dlg-head">
+      <div>
+        <p class="eyebrow">决策网络</p>
+        <h3>本轮真实计算的数据流</h3>
+        <p>滚轮缩放、拖动平移，点任意节点看它的激活值、参数和最强的流入/流出贡献。</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="network-reset" type="button" class="mini-btn">复位视图</button>
+        <button id="network-close" type="button" class="icon-btn" aria-label="关闭">×</button>
+      </div>
+    </div>
+    <div id="network-modal-body" class="network-modal-body"></div>
+  </div>
+</dialog>
+
 <dialog id="dlg-memory">
   <div class="dlg dlg-memory">
     <div class="dlg-head">

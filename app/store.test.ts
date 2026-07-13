@@ -81,6 +81,48 @@ describe("profile storage and context packing", () => {
     expect(facts[2].type).toBe("agreement");
   });
 
+  test("transient facts expire out of long-term memory; durable ones stay", () => {
+    const now = Date.now();
+    const old = Date.now() - 40 * 86_400_000;
+    // A one-time scheduling fact from 40 days ago has expired.
+    const transient = materials.normalizeFacts(
+      [{ text: "她说这周六有空", type: "one_time", confidence: .9, status: "active" }],
+      { observedAt: new Date(old).toISOString() },
+    )[0];
+    expect(materials.effectiveFactStatus(transient, now)).toBe("expired");
+    // A birthday is inferred as a durable attribute, never expiring.
+    const birthday = materials.normalizeFacts(["她生日是5月18号"], { observedAt: new Date(old).toISOString() })[0];
+    expect(birthday.type).toBe("attribute");
+    expect(materials.effectiveFactStatus(birthday, now)).toBe("active");
+    // A long-term preference stays active regardless of age.
+    const pref = materials.normalizeFacts(
+      [{ text: "她不喜欢吵的地方", type: "preference", confidence: .9, status: "active" }],
+      { observedAt: new Date(old).toISOString() },
+    )[0];
+    expect(materials.effectiveFactStatus(pref, now)).toBe("active");
+    // A fresh transient fact is still current.
+    const fresh = materials.normalizeFacts(
+      [{ text: "她说这周六有空", type: "one_time", confidence: .9, status: "active" }],
+      { observedAt: new Date(now).toISOString() },
+    )[0];
+    expect(materials.effectiveFactStatus(fresh, now)).toBe("active");
+  });
+
+  test("expired transient facts drop out of retrieval and the memory center", async () => {
+    const profile = store.createPartner("过期事实", 1, false);
+    const old = new Date(Date.now() - 45 * 86_400_000).toISOString();
+    await materials.indexMaterialMemory(profile.slug, {
+      id: "stale.png", fileName: "stale.png", sourceName: "上个月的火锅", mediaType: "image/png",
+      createdAt: old, provider: "test", summary: "她说上个月那个周六想吃火锅",
+      facts: [{ id: "sf", text: "周六想吃火锅", type: "one_time", confidence: .9, status: "active", observedAt: old }],
+      keywords: ["火锅"], people: ["她"], dates: ["周六"], sentiment: "期待", importance: 0.4,
+      retrievalText: "周六 火锅 一起吃",
+    });
+    const center = await materials.memoryCenterData(profile.slug);
+    const mem = center.memories.find((m: any) => m.id === "stale.png");
+    expect(mem?.facts[0].status).toBe("expired");
+  });
+
   test("two-stage retrieval diversifies and reports reasons", async () => {
     const profile = store.createPartner("检索测试", 1, false);
     for (let i = 0; i < 3; i++) {

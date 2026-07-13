@@ -584,3 +584,17 @@ dialog::backdrop { background: rgba(18,25,38,.34); backdrop-filter: blur(6px); }
 .memory-usage-chip { cursor: pointer; }
 #panel-memory .memory-reason { background: var(--surface-2); color: var(--text-2); }
 @media (max-width: 760px) { .memory-card { grid-template-columns: 64px minmax(0,1fr); } .memory-thumb { width: 64px; height: 64px; } }
+
+/* Expandable decision network */
+.network-graph { position: relative; }
+.network-expand { position: absolute; top: 8px; right: 8px; z-index: 2; font-size: 11px;
+  padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--brand-deep); cursor: pointer; box-shadow: var(--shadow-soft); }
+.network-expand:hover { border-color: var(--brand); }
+.dlg-network { width: min(1120px, 94vw); }
+.network-modal-body { margin-top: 10px; }
+.network-graph-large { border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2);
+  overflow: hidden; touch-action: none; }
+.network-graph-large svg { width: 100%; height: min(66vh, 640px); display: block; }
+.network-graph-large .trace-node text { font-weight: 600; }
+.network-modal-body .network-detail { margin-top: 12px; max-height: 30vh; overflow-y: auto; }

@@ -25,7 +25,7 @@ import {
   resumeMaterialJob, resumePendingMaterialJobs, startMaterialJob,
 } from "./materials";
 import {
-  adaptivePrompt, getAdaptiveProfile, recordOutcomeFeedback, sqliteCapabilities,
+  adaptivePrompt, getAdaptiveProfile, purgeProfileMemoryData, recordOutcomeFeedback, sqliteCapabilities,
   type OutcomeFeedback,
 } from "./adaptive";
 import { runDecisionPipeline, realizationPrompt, demoRealization } from "./decision/pipeline";
@@ -434,6 +434,7 @@ const server = Bun.serve({
           return json({ error: String(e?.message ?? e) }, 400);
         }
         const meta = createPartner(name, Number(stage), Boolean(antiSimp), Number(boldness));
+        purgeProfileMemoryData(meta.slug); // a fresh profile must not inherit a deleted namesake's memories
         const imported = importPartnerContext(meta.slug, String(backgroundText), images as IncomingImage[]);
         return json({ ...meta, stageName: stageInfo(meta.stage).name, imported });
       }

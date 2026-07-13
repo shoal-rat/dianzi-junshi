@@ -263,7 +263,7 @@ export function compose(input: ComposeInput): Composed {
     const facts = memory.facts
       .filter((fact) => (fact.status ?? "active") === "active")
       .slice(0, 5)
-      .map((fact) => `    - ${fact.text}${fact.type === "preference" ? "（长期偏好）" : fact.type === "one_time" || fact.type === "availability" ? "（一次性安排）" : fact.type === "agreement" ? "（明确约定）" : ""}`)
+      .map((fact) => `    - ${fact.text}${fact.type === "preference" ? "（长期偏好）" : fact.type === "attribute" ? "（持久属性）" : fact.type === "one_time" || fact.type === "availability" ? "（一次性安排）" : fact.type === "agreement" ? "（明确约定）" : ""}`)
       .join("\n");
     const dates = memory.dates.length ? `；时间线索：${memory.dates.join("、")}` : "";
     const label = memory.kind === "event" ? "事件记忆" : "来源";

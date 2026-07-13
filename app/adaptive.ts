@@ -498,6 +498,24 @@ export function updateMaterialMemoryFields(
   return Number(result.changes ?? 0) > 0;
 }
 
+/** Removes every memory-bank row for a profile slug. Called when a NEW profile
+ * claims a slug, so a recreated profile never inherits a deleted one's
+ * memories (partner folders live on disk, memories in shared SQLite). */
+export function purgeProfileMemoryData(slug: string): void {
+  const conn = db();
+  conn.transaction(() => {
+    const rows = conn.query("SELECT rowid FROM material_memories WHERE profile_slug=?").all(slug) as any[];
+    if (vectorExtension) {
+      for (const row of rows) {
+        try { conn.query("DELETE FROM material_vectors WHERE rowid=?").run(row.rowid); } catch { /* optional index */ }
+      }
+    }
+    conn.query("DELETE FROM material_memories WHERE profile_slug=?").run(slug);
+    conn.query("DELETE FROM event_memories WHERE profile_slug=?").run(slug);
+    conn.query("DELETE FROM memory_retrieval_log WHERE profile_slug=?").run(slug);
+  })();
+}
+
 export function deleteMaterialMemoryRow(slug: string, memoryId: string): boolean {
   const conn = db();
   let removed = false;

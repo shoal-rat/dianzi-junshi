@@ -45,15 +45,23 @@ const migratedProfiles = new Set<string>();
 // ---------------------------------------------------------------------------
 
 export type FactType =
-  | "one_time"      // valid for one occasion (“周五有空”)
-  | "availability"  // scheduling-flavored one-time information
+  | "one_time"      // valid for one occasion (“这周六有空”) — transient
+  | "availability"  // scheduling-flavored one-time information — transient
+  | "attribute"     // durable personal attribute (生日/名字/职业/老家)
   | "preference"    // long-term taste or habit (“不喜欢吵的地方”)
   | "speculation"   // the user's own guess
   | "inference"     // model-derived reading, not literally stated
   | "agreement"     // an explicit commitment both sides made
   | "observation";  // neutral fallback
 
-export type FactStatus = "active" | "superseded" | "contradicted" | "retired";
+// `expired`: a transient fact whose occasion has passed. Long-term memory
+// should surface durable facts, not last month's dinner plan.
+export type FactStatus = "active" | "superseded" | "contradicted" | "retired" | "expired";
+
+/** Facts that are only true for one moment. These age out of long-term memory. */
+const TRANSIENT_TYPES: FactType[] = ["one_time", "availability"];
+/** A transient fact older than this (with no still-future date) has expired. */
+const TRANSIENT_HORIZON_DAYS = 30;
 
 export interface MemoryFact {
   id: string;
@@ -68,15 +76,39 @@ export interface MemoryFact {
 }
 
 const FACT_TYPES: FactType[] = [
-  "one_time", "availability", "preference", "speculation", "inference", "agreement", "observation",
+  "one_time", "availability", "attribute", "preference", "speculation", "inference", "agreement", "observation",
 ];
+const FACT_STATUSES: FactStatus[] = ["active", "superseded", "contradicted", "retired", "expired"];
 
 export function inferFactType(text: string): FactType {
+  // Durable personal attributes are long-term, even though a birthday is a date.
+  if (/生日|属相|星座|多大了|岁了|老家|哪里人|名字叫|全名|职业|做什么工作|在.{0,6}上班|住在/.test(text)) return "attribute";
   if (/答应|约定|说好|约好|确定[了在]|说到做到/.test(text)) return "agreement";
   if (/一直|每次|总是|喜欢|不喜欢|讨厌|偏好|习惯|从来/.test(text)) return "preference";
   if (/可能|大概|似乎|应该是|我觉得|估计|猜/.test(text)) return "speculation";
   if (/有空|没空|方便|不方便|那天|当天|周[一二三四五六日末]|明天|后天|\d+[月号点]/.test(text)) return "one_time";
   return "observation";
+}
+
+/** Effective status at a point in time. Long-term memory holds durable facts;
+ * a transient scheduling fact is only current until its occasion passes, after
+ * which it is `expired` and stops steering retrieval and answers. A stored
+ * non-active status (superseded/contradicted/retired) always wins. */
+export function effectiveFactStatus(fact: MemoryFact, now = Date.now()): FactStatus {
+  if (fact.status !== "active") return fact.status;
+  if (!TRANSIENT_TYPES.includes(fact.type)) return "active";
+  // If the fact names an explicit calendar date and it is already in the past.
+  const explicit = fact.text.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*[日号]/);
+  const observed = fact.observedAt ? Date.parse(fact.observedAt) : NaN;
+  if (explicit && Number.isFinite(observed)) {
+    const year = new Date(observed).getFullYear();
+    let when = new Date(year, Number(explicit[1]) - 1, Number(explicit[2]) + 2).getTime(); // +2d grace
+    if (when < observed - 30 * 86_400_000) when = new Date(year + 1, Number(explicit[1]) - 1, Number(explicit[2]) + 2).getTime();
+    if (when < now) return "expired";
+  }
+  // Otherwise age out: a “周六” mentioned a month ago has long gone by.
+  if (Number.isFinite(observed) && now - observed > TRANSIENT_HORIZON_DAYS * 86_400_000) return "expired";
+  return "active";
 }
 
 /** Accepts model output (objects), legacy strings, or junk; returns clean facts. */
@@ -101,7 +133,7 @@ export function normalizeFacts(
     if (!text) continue;
     const type = FACT_TYPES.includes(fact.type as FactType) ? fact.type as FactType : inferFactType(text);
     const region = fact.sourceRegion && typeof fact.sourceRegion === "object" ? fact.sourceRegion as any : undefined;
-    const status: FactStatus = ["active", "superseded", "contradicted", "retired"].includes(String(fact.status))
+    const status: FactStatus = FACT_STATUSES.includes(String(fact.status) as FactStatus)
       ? fact.status as FactStatus : "active";
     out.push({
       id: typeof fact.id === "string" && fact.id ? fact.id : crypto.randomUUID(),
@@ -119,8 +151,9 @@ export function normalizeFacts(
   return out;
 }
 
-export function activeFacts(memory: MaterialMemory): MemoryFact[] {
-  return memory.facts.filter((fact) => fact.status === "active");
+/** Currently-live facts: stored-active AND not aged-out transient facts. */
+export function activeFacts(memory: MaterialMemory, now = Date.now()): MemoryFact[] {
+  return memory.facts.filter((fact) => effectiveFactStatus(fact, now) === "active");
 }
 
 const DATE_TOKEN = /\d{4}年|\d{1,2}\s*月\s*\d{1,2}\s*[日号]?|\d{1,2}\s*[日号]|周[一二三四五六日末]|本周|上周|下周|昨天|今天|明天|后天|去年|今年/g;
@@ -356,7 +389,7 @@ export async function indexMaterialMemory(
   const existing = readMaterialMemories(slug).filter((m) => m.id !== memory.id);
   // Near-duplicate marking: same content restated, retrieval keeps only one voice.
   const near = existing
-    .filter((m) => !m.duplicateOf)
+    .filter((m) => !m.duplicateOf && m.status !== "retired")
     .map((m) => ({ id: m.id, sim: cosineSimilarity(decodeVector(vector), decodeVector(m.vector)) }))
     .sort((a, b) => b.sim - a.sim)[0];
   if (near && near.sim >= .93) memory.duplicateOf = near.id;
@@ -646,9 +679,13 @@ export async function retrieveMaterialMemoriesDetailed(slug: string, query: stri
     chosen.push(best);
   }
 
+  const stampNow = Date.now();
   const items: RetrievedMaterial[] = chosen.map((candidate) => ({
     ...candidate.memory, score: candidate.score, kind: candidate.kind,
     reason: candidate.reason, sourceMemoryIds: candidate.sourceMemoryIds,
+    // Effective statuses at retrieval time: expired scheduling facts must not
+    // reach the prompt composer or the decision evidence as if still true.
+    facts: candidate.memory.facts.map((fact) => ({ ...fact, status: effectiveFactStatus(fact, stampNow) })),
   }));
   recordMemoryRetrieval(slug, query, items.map((item) => ({
     id: item.id, kind: item.kind, reason: item.reason, score: item.score,
@@ -701,12 +738,16 @@ async function analyzeOne(slug: string, item: MaterialJobItem, cfg: ProviderConf
 
 只输出一个 JSON 对象，不要 Markdown：
 {"summary":"不超过160字的中文摘要",
- "facts":[{"text":"可回指原图的事实","type":"one_time|availability|preference|speculation|inference|agreement","confidence":0.9,"observedAt":"截图里可见的日期，没有就省略","sourceRegion":{"x":0.1,"y":0.4,"width":0.7,"height":0.2}}],
+ "facts":[{"text":"可回指原图的事实","type":"one_time|availability|attribute|preference|speculation|inference|agreement","confidence":0.9,"observedAt":"截图里可见的日期，没有就省略","sourceRegion":{"x":0.1,"y":0.4,"width":0.7,"height":0.2}}],
  "keywords":["检索词与同义概念"],"people":["出现的人或称呼"],"dates":["出现的日期时间或相对时间"],
  "sentiment":"主要情绪/互动状态","importance":0.0,
  "retrievalText":"为了以后按语义找回这张图而写的自然语言描述，补充同义说法、事件和关系线索"}
 
-facts 的 type 要区分：一次性安排（one_time/availability）、长期偏好（preference）、用户猜测（speculation）、你的推断（inference）、双方明确约定（agreement）。confidence 是你对这条事实读取准确度的估计。sourceRegion 是事实在截图中的大致位置（0-1 相对坐标），不确定就省略。
+facts 的 type 要区分长期和短期：
+- 短期（一次性，过后就失效）：one_time / availability，如「这周六有空」「明天一起吃饭」。
+- 长期（持续有效）：attribute（持久属性，如生日、名字、职业、老家）、preference（长期偏好，如不喜欢吵的地方）、agreement（双方明确约定）。
+- 其他：speculation（用户猜测）、inference（你的推断）。
+生日、年龄、名字、工作这类不随一次事件失效的，归 attribute，不要标成 one_time。confidence 是你对这条事实读取准确度的估计。sourceRegion 是事实在截图中的大致位置（0-1 相对坐标），不确定就省略。
 事实和推断分开；看不清就写看不清，不补造内容。importance 取 0-1：普通闲聊约0.3，明确偏好/约定约0.6，关系转折/冲突/见面兑现约0.85。`;
   let raw = "";
   const gen = streamChat(cfg, {
@@ -940,12 +981,16 @@ export function resumePendingMaterialJobs(): void {
 export async function memoryCenterData(slug: string) {
   const memories = readMaterialMemories(slug);
   const events = readEventMemories(slug);
+  const now = Date.now();
+  // The stored status may be "active" while a transient fact has effectively
+  // expired; surface the effective status so users see what actually applies.
+  const withEffective = (facts: MemoryFact[]) => facts.map((fact) => ({ ...fact, status: effectiveFactStatus(fact, now) }));
   return {
     semantic: await semanticStatus(),
     memories: memories.map((memory) => ({
       id: memory.id, fileName: memory.fileName, sourceName: memory.sourceName,
       createdAt: memory.createdAt, provider: memory.provider, summary: memory.summary,
-      facts: normalizeFacts(memory.facts, { observedAt: memory.createdAt, sourceImage: memory.fileName }),
+      facts: withEffective(normalizeFacts(memory.facts, { observedAt: memory.createdAt, sourceImage: memory.fileName })),
       keywords: memory.keywords, people: memory.people, dates: memory.dates,
       importance: memory.importance, status: memory.status ?? "active",
       duplicateOf: memory.duplicateOf, relatedIds: memory.relatedIds,
@@ -956,7 +1001,7 @@ export async function memoryCenterData(slug: string) {
       id: event.id, eventType: event.eventType, participants: event.participants,
       startedAt: event.startedAt, endedAt: event.endedAt, status: event.status,
       summary: event.summary, sourceMemoryIds: event.sourceMemoryIds,
-      facts: normalizeFacts(event.facts, {}),
+      facts: withEffective(normalizeFacts(event.facts, {})),
     })),
   };
 }
@@ -974,7 +1019,7 @@ export function updateMemoryEntry(slug: string, memoryId: string, patch: {
     for (const edit of patch.facts) {
       const target = facts.find((f) => f.id === edit.id);
       if (!target) continue;
-      if (edit.status && ["active", "superseded", "contradicted", "retired"].includes(edit.status)) target.status = edit.status;
+      if (edit.status && FACT_STATUSES.includes(edit.status)) target.status = edit.status;
       if (typeof edit.text === "string" && edit.text.trim()) target.text = edit.text.trim().slice(0, 400);
     }
     factsJson = JSON.stringify(facts);
