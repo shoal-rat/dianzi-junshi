@@ -1,23 +1,23 @@
 {
   "name": "dianzi-junshi-app",
-  "version": "5.6.0",
+  "version": "6.0.0",
   "private": true,
-  "description": "电子军师桌面后端：SQLite 时间画像、批量截图和本机 AI 连接",
+  "description": "电子军师：本机运行的恋爱聊天军师（Bun 后端 + Preact 前端，打包成桌面 sidecar）",
   "type": "module",
   "scripts": {
     "start": "bun run server.ts --open",
-    "dev": "bun --watch run server.ts",
-    "build:app": "bun build --compile server.ts --outfile dist/dianzi-junshi-app",
-    "check": "tsc --noEmit && bun build server.ts --target bun --outdir /tmp/dj-typecheck-out",
+    "dev": "bun --hot run server.ts",
+    "build": "bun build --compile server.ts --outfile dist/dianzi-junshi",
+    "check": "tsc --noEmit",
     "test": "bun test",
-    "evaluate": "bun run evaluate.ts",
-    "verify": "bun run check && bun test && bun run evaluate"
+    "verify": "bun run check && bun run test && bun run build"
   },
   "dependencies": {
-    "sqlite-vec": "0.1.9"
+    "@anthropic-ai/sdk": "^0.129.0",
+    "preact": "^10.27.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.14",
-    "typescript": "^7.0.2"
+    "@types/bun": "^1.3.0",
+    "typescript": "^5.9.0"
   }
 }

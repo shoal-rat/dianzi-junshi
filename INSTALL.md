@@ -64,10 +64,14 @@ irm https://raw.githubusercontent.com/shoal-rat/dianzi-junshi/master/install.ps1
 
 ## 连接 AI
 
-安装完成后，可以：
+安装完成后，点左下角的连接卡片：
 
-- 使用电脑上已经登录的 Codex；
-- 使用电脑上已经登录的 Claude Code；
-- 在 App 里配置 Claude、DeepSeek、GLM 或兼容 OpenAI 的 API。
+- **Codex**：使用电脑上已经登录的 Codex。装了 ChatGPT 桌面版的话，里面自带的 Codex 也会被自动找到；没登录就在终端运行 `codex login`。
+- **Claude Code**：使用已经登录的 Claude Code；没登录就在终端运行 `claude`，再输入 `/login`。
+- **Claude API / DeepSeek / GLM / 自定义接口**：填上 Key 即可，Key 只存在系统钥匙串里。
 
 Codex 和 Claude Code 不是安装桌面 App 的前置条件。没有任何连接时，可以先用演示模式熟悉界面。
+
+## 从 v5 升级
+
+直接安装新版本覆盖即可。第一次打开时，旧的档案、对话、截图和已经整理好的截图记忆会自动搬进新版本，原文件保持不动；钥匙串里的 API Key 可以直接用。

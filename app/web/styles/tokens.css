@@ -1,0 +1,105 @@
+/*
+ * 「朱批」设计语言
+ * 宣纸打底、墨色写字、朱砂批注。军师读你的聊天，像先生批作业：
+ * 在原话上划朱线、写旁批，把锦囊盖上印。
+ * 颜色只有三种角色：纸（底）、墨（字）、朱（军师的笔）。黛蓝留给「ta」。
+ */
+
+:root {
+  --paper: #f3eee3;
+  --paper-2: #ebe4d5;
+  --paper-3: #e2d9c7;
+  --sheet: #fbf8f1;
+  --ink: #1c1a17;
+  --ink-2: #57514a;
+  --ink-3: #8c8477;
+  --ink-4: #b9b0a0;
+  --rule: #d8cfbd;
+  --rule-soft: #e6dfd0;
+
+  --zhu: #c8372d;
+  --zhu-deep: #a3291f;
+  --zhu-soft: #e9b3a7;
+  --zhu-wash: rgba(200, 55, 45, 0.08);
+  --zhu-on: #fbf6ee;
+
+  --dai: #2f4c5c;
+  --dai-wash: rgba(47, 76, 92, 0.08);
+  --jade: #3d7a5f;
+  --jade-wash: rgba(61, 122, 95, 0.1);
+  --ochre: #a86b12;
+  --ochre-wash: rgba(168, 107, 18, 0.1);
+
+  --shadow-sheet: 0 1px 0 rgba(60, 45, 20, 0.04), 0 6px 18px -10px rgba(60, 45, 20, 0.28);
+  --shadow-lift: 0 2px 0 rgba(60, 45, 20, 0.05), 0 18px 36px -18px rgba(60, 45, 20, 0.4);
+  --grain-opacity: 0.35;
+
+  --font-body: "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", system-ui, sans-serif;
+  --font-display: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC", "SimSun", serif;
+  --font-brush: "Kaiti SC", "STKaiti", "KaiTi", "BiauKai", "Noto Serif SC", "Songti SC", serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 8px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141311;
+    --paper-2: #1a1916;
+    --paper-3: #23211d;
+    --sheet: #1f1d1a;
+    --ink: #ece5d6;
+    --ink-2: #b7ae9e;
+    --ink-3: #807869;
+    --ink-4: #5a544a;
+    --rule: #35312a;
+    --rule-soft: #2a2722;
+    --zhu: #e2553f;
+    --zhu-deep: #f07a63;
+    --zhu-soft: #6e2c23;
+    --zhu-wash: rgba(226, 85, 63, 0.12);
+    --zhu-on: #1a1512;
+    --dai: #86a9bd;
+    --dai-wash: rgba(134, 169, 189, 0.1);
+    --jade: #72b492;
+    --jade-wash: rgba(114, 180, 146, 0.12);
+    --ochre: #d7a24e;
+    --ochre-wash: rgba(215, 162, 78, 0.12);
+    --shadow-sheet: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 22px -12px rgba(0, 0, 0, 0.7);
+    --shadow-lift: 0 2px 0 rgba(0, 0, 0, 0.3), 0 20px 40px -18px rgba(0, 0, 0, 0.8);
+    --grain-opacity: 0.12;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #141311;
+  --paper-2: #1a1916;
+  --paper-3: #23211d;
+  --sheet: #1f1d1a;
+  --ink: #ece5d6;
+  --ink-2: #b7ae9e;
+  --ink-3: #807869;
+  --ink-4: #5a544a;
+  --rule: #35312a;
+  --rule-soft: #2a2722;
+  --zhu: #e2553f;
+  --zhu-deep: #f07a63;
+  --zhu-soft: #6e2c23;
+  --zhu-wash: rgba(226, 85, 63, 0.12);
+  --zhu-on: #1a1512;
+  --dai: #86a9bd;
+  --dai-wash: rgba(134, 169, 189, 0.1);
+  --jade: #72b492;
+  --jade-wash: rgba(114, 180, 146, 0.12);
+  --ochre: #d7a24e;
+  --ochre-wash: rgba(215, 162, 78, 0.12);
+  --shadow-sheet: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 22px -12px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 2px 0 rgba(0, 0, 0, 0.3), 0 20px 40px -18px rgba(0, 0, 0, 0.8);
+  --grain-opacity: 0.12;
+  color-scheme: dark;
+}

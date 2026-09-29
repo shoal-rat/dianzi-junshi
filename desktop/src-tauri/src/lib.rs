@@ -81,47 +81,22 @@ pub fn run() {
         .setup(|app| {
             let port = free_local_port();
             let resources = app.path().resource_dir()?;
-            let native_dirs = [
-                resources.join("resources/native"),
-                resources.join("native"),
-                resources.parent().unwrap_or(&resources).join("Frameworks"),
-            ];
             let sidecar = app
                 .shell()
                 .sidecar("dianzi-junshi-server")?
                 .env("HOST", "127.0.0.1")
                 .env("PORT", port.to_string())
                 .env("DJ_KEYCHAIN_HELPER", std::env::current_exe()?.to_string_lossy().to_string());
-            #[cfg(not(target_os = "macos"))]
-            let sidecar = {
-                let mut configured = sidecar;
-                for directory in native_dirs {
-                    let sqlite_names = ["libsqlite3.dylib", "libsqlite3.so", "sqlite3.dll"];
-                    if let Some(path) = sqlite_names.iter().map(|name| directory.join(name)).find(|path| path.exists()) {
-                        configured = configured.env("DJ_SQLITE_LIBRARY", path.to_string_lossy().to_string());
-                    }
-                    let vec_names = ["vec0.dylib", "vec0.so", "vec0.dll"];
-                    if let Some(path) = vec_names.iter().map(|name| directory.join(name)).find(|path| path.exists()) {
-                        configured = configured.env("DJ_SQLITE_VEC_PATH", path.to_string_lossy().to_string());
-                    }
-                }
-                configured
-            };
-            #[cfg(target_os = "macos")]
-            let sidecar = {
-                let _ = native_dirs;
-                sidecar.env("DJ_DISABLE_SQLITE_VEC", "1")
-            };
             #[cfg(target_os = "linux")]
-            let sidecar = sidecar
-                .env(
-                    "DJ_BACKEND_ARCHIVE",
-                    resources
-                        .join("resources/backend/dianzi-junshi-server.gz")
-                        .to_string_lossy()
-                        .to_string(),
-                )
-                .env("DJ_DISABLE_SQLITE_VEC", "1");
+            let sidecar = sidecar.env(
+                "DJ_BACKEND_ARCHIVE",
+                resources
+                    .join("resources/backend/dianzi-junshi-server.gz")
+                    .to_string_lossy()
+                    .to_string(),
+            );
+            #[cfg(not(target_os = "linux"))]
+            let _ = &resources;
             let (_events, child) = sidecar.spawn()?;
             app.manage(BackendProcess(Mutex::new(Some(child))));
 

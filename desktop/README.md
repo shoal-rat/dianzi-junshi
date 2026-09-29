@@ -1,6 +1,6 @@
 # 桌面壳和安装包
 
-Tauri 2 原生窗口负责应用生命周期；业务后端仍由 `app/` 下的 TypeScript 实现，并在构建时编译成 sidecar。
+Tauri 2 原生窗口负责应用生命周期；业务后端是 `app/` 下的 TypeScript，构建时连同前端和问答策略一起编译成单文件 sidecar。v6 起不需要任何原生库。
 
 ## 本机构建
 
@@ -9,15 +9,14 @@ bun install
 bun run build
 ```
 
-`beforeBuildCommand` 会：
+`beforeBuildCommand`（`scripts/build-sidecar.ts`）会：
 
 1. 读取 `TAURI_ENV_TARGET_TRIPLE`；
-2. 用对应 Bun target 编译后端；
-3. 把 sidecar 写成 Tauri 要求的 target-triple 文件名；
-4. 准备当前平台可用的 sqlite-vec 原生资源；
-5. 由 Tauri 生成当前系统的安装包。
+2. 用对应的 Bun target 把 `app/server.ts` 编译成单文件；
+3. 按 Tauri 要求的 target-triple 文件名放进 `src-tauri/binaries/`；
+4. Linux 上把后端压成资源、外面套一层 shell sidecar（linuxdeploy 处理不了 Bun 的静态可执行文件）。
 
-macOS 可以指定：
+macOS 只打 DMG：
 
 ```bash
 bun run build -- --bundles dmg
@@ -26,14 +25,14 @@ bun run build -- --bundles dmg
 ## 运行时
 
 - 只允许单实例。
-- 从系统选择空闲本机端口，避免固定 5177 冲突。
-- sidecar 只绑定 `127.0.0.1`。
-- 等待后端可连接后才创建主窗口。
-- 应用退出时结束 sidecar。
-- 前端没有执行任意 shell 命令的 Tauri 权限。
+- 启动时找一个空闲的本机端口，sidecar 只绑定 `127.0.0.1`，并拒绝非本机来源的请求。
+- API Key 通过同一个可执行文件的 `--keychain` 子命令读写系统钥匙串（macOS 钥匙串 / Windows 凭据管理器 / Linux Secret Service）。
+- 退出时结束 sidecar。
 
-## Release
+## 图标
 
-推送 `v*` 标签触发 `.github/workflows/release-desktop.yml`。工作流在各目标系统原生构建，不依赖不可靠的 Windows 跨编译。
+`app-icon.html` 是图标的源文件：用 Chrome 无头模式按 1024×1024、透明底截图，再运行 `bunx tauri icon icon.png` 生成全部尺寸。
 
-签名和发布步骤见 [发布桌面安装包](../docs/发布桌面安装包.md)。
+## 发布
+
+GitHub Actions 的「Build desktop installers」手动触发，构建 macOS（Apple 芯片 / Intel）、Windows、Linux（x64 / ARM64）安装包并生成草稿 Release。签名与公证见 [发布签名](../docs/release-signing.md)。
