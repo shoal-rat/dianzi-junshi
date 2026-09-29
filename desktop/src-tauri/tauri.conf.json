@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "电子军师",
-  "version": "5.6.0",
+  "version": "6.0.0",
   "identifier": "com.shoalrat.dianzi-junshi",
   "build": {
     "beforeBuildCommand": "bun run build:sidecar",
@@ -16,8 +16,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "externalBin": ["binaries/dianzi-junshi-server"],
-    "resources": ["resources/native/*"],
+    "externalBin": [
+      "binaries/dianzi-junshi-server"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -26,8 +27,8 @@
       "icons/icon.ico"
     ],
     "category": "Lifestyle",
-    "shortDescription": "先读懂，再回复",
-    "longDescription": "本地优先的聊天理解与回复助手，支持批量截图和随时间变化的长期记忆。",
+    "shortDescription": "读懂 ta，出三个锦囊",
+    "longDescription": "本机运行的恋爱聊天军师：扫梗、读语气、看行动，给你稳、撩、奇三条能直接发的回复，并长期记住 ta 的事。",
     "macOS": {
       "minimumSystemVersion": "10.15"
     },

@@ -1,0 +1,23 @@
+<!-- 应用图标源文件：用 Chrome 无头模式按 1024×1024、透明底截图，再 `bunx tauri icon icon.png` 生成全部尺寸。字体是 Google Fonts 上的 Noto Serif SC（OFL）。 -->
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&text=%E5%86%9B" rel="stylesheet">
+<style>html,body{margin:0;background:transparent}body{width:1024px;height:1024px}</style></head><body>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="r" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.006" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="3" result="s"/>
+    <feColorMatrix in="s" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -22 16.4" result="m"/>
+    <feComposite in="rough" in2="m" operator="in"/>
+  </filter>
+  <linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7f2e8"/><stop offset="1" stop-color="#ece4d4"/></linearGradient>
+</defs>
+<rect x="100" y="100" width="824" height="824" rx="185" fill="url(#p)"/>
+<rect x="100.5" y="100.5" width="823" height="823" rx="185" fill="none" stroke="#d8cfbd" stroke-width="2"/>
+<g transform="rotate(-5 512 512)" filter="url(#r)">
+  <rect x="232" y="232" width="560" height="560" rx="44" fill="#c8372d"/>
+  <rect x="272" y="272" width="480" height="480" rx="18" fill="none" stroke="#f7f2e8" stroke-width="16"/>
+  <text x="512" y="532" text-anchor="middle" dominant-baseline="central" font-family="Noto Serif SC" font-weight="900" font-size="380" fill="#f7f2e8">军</text>
+</g>
+</svg></body></html>

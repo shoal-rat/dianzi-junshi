@@ -1,3 +1,0 @@
-# dianzi-junshi Python dependencies
-# All tools use the Python standard library only; no external packages required.
-# This file is kept for future extensibility
