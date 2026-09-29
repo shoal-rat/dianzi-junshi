@@ -17,6 +17,8 @@ export interface Settings {
   depth: "fast" | "balanced" | "deep";
   /** 用户自己的性别（可选），让军师用对称呼、选对打法表。 */
   me: "" | "m" | "f";
+  /** 界面语言：auto 跟随系统（中文环境中文，其他英文） */
+  language: "auto" | "zh" | "en";
 }
 
 const PATH = () => join(HOME, "settings.json");
@@ -24,7 +26,7 @@ const LEGACY = () => join(HOME, "config.json");
 
 export const PROVIDER_KINDS: ProviderKind[] = ["codex", "claude-code", "claude", "deepseek", "glm", "custom", "demo"];
 
-const DEFAULTS: Settings = { provider: "demo", providers: {}, semantic: "auto", depth: "fast", me: "" };
+const DEFAULTS: Settings = { provider: "demo", providers: {}, semantic: "auto", depth: "fast", me: "", language: "auto" };
 
 /** v5 的 config.json：只搬 provider / model / baseUrl / hasKey（Key 本身一直在系统凭据库里）。 */
 function fromLegacy(): Settings | null {
@@ -42,7 +44,7 @@ function fromLegacy(): Settings | null {
       };
     }
     const provider = PROVIDER_KINDS.includes(raw.provider) ? raw.provider : "demo";
-    return { provider, providers, semantic: raw.semanticEmbedding?.mode === "off" ? "off" : "auto", depth: "fast", me: "" };
+    return { provider, providers, semantic: raw.semanticEmbedding?.mode === "off" ? "off" : "auto", depth: "fast", me: "", language: "zh" };
   } catch {
     return null;
   }
@@ -55,7 +57,11 @@ export function readSettings(): Settings {
   ensureDir(HOME);
   let s: Settings | null = null;
   if (existsSync(PATH())) {
-    try { s = { ...DEFAULTS, ...JSON.parse(readFileSync(PATH(), "utf-8")) }; } catch { s = null; }
+    try {
+      const raw = JSON.parse(readFileSync(PATH(), "utf-8"));
+      // v6.0 写的设置没有 language：那时只有中文版，老用户继续用中文
+      s = { ...DEFAULTS, ...raw, language: raw.language ?? "zh" };
+    } catch { s = null; }
   }
   if (!s) {
     s = fromLegacy() ?? structuredClone(DEFAULTS);
@@ -72,14 +78,15 @@ function persist(s: Settings): void {
   renameSync(tmp, PATH());
 }
 
-export function writeSettings(patch: { provider?: ProviderKind; semantic?: "auto" | "off"; depth?: Settings["depth"]; me?: string; providers?: Partial<Record<ProviderKind, ProviderSettings>> }): Settings {
+export function writeSettings(patch: { provider?: ProviderKind; semantic?: "auto" | "off"; depth?: Settings["depth"]; me?: string; language?: string; providers?: Partial<Record<ProviderKind, ProviderSettings>> }): Settings {
   const cur = readSettings();
-  if (patch.provider && !PROVIDER_KINDS.includes(patch.provider)) throw new Error("不支持这个连接");
+  if (patch.provider && !PROVIDER_KINDS.includes(patch.provider)) throw new Error("unsupported provider");
   const next: Settings = {
     provider: patch.provider ?? cur.provider,
     semantic: patch.semantic === "off" ? "off" : patch.semantic === "auto" ? "auto" : cur.semantic,
     depth: patch.depth && ["fast", "balanced", "deep"].includes(patch.depth) ? patch.depth : cur.depth ?? "fast",
     me: patch.me !== undefined ? (patch.me === "m" || patch.me === "f" ? patch.me : "") : cur.me ?? "",
+    language: patch.language === "zh" || patch.language === "en" || patch.language === "auto" ? patch.language : cur.language ?? "auto",
     providers: { ...cur.providers },
   };
   for (const [kind, value] of Object.entries(patch.providers ?? {}) as Array<[ProviderKind, ProviderSettings]>) {

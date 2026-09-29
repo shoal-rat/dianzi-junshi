@@ -55,8 +55,40 @@ function mothersDay(year: number): Date {
   return new Date(year, 4, firstSunday + 7);
 }
 
-export function upcomingFestivals(now: Date, horizonDays = 21): Festival[] {
+/** 英语圈（以美国为准）的日子，按第几个星期几算的另外处理。 */
+const FIXED_EN: Array<[number, number, string, string]> = [
+  [1, 1, "New Year's Day", "Recovery brunch is a low-pressure date"],
+  [2, 13, "Galentine's Day", "Their friends' day — don't compete with it"],
+  [2, 14, "Valentine's Day", "The big one: book 1-2 weeks out; early on, low-key and fun beats a pricey prix-fixe"],
+  [8, 1, "National Girlfriend Day", "Only if you're official — a cute text is enough"],
+  [10, 1, "Cuffing season", "October to February: people get more open to something steady — good time to make real plans"],
+  [10, 3, "National Boyfriend Day", "Only if you're official — a cute text is enough"],
+  [10, 31, "Halloween", "A party together is a great low-pressure date; couples costumes are a soft launch"],
+  [12, 24, "Christmas Eve", "Travel home is common; gift expectations depend on the stage"],
+  [12, 25, "Christmas", "Travel home is common; gift expectations depend on the stage"],
+  [12, 31, "New Year's Eve", "Midnight kiss = a statement; book early, or go to a party together"],
+];
+
+function nthWeekday(year: number, month: number, weekday: number, n: number): Date {
+  const first = new Date(year, month, 1);
+  const day = 1 + ((7 + weekday - first.getDay()) % 7) + (n - 1) * 7;
+  return new Date(year, month, day);
+}
+
+export function upcomingFestivals(now: Date, horizonDays = 21, lang: "zh" | "en" = "zh"): Festival[] {
   const out: Festival[] = [];
+  if (lang === "en") {
+    for (const year of [now.getFullYear(), now.getFullYear() + 1]) {
+      for (const [m, d, name, note] of FIXED_EN) out.push({ name, date: new Date(year, m - 1, d), days: 0, note });
+      out.push({ name: "Mother's Day (US)", date: nthWeekday(year, 4, 0, 2), days: 0, note: "Helping them pick a gift for their mom earns points" });
+      out.push({ name: "Father's Day (US)", date: nthWeekday(year, 5, 0, 3), days: 0, note: "Helping them pick a gift for their dad earns points" });
+      out.push({ name: "Thanksgiving (US)", date: nthWeekday(year, 10, 4, 4), days: 0, note: "Family time; Friendsgiving is an easier invite; 'whose family' is a real talk once serious" });
+    }
+    return out
+      .map((f) => ({ ...f, days: daysBetween(now, f.date) }))
+      .filter((f) => f.days >= 0 && f.days <= horizonDays)
+      .sort((a, b) => a.days - b.days);
+  }
   for (const year of [now.getFullYear(), now.getFullYear() + 1]) {
     for (const [m, d, name, note] of FIXED) out.push({ name, date: new Date(year, m - 1, d), days: 0, note });
     out.push({ name: "母亲节", date: mothersDay(year), days: 0, note: "帮对方想给妈妈的礼物，加分" });
@@ -71,11 +103,22 @@ export function upcomingFestivals(now: Date, horizonDays = 21): Festival[] {
 }
 
 /** 从「生日：10月12日」「10/12」这类文字里读出下一次的日期。 */
+const MONTHS_EN = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
 export function nextAnnual(text: string, now: Date): Date | null {
+  let month: number;
+  let day: number;
   const m = text.match(/(\d{1,2})\s*[月/.-]\s*(\d{1,2})\s*[日号]?/);
-  if (!m) return null;
-  const month = Number(m[1]);
-  const day = Number(m[2]);
+  const en = text.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/)
+    ?? text.toLowerCase().match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+  if (m) {
+    month = Number(m[1]);
+    day = Number(m[2]);
+  } else if (en) {
+    const nameFirst = isNaN(Number(en[1]));
+    month = MONTHS_EN.indexOf(nameFirst ? en[1] : en[2]) + 1;
+    day = Number(nameFirst ? en[2] : en[1]);
+  } else return null;
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   let d = new Date(now.getFullYear(), month - 1, day);
   if (daysBetween(now, d) < 0) d = new Date(now.getFullYear() + 1, month - 1, day);
@@ -83,9 +126,12 @@ export function nextAnnual(text: string, now: Date): Date | null {
 }
 
 const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const WEEK_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTH_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export function partOfDay(d: Date): string {
+export function partOfDay(d: Date, lang: "zh" | "en" = "zh"): string {
   const h = d.getHours();
+  if (lang === "en") return h < 5 ? "late night" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 22 ? "evening" : "late night";
   if (h < 5) return "凌晨";
   if (h < 9) return "早上";
   if (h < 12) return "上午";
@@ -95,15 +141,22 @@ export function partOfDay(d: Date): string {
   return "深夜";
 }
 
-export function describeNow(d: Date): string {
+export function describeNow(d: Date, lang: "zh" | "en" = "zh"): string {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
+  if (lang === "en") return `${WEEK_EN[d.getDay()]}, ${MONTH_EN[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} · ${partOfDay(d, "en")} ${hh}:${mm}`;
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${WEEK[d.getDay()]} ${partOfDay(d)} ${hh}:${mm}`;
 }
 
-export function describeGap(from: Date | null, now: Date): string | null {
+export function describeGap(from: Date | null, now: Date, lang: "zh" | "en" = "zh"): string | null {
   if (!from) return null;
   const hours = (now.getTime() - from.getTime()) / 3_600_000;
+  if (lang === "en") {
+    if (hours < 1) return "just now";
+    if (hours < 24) return `${Math.round(hours)} hour${Math.round(hours) === 1 ? "" : "s"} ago`;
+    const days = Math.round(hours / 24);
+    return days === 1 ? "yesterday" : `${days} days ago`;
+  }
   if (hours < 1) return "刚刚还在聊";
   if (hours < 24) return `${Math.round(hours)} 小时前`;
   const days = Math.round(hours / 24);

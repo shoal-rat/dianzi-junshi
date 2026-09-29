@@ -4,11 +4,13 @@
 
 <p align="center">ta 发来一句话，我给你三个锦囊。<br>扫梗、读语气、看行动，替你想好怎么回——明显没戏时，像朋友一样拦住你。</p>
 
+<p align="center"><b>中文</b> · <a href="README_EN.md">English</a></p>
+
 <p align="center">
-<a href="docs/releases/v6.0.0.md"><img src="https://img.shields.io/badge/release-v6.0.0-c8372d" alt="Release v6.0.0"></a>
+<a href="docs/releases/v6.1.0.md"><img src="https://img.shields.io/badge/release-v6.1.0-c8372d" alt="Release v6.1.0"></a>
 <a href="desktop/README.md"><img src="https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-1c1a17" alt="Desktop"></a>
 <a href="docs/数据与隐私.md"><img src="https://img.shields.io/badge/data-local--first-3d7a5f" alt="Local first"></a>
-<a href="app/test"><img src="https://img.shields.io/badge/tests-54%20passing-2f4c5c" alt="Tests"></a>
+<a href="app/test"><img src="https://img.shields.io/badge/tests-77%20passing-2f4c5c" alt="Tests"></a>
 </p>
 
 ![电子军师主界面：原话上的朱笔批注、带「荐」印的三个锦囊、军令和旁白，右边是档案卡](assets/v6-home.jpg)
@@ -99,6 +101,18 @@
 
 档案里可以写「ta 是男生 / 女生」，设置里可以写「你是男生 / 女生」，都不写也行。写了，军师就会用对「他 / 她」，打法去对应的「追女生 / 追男生」那张表里找；不写就按聊天自己判断，界面统一写「ta」。
 
+## 英文版
+
+v6.1 起有英文版。界面语言跟随系统：中文系统显示中文，其他系统显示英文，设置里可以手动改。
+
+英文版不是把中文策略翻译过去，而是按英语圈的聊天和约会习惯另写了一套（[`references/en/`](references/en)）：聊天在 iMessage、Instagram、Hinge 上；「在约会」不等于确定关系，要专门聊一次才算；一句话末尾加句号显得冷，一个「!」反而显得热情；😂 有点显老；约人讲究约一次、说清楚，然后把球交给对方。梗词典、人话检查、节日（情人节、Galentine's、cuffing season、感恩节）也都是英文那一套。两套策略不会同时塞进上下文：每个档案可以单独设「你们用什么语言聊」，聊英文就只装英文那套；如果界面是中文，解说仍然用中文写，只有锦囊是英文。
+
+印章保留汉字（稳 / 撩 / 奇 / 荐 / 醒），英文界面在旁边配上 Steady / Flirt / Wildcard / Pick / Reality check。
+
+![英文版主界面](assets/en-home.jpg)
+
+两套策略的差别见 [The English playbook](docs/english-playbook.md)（英文）。
+
 ## 连接 AI
 
 | 连接 | 说明 |
@@ -140,7 +154,7 @@ bun run start
 bun run verify
 ```
 
-`verify` 会依次做类型检查、跑 54 个测试（男女样本各半，数据目录每次都是临时的），最后编译出单文件后端。改了 `app/web/` 刷新页面就能看到；改了后端要重启。
+`verify` 会依次做类型检查、跑 77 个测试（男女样本、中英文都有，数据目录每次都是临时的），最后编译出单文件后端。改了 `app/web/` 刷新页面就能看到；改了后端要重启。
 
 桌面版（Tauri 2）：
 
@@ -154,12 +168,13 @@ bun run dev
 
 ```text
 references/        问答策略（核心 / 语感 / 梗 / 读局 / 打法 / 约会 / 读人 / 梗词典），构建时内嵌进后端
+references/en/     英文版问答策略（按英语圈文化另写，不是翻译）
 app/server.ts      本机服务（只监听 127.0.0.1）
 app/src/core/      扫梗、人话门禁、车道分诊、日历、提示词装配、一轮的流程
 app/src/llm/       Codex / Claude Code / Claude API / OpenAI 兼容 / 演示
 app/src/store/     SQLite：档案、对话、档案卡、素材库、结果与学习、后台导入、v5 搬家
 app/src/shared/    前后端共用：输出契约解析、领域常量
-app/web/           Preact 前端（朱批设计语言）
+app/web/           Preact 前端（朱批设计语言，中英双语）
 app/test/          测试
 desktop/           Tauri 桌面壳与打包
 ```
@@ -170,6 +185,6 @@ desktop/           Tauri 桌面壳与打包
 - [设计语言：朱批](docs/设计语言.md)
 - [数据与隐私](docs/数据与隐私.md)
 - [安装说明](INSTALL.md) · [桌面构建](desktop/README.md) · [发布签名](docs/release-signing.md)
-- [v6.0.0 发行说明](docs/releases/v6.0.0.md) · [更新记录](CHANGELOG.md)
+- [The English playbook](docs/english-playbook.md)——英文版的策略和中文版有什么不同
+- [v6.1.0 发行说明](docs/releases/v6.1.0.md) · [更新记录](CHANGELOG.md)
 
-[English README](README_EN.md)

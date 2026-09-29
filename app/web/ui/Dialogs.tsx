@@ -5,7 +5,8 @@ import { Icon } from "./Icon";
 import { Nerve } from "./Header";
 import { api, uploadImage } from "../lib/api";
 import { current, openPerson, refreshDossier, refreshPeople, refreshSettings, reloadTurns, reportError, setState, toast, useApp, watchJob } from "../lib/store";
-import { GENDERS, OUTCOMES, SIGNALS, STAGES, type Gender, type ImageRef, type Outcome, type ProviderKind, type ProviderStatusDTO, type SignalKey } from "../../src/shared/domain";
+import { T, uiLang } from "../lib/i18n";
+import { labels, SEAL_EN, type ChatLang, type Gender, type ImageRef, type Outcome, type ProviderKind, type ProviderStatusDTO, type SignalKey } from "../../src/shared/domain";
 import { parseAnswer } from "../../src/shared/contract";
 
 function Dialog({ title, kicker, children, onClose, wide }: { title: string; kicker?: string; children: ComponentChildren; onClose: () => void; wide?: boolean }) {
@@ -22,7 +23,7 @@ function Dialog({ title, kicker, children, onClose, wide }: { title: string; kic
       <div class="dlg-sheet">
         <header class="dlg-head">
           <div>{kicker && <span class="dlg-kicker">{kicker}</span>}<h2>{title}</h2></div>
-          <button class="icon-btn" aria-label="关闭" onClick={onClose}><Icon name="x" /></button>
+          <button class="icon-btn" aria-label={T().close} onClick={onClose}><Icon name="x" /></button>
         </header>
         {children}
       </div>
@@ -43,7 +44,7 @@ function Drop({ files, onFiles, hint }: { files: File[]; onFiles: (f: File[]) =>
       <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden
         onChange={(e) => { onFiles([...files, ...[...((e.target as HTMLInputElement).files ?? [])]]); (e.target as HTMLInputElement).value = ""; }} />
       <Icon name="image" size={22} />
-      <b>{files.length ? `已选 ${files.length} 张截图` : "拖进来，或者点这里选截图"}</b>
+      <b>{files.length ? T().dropPicked(files.length) : T().dropPick}</b>
       <small>{hint}</small>
     </div>
   );
@@ -62,16 +63,33 @@ function GenderPick({ value, onChange, label }: { value: Gender; onChange: (g: G
     <div class="field"><span>{label}</span>
       <div class="stage-chips">
         {(["f", "m", ""] as Gender[]).map((g) => (
-          <button type="button" key={g || "none"} class={`chip ${value === g ? "cur" : ""}`} onClick={() => onChange(g)}>{GENDERS[g].label}</button>
+          <button type="button" key={g || "none"} class={`chip ${value === g ? "cur" : ""}`} onClick={() => onChange(g)}>{labels(uiLang()).genders[g].label}</button>
         ))}
       </div>
     </div>
   );
 }
 
+function LangPick({ value, onChange }: { value: ChatLang; onChange: (l: ChatLang) => void }) {
+  const t = T();
+  return (
+    <div class="field"><span>{t.chatLangLabel}</span>
+      <div class="stage-chips">
+        {(["", "zh", "en"] as ChatLang[]).map((l) => (
+          <button type="button" key={l || "follow"} class={`chip ${value === l ? "cur" : ""}`} lang={l === "zh" ? "zh-CN" : l === "en" ? "en" : undefined} onClick={() => onChange(l)}>{t.chatLangs[l]}</button>
+        ))}
+      </div>
+      <small>{t.chatLangHint}</small>
+    </div>
+  );
+}
+
 function NewPerson() {
+  const t = T();
+  const L = labels(uiLang());
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Gender>("");
+  const [lang, setLang] = useState<ChatLang>("");
   const [stage, setStage] = useState(1);
   const [nerve, setNerve] = useState(2);
   const [clearEyed, setClearEyed] = useState(false);
@@ -80,10 +98,10 @@ function NewPerson() {
   const [busy, setBusy] = useState(false);
   async function submit(e: Event) {
     e.preventDefault();
-    if (!name.trim()) { toast("给 ta 起个称呼，代号也行", "zhu"); return; }
+    if (!name.trim()) { toast(t.nameNeeded, "zhu"); return; }
     setBusy(true);
     try {
-      const { person, job } = await api.createPerson({ name, gender, stage, nerve, clearEyed, history });
+      const { person, job } = await api.createPerson({ name, gender, lang, stage, nerve, clearEyed, history });
       if (files.length) {
         const refs = await uploadAll(person.id, files, "import");
         if (refs.length) { const j = await api.importStuff(person.id, { imageIds: refs.map((r) => r.id) }); watchJob(person.id, j.id); }
@@ -92,38 +110,39 @@ function NewPerson() {
       await refreshPeople();
       await openPerson(person.id);
       close();
-      toast(files.length || history.trim() ? "建好了，旧资料在后台整理，你可以先开始聊" : "建好了", "jade");
+      toast(files.length || history.trim() ? t.createdBg : t.created, "jade");
     } catch (err) { reportError(err); } finally { setBusy(false); }
   }
   return (
-    <Dialog title="新建档案" kicker="一分钟" onClose={close} wide>
+    <Dialog title={t.newTitle} kicker={t.newKicker} onClose={close} wide>
       <form class="dlg-body two" onSubmit={submit}>
         <div>
-          <label class="field"><span>怎么称呼 ta</span>
-            <input value={name} maxLength={40} autoFocus placeholder="昵称、备注名、代号都行" onInput={(e) => setName((e.target as HTMLInputElement).value)} />
+          <label class="field"><span>{t.nameLabel}</span>
+            <input value={name} maxLength={40} autoFocus placeholder={t.namePh} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
           </label>
-          <GenderPick value={gender} onChange={setGender} label="ta 是" />
-          <div class="field"><span>你俩现在到哪一步</span>
+          <GenderPick value={gender} onChange={setGender} label={t.genderLabel} />
+          <div class="field"><span>{t.stageLabel}</span>
             <div class="stage-chips">
-              {STAGES.map((s) => <button type="button" key={s.n} class={`chip ${stage === s.n ? "cur" : ""}`} onClick={() => setStage(s.n)}>{s.short}</button>)}
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => <button type="button" key={n} class={`chip ${stage === n ? "cur" : ""}`} onClick={() => setStage(n)}>{L.stage(n).short}</button>)}
             </div>
-            <small>拿不准就选「暧昧」，军师会用聊天里的证据自己校准</small>
+            <small>{t.stageHint}</small>
           </div>
-          <div class="field"><span>胆量</span><Nerve value={nerve} onChange={setNerve} compact /><small>越敢，锦囊越直接；判断本身不变</small></div>
+          <div class="field"><span>{t.nerve}</span><Nerve value={nerve} onChange={setNerve} compact /><small>{t.nerveHint}</small></div>
           <label class="check"><input type="checkbox" checked={clearEyed} onChange={(e) => setClearEyed((e.target as HTMLInputElement).checked)} />
-            <span><b>打开清醒提醒</b><small>ta 明显只是吊着你时，军师会像朋友一样直接拦住你</small></span>
+            <span><b>{t.clearEyedLabel}</b><small>{t.clearEyedHint}</small></span>
           </label>
         </div>
         <div>
-          <label class="field"><span>以前的聊天 <i>可选</i></span>
-            <textarea rows={6} value={history} placeholder="贴以前的聊天、你记得的细节（生日、喜好、说过的话）……多长都行" onInput={(e) => setHistory((e.target as HTMLTextAreaElement).value)} />
+          <LangPick value={lang} onChange={setLang} />
+          <label class="field"><span>{t.historyLabel} <i>{t.optional}</i></span>
+            <textarea rows={6} value={history} placeholder={t.historyPh} onInput={(e) => setHistory((e.target as HTMLTextAreaElement).value)} />
           </label>
-          <Drop files={files} onFiles={setFiles} hint="聊天、朋友圈、小红书截图都行，数量不限，后台一张张整理" />
+          <Drop files={files} onFiles={setFiles} hint={t.dropHintNew} />
         </div>
         <footer class="dlg-foot">
-          <span class="privacy"><Icon name="eye" size={14} />都存在这台电脑上</span>
-          <button type="button" class="btn btn-line" onClick={close}>算了</button>
-          <button class="btn btn-zhu" disabled={busy}>{busy ? "在建…" : "建好，开始"}</button>
+          <span class="privacy"><Icon name="eye" size={14} />{t.privacy}</span>
+          <button type="button" class="btn btn-line" onClick={close}>{t.later}</button>
+          <button class="btn btn-zhu" disabled={busy}>{busy ? t.creating : t.create}</button>
         </footer>
       </form>
     </Dialog>
@@ -135,13 +154,15 @@ function PersonEdit() {
   const [name, setName] = useState(person?.name ?? "");
   const [gender, setGender] = useState<Gender>(person?.gender ?? "");
   const [note, setNote] = useState(person?.note ?? "");
+  const [lang, setLang] = useState<ChatLang>(person?.lang ?? "");
+  const t = T();
   if (!person) return null;
   async function save(e: Event) {
     e.preventDefault();
-    try { await api.updatePerson(person!.id, { name, gender, note }); await refreshPeople(); close(); } catch (err) { reportError(err); }
+    try { await api.updatePerson(person!.id, { name, gender, lang, note }); await refreshPeople(); close(); } catch (err) { reportError(err); }
   }
   async function remove() {
-    if (!confirm(`删掉「${person!.name}」的档案？聊天、截图、记忆会一起删掉，恢复不了。`)) return;
+    if (!confirm(t.confirmDeletePerson(person!.name))) return;
     try {
       await api.deletePerson(person!.id);
       await refreshPeople();
@@ -151,19 +172,20 @@ function PersonEdit() {
     } catch (err) { reportError(err); }
   }
   return (
-    <Dialog title={person.name} kicker="档案设置" onClose={close}>
+    <Dialog title={person.name} kicker={t.personKicker} onClose={close}>
       <form class="dlg-body" onSubmit={save}>
-        <label class="field"><span>称呼</span><input value={name} maxLength={40} onInput={(e) => setName((e.target as HTMLInputElement).value)} /></label>
-        <GenderPick value={gender} onChange={setGender} label="ta 是" />
-        <label class="field"><span>给军师的备注</span>
-          <textarea rows={4} value={note} placeholder="比如：同事，不想让别人知道；她说过不喜欢被催" onInput={(e) => setNote((e.target as HTMLTextAreaElement).value)} />
-          <small>每次都会带给军师</small>
+        <label class="field"><span>{t.nameLabel}</span><input value={name} maxLength={40} onInput={(e) => setName((e.target as HTMLInputElement).value)} /></label>
+        <GenderPick value={gender} onChange={setGender} label={t.genderLabel} />
+        <LangPick value={lang} onChange={setLang} />
+        <label class="field"><span>{t.noteLabel}</span>
+          <textarea rows={4} value={note} placeholder={t.notePh} onInput={(e) => setNote((e.target as HTMLTextAreaElement).value)} />
+          <small>{t.noteHint}</small>
         </label>
         <footer class="dlg-foot">
-          <button type="button" class="btn btn-danger" onClick={remove}><Icon name="trash" size={15} />删掉这个档案</button>
+          <button type="button" class="btn btn-danger" onClick={remove}><Icon name="trash" size={15} />{t.deletePerson}</button>
           <span class="grow" />
-          <button type="button" class="btn btn-line" onClick={close}>取消</button>
-          <button class="btn btn-zhu">保存</button>
+          <button type="button" class="btn btn-line" onClick={close}>{t.cancel}</button>
+          <button class="btn btn-zhu">{t.save}</button>
         </footer>
       </form>
     </Dialog>
@@ -175,10 +197,11 @@ function ImportDialog() {
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const t = T();
   if (!person) return null;
   async function submit(e: Event) {
     e.preventDefault();
-    if (!text.trim() && !files.length) { toast("贴点文字或者选几张截图", "zhu"); return; }
+    if (!text.trim() && !files.length) { toast(t.importNeedSomething, "zhu"); return; }
     setBusy(true);
     try {
       if (text.trim()) { const j = await api.importStuff(person!.id, { text }); watchJob(person!.id, j.id); }
@@ -188,20 +211,20 @@ function ImportDialog() {
       }
       await refreshDossier(person!.id);
       close();
-      toast("收到，在后台一条条整理，整理好的会进档案卡", "jade");
+      toast(t.importQueued, "jade");
     } catch (err) { reportError(err); } finally { setBusy(false); }
   }
   return (
-    <Dialog title={`给 ${person.name} 补资料`} kicker="导入" onClose={close} wide>
+    <Dialog title={t.importTitle(person.name)} kicker={t.importKicker} onClose={close} wide>
       <form class="dlg-body two" onSubmit={submit}>
-        <label class="field"><span>旧聊天或笔记</span>
-          <textarea rows={9} value={text} placeholder="从微信复制出来的聊天记录、你记下的细节……原文会完整保存，按需要找回" onInput={(e) => setText((e.target as HTMLTextAreaElement).value)} />
+        <label class="field"><span>{t.importTextLabel}</span>
+          <textarea rows={9} value={text} placeholder={t.importTextPh} onInput={(e) => setText((e.target as HTMLTextAreaElement).value)} />
         </label>
-        <Drop files={files} onFiles={setFiles} hint="一张张交给 AI 看，抄下对话、记下关于 ta 的事实；同一张图传两次只算一次" />
+        <Drop files={files} onFiles={setFiles} hint={t.importDropHint} />
         <footer class="dlg-foot">
-          <span class="privacy"><Icon name="eye" size={14} />原图和原文只存在这台电脑上</span>
-          <button type="button" class="btn btn-line" onClick={close}>取消</button>
-          <button class="btn btn-zhu" disabled={busy}>{busy ? "在上传…" : "开始整理"}</button>
+          <span class="privacy"><Icon name="eye" size={14} />{t.privacyImport}</span>
+          <button type="button" class="btn btn-line" onClick={close}>{t.cancel}</button>
+          <button class="btn btn-zhu" disabled={busy}>{busy ? t.uploading : t.startImport}</button>
         </footer>
       </form>
     </Dialog>
@@ -213,6 +236,7 @@ function ProviderFields({ p, onSaved }: { p: ProviderStatusDTO; onSaved: () => v
   const [base, setBase] = useState(p.baseUrl ?? "");
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
+  const t = T();
   async function save(e: Event) {
     e.preventDefault();
     setBusy(true);
@@ -220,36 +244,36 @@ function ProviderFields({ p, onSaved }: { p: ProviderStatusDTO; onSaved: () => v
       await api.saveSettings({ provider: p.kind, providers: { [p.kind]: { model, baseUrl: base } }, key: key.trim() ? { kind: p.kind, value: key.trim() } : undefined });
       setKey("");
       onSaved();
-      toast(`改用 ${p.label}`, "jade");
+      toast(t.switchedTo(p.label), "jade");
     } catch (err) { reportError(err); } finally { setBusy(false); }
   }
   return (
     <form class="prov-fields" onSubmit={save}>
       {(p.models.length > 0 || p.kind === "custom" || p.kind === "codex") && (
-        <label class="field"><span>模型</span>
+        <label class="field"><span>{t.model}</span>
           {p.models.length > 0 && p.kind !== "custom" ? (
             <select value={model} onChange={(e) => setModel((e.target as HTMLSelectElement).value)}>
-              {p.kind === "claude-code" ? null : <option value="">默认（{p.models[0]}）</option>}
-              {p.models.map((m) => <option key={m} value={m}>{m || "跟随 Claude Code 的设置"}</option>)}
+              {p.kind === "claude-code" ? null : <option value="">{t.modelDefault(p.models[0])}</option>}
+              {p.models.map((m) => <option key={m} value={m}>{m || t.modelFollowCC}</option>)}
             </select>
           ) : (
-            <input value={model} placeholder={p.kind === "codex" ? "留空就用 Codex 的默认模型" : "模型名"} onInput={(e) => setModel((e.target as HTMLInputElement).value)} />
+            <input value={model} placeholder={p.kind === "codex" ? t.modelCodexPh : t.modelPh} onInput={(e) => setModel((e.target as HTMLInputElement).value)} />
           )}
         </label>
       )}
       {(p.kind === "custom" || p.kind === "claude") && (
-        <label class="field"><span>接口地址 {p.kind === "claude" && <i>一般不用填</i>}</span>
+        <label class="field"><span>{t.baseUrl} {p.kind === "claude" && <i>{t.baseUrlHint}</i>}</span>
           <input value={base} placeholder={p.kind === "custom" ? "http://127.0.0.1:1234/v1" : "https://api.anthropic.com"} onInput={(e) => setBase((e.target as HTMLInputElement).value)} />
         </label>
       )}
       {p.needsKey && (
-        <label class="field"><span>API Key {p.hasKey && <i>已保存在系统钥匙串，不改就留空</i>}</span>
-          <input type="password" autoComplete="off" value={key} placeholder={p.hasKey ? "••••••••" : "粘贴 Key"} onInput={(e) => setKey((e.target as HTMLInputElement).value)} />
+        <label class="field"><span>{t.apiKey} {p.hasKey && <i>{t.apiKeySaved}</i>}</span>
+          <input type="password" autoComplete="off" value={key} placeholder={p.hasKey ? "••••••••" : t.apiKeyPh} onInput={(e) => setKey((e.target as HTMLInputElement).value)} />
         </label>
       )}
       <div class="prov-actions">
-        {p.needsKey && p.hasKey && <button type="button" class="link" onClick={async () => { await api.saveSettings({ key: { kind: p.kind, value: null } }); onSaved(); }}>删掉 Key</button>}
-        <button class="btn btn-zhu" disabled={busy || (p.needsKey && !p.hasKey && !key.trim())}>用这个</button>
+        {p.needsKey && p.hasKey && <button type="button" class="link" onClick={async () => { await api.saveSettings({ key: { kind: p.kind, value: null } }); onSaved(); }}>{t.deleteKey}</button>}
+        <button class="btn btn-zhu" disabled={busy || (p.needsKey && !p.hasKey && !key.trim())}>{t.useThis}</button>
       </div>
     </form>
   );
@@ -261,6 +285,7 @@ function SettingsDialog() {
   const [picked, setPicked] = useState<ProviderKind>(settings?.provider ?? "demo");
   const [theme, setTheme] = useState(() => localStorage.getItem("junshi.theme") ?? "auto");
   useEffect(() => { void refreshSettings(); }, []);
+  const t = T();
   if (!settings) return null;
   const chosen = settings.providers.find((p) => p.kind === picked);
   function applyTheme(t: string) {
@@ -276,15 +301,15 @@ function SettingsDialog() {
       <span class="prov-dot" />
       <b>{p.label}</b>
       <small>{p.detail}</small>
-      {settings.provider === p.kind && <Seal char="用" size={20} tone="jade" class="prov-seal" />}
+      {settings.provider === p.kind && <Seal char="用" size={20} tone="jade" class="prov-seal" title={t.connReady} />}
     </button>
   );
   return (
-    <Dialog title="连接与设置" kicker="AI 连接" onClose={close} wide>
+    <Dialog title={t.settingsTitle} kicker={t.settingsKicker} onClose={close} wide>
       <div class="dlg-body">
-        <h4 class="dlg-sub">本机已登录的 AI<small>不用填 Key，额度用你自己的账号</small></h4>
+        <h4 class="dlg-sub">{t.localAI}<small>{t.localAIHint}</small></h4>
         <div class="prov-grid">{local.map(card)}</div>
-        <h4 class="dlg-sub">API<small>Key 只存在系统钥匙串里</small></h4>
+        <h4 class="dlg-sub">{t.apiAI}<small>{t.apiAIHint}</small></h4>
         <div class="prov-grid">{cloud.map(card)}{card(demo)}</div>
         {chosen && (
           <div class="prov-detail">
@@ -293,36 +318,42 @@ function SettingsDialog() {
           </div>
         )}
         <div class="settings-row">
+          <div><b>{t.uiLang}</b><small>{t.uiLangHint}</small></div>
+          <select value={settings.language} onChange={async (e) => { await api.saveSettings({ language: (e.target as HTMLSelectElement).value as "auto" | "zh" | "en" }); void refreshSettings(); }}>
+            {(["auto", "zh", "en"] as const).map((v) => <option key={v} value={v}>{t.uiLangs[v]}</option>)}
+          </select>
+        </div>
+        <div class="settings-row">
           <div>
-            <b>想多深</b>
-            <small>快：少等一半，适合日常接话；细：多想一会儿，适合吵架、挑明这种关键时刻。Codex / Claude Code 要等整段写完才显示，选「快」体感差别最大。</small>
+            <b>{t.depth}</b>
+            <small>{t.depthHint}</small>
           </div>
           <select value={settings.depth} onChange={async (e) => { await api.saveSettings({ depth: (e.target as HTMLSelectElement).value as "fast" | "balanced" | "deep" }); void refreshSettings(); }}>
-            <option value="fast">快</option><option value="balanced">标准</option><option value="deep">细</option>
+            {(["fast", "balanced", "deep"] as const).map((v) => <option key={v} value={v}>{t.depths[v]}</option>)}
           </select>
         </div>
         <div class="settings-row">
           <div>
-            <b>本机语义检索</b>
-            <small>{settings.semantic.detail}。装了 Ollama 的嵌入模型（比如 bge-m3），「她最近冷了」也能找回「没以前热情」这种说法不同的旧记录。</small>
+            <b>{t.semantic}</b>
+            <small>{settings.semantic.detail}{t.semanticHint}</small>
           </div>
           <select value={settings.semantic.mode} onChange={async (e) => { await api.saveSettings({ semantic: (e.target as HTMLSelectElement).value as "auto" | "off" }); void refreshSettings(); }}>
-            <option value="auto">自动</option><option value="off">关闭</option>
+            {(["auto", "off"] as const).map((v) => <option key={v} value={v}>{t.semantics[v]}</option>)}
           </select>
         </div>
         <div class="settings-row">
-          <div><b>你是</b><small>写了之后，军师会用对打法（追女生、追男生两套路数不一样）；不写就按聊天判断</small></div>
+          <div><b>{t.me}</b><small>{t.meHint}</small></div>
           <select value={settings.me} onChange={async (e) => { await api.saveSettings({ me: (e.target as HTMLSelectElement).value }); void refreshSettings(); }}>
-            <option value="">不写</option><option value="f">女生</option><option value="m">男生</option>
+            {(["", "f", "m"] as Gender[]).map((g) => <option key={g} value={g}>{labels(uiLang()).genders[g].label}</option>)}
           </select>
         </div>
         <div class="settings-row">
-          <div><b>纸色</b><small>宣纸（亮）/ 墨夜（暗）/ 跟随系统</small></div>
+          <div><b>{t.paper}</b><small>{t.paperHint}</small></div>
           <select value={theme} onChange={(e) => applyTheme((e.target as HTMLSelectElement).value)}>
-            <option value="auto">跟随系统</option><option value="light">宣纸</option><option value="dark">墨夜</option>
+            {(["auto", "light", "dark"] as const).map((v) => <option key={v} value={v}>{t.papers[v]}</option>)}
           </select>
         </div>
-        <p class="note small">数据都在 <code>{settings.home}</code> · 电子军师 {settings.version}</p>
+        <p class="note small">{t.dataAt} <code>{settings.home}</code> · {t.brandName} {settings.version}</p>
       </div>
     </Dialog>
   );
@@ -343,6 +374,8 @@ function FeedbackDialog({ turnId, planIndex }: { turnId: string; planIndex?: num
   const [files, setFiles] = useState<File[]>([]);
   const [guessing, setGuessing] = useState(false);
   const [reason, setReason] = useState("");
+  const t = T();
+  const L = labels(uiLang());
   if (!person || !turn) return null;
   async function guess() {
     setGuessing(true);
@@ -355,61 +388,60 @@ function FeedbackDialog({ turnId, planIndex }: { turnId: string; planIndex?: num
   }
   async function save(e: Event) {
     e.preventDefault();
-    if (!result) { toast("选一下 ta 后来的反应", "zhu"); return; }
+    if (!result) { toast(t.pickReaction, "zhu"); return; }
     try {
       await api.recordOutcome(person!.id, { turnId, planIndex: plan?.index, seal: plan?.seal, suggested: plan?.lines.join("\n"), sent, reply, result, delayHours: delay, signals });
       await Promise.all([reloadTurns(person!.id), refreshDossier(person!.id)]);
       close();
-      toast("记下了，军师下次会参考", "jade");
+      toast(t.logged, "jade");
     } catch (err) { reportError(err); }
   }
   return (
-    <Dialog title="后来怎样" kicker="记一笔" onClose={close} wide>
+    <Dialog title={t.feedbackTitle} kicker={t.feedbackKicker} onClose={close} wide>
       <form class="dlg-body two" onSubmit={save}>
         <div>
-          <label class="field"><span>你最后实际发的 {plan && <i>「{plan.seal}」那条，改过就改成真的</i>}</span>
+          <label class="field"><span>{t.sentLabel} {plan && <i>{t.sentHint(uiLang() === "en" ? SEAL_EN[plan.seal] ?? plan.seal : plan.seal)}</i>}</span>
             <textarea rows={3} value={sent} onInput={(e) => setSent((e.target as HTMLTextAreaElement).value)} />
           </label>
-          <label class="field"><span>ta 回了什么 <i>文字或截图</i></span>
-            <textarea rows={4} value={reply} placeholder="粘贴 ta 的回复" onInput={(e) => setReply((e.target as HTMLTextAreaElement).value)} />
+          <label class="field"><span>{t.replyLabel} <i>{t.replyHint}</i></span>
+            <textarea rows={4} value={reply} placeholder={t.replyPh} onInput={(e) => setReply((e.target as HTMLTextAreaElement).value)} />
           </label>
-          <Drop files={files} onFiles={setFiles} hint="贴回复截图，让 AI 帮你选好下面的选项" />
+          <Drop files={files} onFiles={setFiles} hint={t.replyDrop} />
           <button type="button" class="btn btn-line wide" disabled={guessing || (!reply.trim() && !files.length)} onClick={guess}>
-            <Icon name="spark" size={15} />{guessing ? "在看…" : "让军师帮我选"}
+            <Icon name="spark" size={15} />{guessing ? t.guessing : t.guess}
           </button>
           {reason && <p class="note">{reason}</p>}
         </div>
         <div>
-          <div class="field"><span>ta 的反应</span>
+          <div class="field"><span>{t.reactionLabel}</span>
             <div class="outcomes">
-              {(Object.keys(OUTCOMES) as Outcome[]).map((r) => (
+              {(Object.keys(L.outcomes) as Outcome[]).map((r) => (
                 <button type="button" key={r} class={`outcome r-${r} ${result === r ? "cur" : ""}`} onClick={() => setResult(r)}>
-                  <b>{OUTCOMES[r].label}</b><small>{OUTCOMES[r].hint}</small>
+                  <b>{L.outcomes[r].label}</b><small>{L.outcomes[r].hint}</small>
                 </button>
               ))}
             </div>
           </div>
-          <label class="field"><span>大概多久回的</span>
+          <label class="field"><span>{t.delayLabel}</span>
             <select value={delay} onChange={(e) => setDelay(Number((e.target as HTMLSelectElement).value))}>
-              <option value={0.2}>几分钟</option><option value={1}>一小时内</option><option value={6}>当天</option>
-              <option value={24}>第二天</option><option value={72}>几天后</option><option value={168}>一周左右</option>
+              {t.delays.map(([v, label]) => <option key={v} value={Number(v)}>{label}</option>)}
             </select>
           </label>
-          <div class="field"><span>有这些就勾上</span>
+          <div class="field"><span>{t.signalsLabel}</span>
             <div class="signals">
-              {(Object.keys(SIGNALS) as SignalKey[]).map((k) => (
+              {(Object.keys(L.signals) as SignalKey[]).map((k) => (
                 <label key={k} class={`chip ${signals[k] ? "cur" : ""}`}>
-                  <input type="checkbox" checked={Boolean(signals[k])} onChange={(e) => setSignals({ ...signals, [k]: (e.target as HTMLInputElement).checked })} />{SIGNALS[k]}
+                  <input type="checkbox" checked={Boolean(signals[k])} onChange={(e) => setSignals({ ...signals, [k]: (e.target as HTMLInputElement).checked })} />{L.signals[k]}
                 </label>
               ))}
             </div>
           </div>
         </div>
         <footer class="dlg-foot">
-          {prev && <button type="button" class="link" onClick={async () => { await api.deleteOutcome(person.id, prev.id); await reloadTurns(person.id); await refreshDossier(person.id); close(); }}>删掉这条记录</button>}
+          {prev && <button type="button" class="link" onClick={async () => { await api.deleteOutcome(person.id, prev.id); await reloadTurns(person.id); await refreshDossier(person.id); close(); }}>{t.deleteOutcome}</button>}
           <span class="grow" />
-          <button type="button" class="btn btn-line" onClick={close}>先不记</button>
-          <button class="btn btn-zhu">记下</button>
+          <button type="button" class="btn btn-line" onClick={close}>{t.notNow}</button>
+          <button class="btn btn-zhu">{t.logIt}</button>
         </footer>
       </form>
     </Dialog>

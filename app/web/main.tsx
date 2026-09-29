@@ -6,27 +6,32 @@ import { Dossier } from "./ui/Dossier";
 import { Dialogs } from "./ui/Dialogs";
 import { Seal, SealDefs, Brush } from "./ui/Seal";
 import { boot, current, setState, useApp } from "./lib/store";
+import { setUiLang, T } from "./lib/i18n";
 
 const theme = localStorage.getItem("junshi.theme");
 if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+// 服务端说了算；启动前先按浏览器语言猜一个，免得标题闪一下
+setUiLang(/^zh\b/i.test(navigator.language) ? "zh" : "en");
 
 function Welcome() {
+  const t = T();
   return (
     <div class="welcome">
       <div class="welcome-art" aria-hidden="true">
-        <span class="welcome-vert">把聊天交给我</span>
+        <span class="welcome-vert">{t.welcomeVert}</span>
         <Seal char="电子军师" size={132} tilt={-6} />
       </div>
       <div class="welcome-copy">
-        <p class="kicker">恋爱聊天军师 · 资料只在这台电脑上</p>
-        <h1>ta 发来一句话，<br />我给你三个锦囊。</h1>
+        <p class="kicker">{t.welcomeKicker}</p>
+        <h1>{t.welcomeTitle[0]}<br />{t.welcomeTitle[1]}</h1>
         <Brush width={120} />
         <ol class="welcome-steps">
-          <li><Seal char="一" size={30} tone="ink" /><div><b>建个档案</b><span>给 ta 起个代号就行，以前的截图可以一起丢进来</span></div></li>
-          <li><Seal char="二" size={30} tone="ink" /><div><b>贴 ta 的话</b><span>文字、截图都行。我先扫梗、读语气，再看有没有戏</span></div></li>
-          <li><Seal char="三" size={30} tone="ink" /><div><b>挑一句发</b><span>稳、撩、奇三条路，发完回来说一声，我会越来越懂 ta</span></div></li>
+          {t.welcomeSteps.map(([title, body], i) => (
+            <li key={i}><Seal char={t.welcomeStepSeals[i]} size={30} tone="ink" /><div><b>{title}</b><span>{body}</span></div></li>
+          ))}
         </ol>
-        <button class="btn btn-zhu big" onClick={() => setState({ dialog: { type: "new" } })}>建第一个档案</button>
+        <button class="btn btn-zhu big" onClick={() => setState({ dialog: { type: "new" } })}>{t.welcomeCta}</button>
+        {t.welcomeFootnote && <p class="welcome-foot">{t.welcomeFootnote}</p>}
       </div>
     </div>
   );
@@ -56,7 +61,7 @@ function App() {
       <Sidebar />
       <main class="desk">{person ? <Desk person={person} key={person.id} /> : <Welcome />}</main>
       {person && <Dossier person={person} />}
-      <button class="scrim" aria-label="关闭抽屉" tabIndex={-1} onClick={() => setState({ drawer: null })} />
+      <button class="scrim" aria-label={T().scrim} tabIndex={-1} onClick={() => setState({ drawer: null })} />
       <Dialogs />
       <Toast />
     </div>

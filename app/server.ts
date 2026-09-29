@@ -11,7 +11,7 @@ import { deleteKey, keychainBackend, loadKeys, saveKey } from "./src/store/keych
 import { readSettings, writeSettings, PROVIDER_KINDS } from "./src/store/settings";
 import { createPerson, deletePerson, getPerson, listPeople, updatePerson } from "./src/store/people";
 import { getImage, imageBytes, imageRef, imagesFor, saveImage } from "./src/store/images";
-import { deleteTurn, getTurn, listTurns, markCopied, updateTurnOutput } from "./src/store/turns";
+import { deleteTurn, failInterruptedTurns, getTurn, listTurns, markCopied, updateTurnOutput } from "./src/store/turns";
 import { addFacts, deleteMeme, listFacts, listMemes, setMemeAvoid, updateFact } from "./src/store/dossier";
 import { deleteOutcome, readings, recordOutcome, styleProfile, tacticStats, workedAndFlopped } from "./src/store/learning";
 import { archiveStats, addArchive } from "./src/store/archive";
@@ -25,6 +25,8 @@ import { lint } from "./src/core/voice";
 import { parseAnswer, planText } from "./src/shared/contract";
 import type { DossierDTO, Mode, ProviderKind, SettingsDTO } from "./src/shared/domain";
 import { personDir } from "./src/store/db";
+import { msg } from "./src/store/messages";
+import { appLang, chatLang } from "./src/store/locale";
 
 if (process.argv.includes("--version")) {
   console.log(pkg.version);
@@ -63,7 +65,7 @@ type Handler = (req: Request, params: Record<string, string>) => Response | Prom
 
 function guard(handler: Handler): (req: Request & { params?: Record<string, string> }) => Promise<Response> {
   return async (req) => {
-    if (!trusted(req)) return json({ error: "只接受本机请求" }, 403);
+    if (!trusted(req)) return json({ error: msg().onlyLocal }, 403);
     try {
       return await handler(req, (req as any).params ?? {});
     } catch (e) {
@@ -74,7 +76,7 @@ function guard(handler: Handler): (req: Request & { params?: Record<string, stri
 
 function requirePerson(id: string) {
   const person = getPerson(id);
-  if (!person) throw new Error("找不到这个档案");
+  if (!person) throw new Error(msg().personMissing);
   return person;
 }
 
@@ -87,6 +89,8 @@ async function settingsDTO(): Promise<SettingsDTO> {
     semantic: { mode: s.semantic, available: sem.available, model: sem.model, detail: sem.detail },
     depth: s.depth ?? "fast",
     me: s.me ?? "",
+    language: s.language ?? "auto",
+    lang: appLang(),
     keychain: keychainBackend(),
     home: HOME,
     version: VERSION,
@@ -144,14 +148,14 @@ const server = Bun.serve({
     "/api/settings": {
       GET: guard(async () => json(await settingsDTO())),
       POST: guard(async (req) => {
-        const b = await body<{ provider?: ProviderKind; semantic?: "auto" | "off"; depth?: "fast" | "balanced" | "deep"; me?: string; providers?: Record<string, { model?: string; baseUrl?: string }>; key?: { kind: ProviderKind; value: string | null } }>(req);
+        const b = await body<{ provider?: ProviderKind; semantic?: "auto" | "off"; depth?: "fast" | "balanced" | "deep"; me?: string; language?: string; providers?: Record<string, { model?: string; baseUrl?: string }>; key?: { kind: ProviderKind; value: string | null } }>(req);
         if (b.key) {
           if (b.key.value === null) await deleteKey(b.key.kind);
           else await saveKey(b.key.kind, b.key.value);
         }
         const providers: Record<string, { model?: string; baseUrl?: string }> = {};
         for (const [k, v] of Object.entries(b.providers ?? {})) if (PROVIDER_KINDS.includes(k as ProviderKind)) providers[k] = { model: v.model, baseUrl: v.baseUrl };
-        writeSettings({ provider: b.provider, semantic: b.semantic, depth: b.depth, me: b.me, providers });
+        writeSettings({ provider: b.provider, semantic: b.semantic, depth: b.depth, me: b.me, language: b.language, providers });
         if (b.semantic) resetSemanticCache();
         resetLocate();
         resumeJobs();
@@ -162,7 +166,7 @@ const server = Bun.serve({
     "/api/people": {
       GET: guard(() => json(listPeople())),
       POST: guard(async (req) => {
-        const b = await body<{ name: string; gender?: string; stage?: number; nerve?: number; clearEyed?: boolean; note?: string; history?: string }>(req);
+        const b = await body<{ name: string; gender?: string; lang?: string; stage?: number; nerve?: number; clearEyed?: boolean; note?: string; history?: string }>(req);
         const person = createPerson(b);
         const job = b.history?.trim() ? await importText(person.id, b.history) : null;
         return json({ person, job });
@@ -186,13 +190,13 @@ const server = Bun.serve({
       POST: guard(async (req, p) => {
         const person = requirePerson(p.id);
         const b = await body<{ mode: Mode; text?: string; imageIds?: string[] }>(req);
-        if (!MODES.includes(b.mode)) throw new Error("不认识这个模式");
+        if (!MODES.includes(b.mode)) throw new Error(msg().badMode);
         const text = String(b.text ?? "").slice(0, 20000);
         const images = imagesFor(person.id, (b.imageIds ?? []).slice(0, 12));
-        if (!text.trim() && !images.length) throw new Error("先贴点内容，文字或截图都行");
+        if (!text.trim() && !images.length) throw new Error(msg().emptyTurn);
         const cfg = activeConfig();
         if (images.length && cfg.kind !== "demo" && !supportsVision(cfg)) {
-          throw new ProviderError(`${providerLabel(cfg.kind)} 看不了截图`, "把 ta 的话打成文字贴进来，或者在设置里换成 Codex、Claude Code、Claude API 这类能看图的连接");
+          throw new ProviderError(msg().noVision(providerLabel(cfg.kind)), msg().noVisionHint);
         }
         const controller = new AbortController();
         req.signal.addEventListener("abort", () => controller.abort());
@@ -203,7 +207,7 @@ const server = Bun.serve({
     "/api/turns/:id": {
       DELETE: guard((_req, p) => {
         const turn = getTurn(p.id);
-        if (!turn) throw new Error("找不到这一轮");
+        if (!turn) throw new Error(msg().turnMissing);
         deleteTurn(turn.personId, turn.id);
         return json({ ok: true });
       }),
@@ -221,22 +225,24 @@ const server = Bun.serve({
     "/api/turns/:id/revise": {
       POST: guard(async (req, p) => {
         const turn = getTurn(p.id);
-        if (!turn) throw new Error("找不到这一轮");
+        if (!turn) throw new Error(msg().turnMissing);
         const b = await body<{ planIndex: number; ask?: string }>(req);
         const plan = parseAnswer(turn.output).plans.find((x) => x.index === Number(b.planIndex));
-        if (!plan) throw new Error("找不到这条锦囊");
+        if (!plan) throw new Error(msg().planMissing);
         const cfg = activeConfig();
-        if (cfg.kind === "demo") throw new Error("演示模式不会真的改稿，先选一个 AI 连接");
-        const current = lint(planText(plan));
+        if (cfg.kind === "demo") throw new Error(msg().demoNoRevise);
+        const person = requirePerson(turn.personId);
+        const lang = turn.context?.lang ?? chatLang(person);
+        const current = lint(planText(plan), lang);
         const problems = [
           ...current.findings.map((f) => `${f.text}：${f.hint}`),
-          b.ask?.trim() ? `用户要求：${b.ask.trim().slice(0, 100)}` : "",
+          b.ask?.trim() ? `${lang === "en" ? "User asked" : "用户要求"}: ${b.ask.trim().slice(0, 100)}` : "",
         ].filter(Boolean);
-        const fixes = await revisePlans(cfg, personDir(turn.personId), turn.input, [{ index: plan.index, seal: plan.seal, text: planText(plan), problems: problems.length ? problems : ["换一种说法"] }]);
+        const fixes = await revisePlans(cfg, personDir(turn.personId), turn.input, [{ index: plan.index, seal: plan.seal, text: planText(plan), problems: problems.length ? problems : [lang === "en" ? "say it a different way" : "换一种说法"] }], undefined, lang);
         const text = fixes.get(plan.index);
-        if (!text) throw new Error("这次没改出来，再试一次");
+        if (!text) throw new Error(msg().reviseFailed);
         const pos = parseAnswer(turn.output).plans.findIndex((x) => x.index === plan.index);
-        const next = checksFor(replaceReply(turn.output, pos, text));
+        const next = checksFor(replaceReply(turn.output, pos, text), lang);
         const checks = next.checks.map((c) => (c.index === plan.index ? { ...c, revised: true } : turn.checks.find((o) => o.index === c.index) ?? c));
         updateTurnOutput(turn.id, next.output, checks);
         return json(getTurn(turn.id));
@@ -269,12 +275,12 @@ const server = Bun.serve({
         let job = null;
         if (b.text?.trim()) job = await importText(p.id, b.text);
         if (images.length) job = createJob(p.id, images.map((i) => ({ kind: "image" as const, ref: i.id, name: i.name })));
-        if (!job) throw new Error("没有要导入的内容");
+        if (!job) throw new Error(msg().nothingToImport);
         return json(job);
       }),
     },
 
-    "/api/jobs/:id": guard((_req, p) => { const job = getJob(p.id); return job ? json(job) : fail("找不到这个任务", 404); }),
+    "/api/jobs/:id": guard((_req, p) => { const job = getJob(p.id); return job ? json(job) : fail(msg().jobMissing, 404); }),
     "/api/jobs/:id/retry": { POST: guard((_req, p) => json(retryJob(p.id))) },
 
     "/api/people/:id/outcomes": {
@@ -291,10 +297,10 @@ const server = Bun.serve({
       POST: guard(async (req, p) => {
         requirePerson(p.id);
         const b = await body<{ sent: string; reply?: string; imageIds?: string[] }>(req);
-        if (!b.sent?.trim()) throw new Error("先写一下你实际发的是什么");
+        if (!b.sent?.trim()) throw new Error(msg().sentRequired);
         const images = imagesFor(p.id, (b.imageIds ?? []).slice(0, 6));
-        if (!b.reply?.trim() && !images.length) throw new Error("贴一下 ta 的回复，文字或截图都行");
-        return json(await guessOutcome(activeConfig(), personDir(p.id), b.sent, b.reply ?? "", images));
+        if (!b.reply?.trim() && !images.length) throw new Error(msg().replyRequired);
+        return json(await guessOutcome(activeConfig(), personDir(p.id), b.sent, b.reply ?? "", images, chatLang(requirePerson(p.id))));
       }),
     },
 
@@ -324,7 +330,7 @@ const server = Bun.serve({
       }),
     },
 
-    "/api/lint": { POST: guard(async (req) => json(lint(String((await body(req)).text ?? "")))) },
+    "/api/lint": { POST: guard(async (req) => { const b = await body(req); return json(lint(String(b.text ?? ""), b.lang === "en" ? "en" : "zh")); }) },
   },
   fetch(req) {
     return trusted(req) ? new Response("not found", { status: 404 }) : new Response("forbidden", { status: 403 });
@@ -332,6 +338,7 @@ const server = Bun.serve({
 });
 
 database();
+failInterruptedTurns(msg().interrupted);
 migrateLegacy().then((n) => { if (n) console.log(`从旧版本搬过来 ${n} 个档案`); }).catch((e) => console.error("旧数据迁移失败：", e));
 loadKeys().then((issues) => { for (const i of issues) console.warn(i); }).finally(() => resumeJobs());
 

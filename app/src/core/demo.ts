@@ -223,8 +223,250 @@ const ODDS = `\`\`\`judge
 \`\`\`
 两个选项、有具体地方，她选不选一眼就知道。`;
 
-/** 示范回答默认写成「她」；ta 是男生就换成「他」，没写就用「ta」。 */
-export function demoAnswer(mode: Mode, text: string, pronoun = "她"): string {
+// ---------------------------------------------------------------------------
+// English demo — written for English-language chats, not translated.
+// {they}/{them}/{their}/{They} are filled from the profile's gender.
+
+const TAIL_EN = "\n\n(This is a demo answer — it didn't actually read your message. Pick an AI connection in Settings and Junshi will read it for real.)";
+
+function pickEn(text: string): "banter" | "plans" | "tired" | "general" {
+  if (/\b(cooked|delulu|no cap|mid|down bad|rent free|lowkey)\b/i.test(text)) return "banter";
+  if (/flake|bail|saturday|friday|weekend|reservation|table|booked|dinner|drinks/i.test(text)) return "plans";
+  if (/tired|exhausted|long day|rough day|stressed|work/i.test(text)) return "tired";
+  return "general";
+}
+
+const REPLY_EN: Record<ReturnType<typeof pickEn>, string> = {
+  banter: `\`\`\`judge
+Verdict: {They}'re being dramatic on purpose — it's a bit, and {they} want{s} you to play along
+Note: cooked | slang for "doomed" — a joke, not an actual crisis
+Surface: {They} slept through {their} alarm and called {themself} cooked
+Emotion: playful — performing the chaos
+Need: to be played with — see if you'll join the bit
+\`\`\`
+
+### Steady · Join the bit · thirst 0.5
+\`\`\`reply
+respectfully you were cooked the second you hit snooze
+\`\`\`
+Plays along and teases back — easy, fun, keeps it going.
+
+### Flirt · Tease with a hook · thirst 1.5
+\`\`\`reply
+tragic
+guess I'll have to supervise your mornings
+\`\`\`
+The hook is hidden in the joke — they can pick it up or laugh it off.
+
+### Wildcard · Same energy back · thirst 1
+\`\`\`reply
+we're both cooked
+I've been awake for 20 minutes and I'm already tired
+\`\`\`
+Mirroring the bit is the safest, strongest move.
+
+Pick: Wildcard | matching {their} bit is the fastest way to feel like the same wavelength
+Don't send: you should set two alarms | turns a joke into a lecture`,
+  plans: `\`\`\`judge
+Verdict: {They} already booked the table — that's a real move, lock it in and have fun with it
+Note: don't flake on me | half-joking, but {they} actually care{s} that you show up
+Note: lol | softens the ask so it doesn't sound needy
+Surface: {They} made a reservation for Saturday and told you not to bail
+Emotion: excited — with a tiny worry you won't take it seriously
+Need: reassurance — a clear yes
+Stage: Talking stage ({they} set up the date — strong action signal)
+Interest: sweet 7 initiative 8 commitment 5 action 8 overall 7 confidence med
+\`\`\`
+
+### Steady · Clear yes · thirst 0.5
+\`\`\`reply
+wouldn't miss it
+what time should I be there?
+\`\`\`
+{They} want{s} certainty — give it, then lock the time.
+
+### Flirt · Throw it back · thirst 1.5
+\`\`\`reply
+flake on a table you booked? never
+you're the one I'm worried about
+\`\`\`
+Takes the care seriously, then hands the joke back.
+
+### Wildcard · Extend the night · thirst 1
+\`\`\`reply
+I'm in
+dessert after is on me
+\`\`\`
+Turns dinner into a whole date without making it a big deal.
+
+Pick: Flirt | {they} gave a clear signal — you can flirt back
+Don't send: ok sounds good | reads like a work calendar invite and deflates {their} excitement
+
+\`\`\`aside
+Book: {they} already did — check the address and how long it takes to get there
+On the day: arrive a few minutes early and text "here, grabbed us a spot"
+After: float a second date naturally at the end, don't pin it down on the spot
+\`\`\``,
+  tired: `\`\`\`judge
+Verdict: {They}'re wiped and want company, not advice
+Note: so tired | wants sympathy, not a to-do list
+Surface: {They} had a long day at work
+Emotion: drained, a little fed up
+Need: company — someone on {their} side
+\`\`\`
+
+### Steady · Be there · thirst 0.5
+\`\`\`reply
+that sounds exhausting
+do nothing tonight, that's an order
+\`\`\`
+No advice, just on {their} side.
+
+### Flirt · A little sweet · thirst 1.5
+\`\`\`reply
+and you still texted me back
+I'm honored
+\`\`\`
+Light tease with some warmth, asks for nothing.
+
+### Wildcard · Do something small · thirst 1
+\`\`\`reply
+sent you something for dinner
+don't cook tonight
+\`\`\`
+Worth more than "feel better" — if you know where {they} live{s}.
+
+Pick: Steady | right now {they} need{s} to be heard; flirting can wait
+Don't send: you should go to bed early | reads like a parent`,
+  general: `\`\`\`judge
+Verdict: Normal day-to-day sharing — pick up a detail and show a bit of yourself
+Surface: {They}'re telling you about {their} day
+Emotion: relaxed, wants to share
+Need: a real reply, back-and-forth
+\`\`\`
+
+### Steady · Pick up a detail · thirst 0
+\`\`\`reply
+wait then what happened
+\`\`\`
+Asking for the rest is the easiest way to keep it going.
+
+### Flirt · Leave a hook · thirst 1
+\`\`\`reply
+ok I need the full story
+in person, obviously
+\`\`\`
+Nudges the chat toward meeting up.
+
+### Wildcard · Show your life · thirst 0.5
+\`\`\`reply
+my day was also unhinged
+tell you later
+\`\`\`
+Gives {them} a reason to ask about you.
+
+Pick: Steady | there's not much to go on yet — keep the back-and-forth going
+Don't send: nice | a conversation killer`,
+};
+
+const ODDS_EN = `\`\`\`judge
+Verdict: Sweet texts, zero plans — right now {they}'re a great texter, not a sure thing
+Stage: Talking stage (lots of flirting, two plans dodged)
+Interest: sweet 7 initiative 4 commitment 2 action 2 overall 4 confidence med
+Player: 45
+Pursuit: high-options · pacing 2
+Vibe: playful
+\`\`\`
+
+- Good signs: plays along, shares {their} day
+- Bad signs: dodged two plans with "we'll see", no new time; warmest after midnight
+- Mirroring: started using your "lowkey", but still sends {their} own memes
+- Recent player signals: future-faking — "we should totally go to that place" twice, no date
+- Next test: low-cost ask — two specific times, see if {they} pick{s} one
+
+\`\`\`strategy
+Reply timing: whenever you see it
+Go quiet?: close the loop
+Move: ask them out
+Watch for: whether {they} name{s} a time
+\`\`\`
+
+### Wildcard · Specific ask · thirst 1
+\`\`\`reply
+thursday night or saturday afternoon
+your pick, I'll bring you to that taco place
+\`\`\`
+Two options and a real place — you'll know right away.`;
+
+const POLISH_EN = `\`\`\`judge
+Verdict: The feeling's fair, but this hands {them} a guilt trip instead of a reason to reply
+Surface: you want to ask why {they} went quiet
+Emotion: {they}'d feel cornered — it's a question with only bad answers
+\`\`\`
+
+\`\`\`verdict
+Call: Tweak it
+Fit: 4
+Thirst: 3 (cap 1.5)
+Neediness: high
+Flirt: too intense
+Risk: {they} can only say "no I'm not" and then pull back further
+Timing: good after {they} reach{es} out; bad right after being left on read
+\`\`\`
+
+### Steady · Light version · thirst 0.5
+\`\`\`reply
+you went fully off the grid lol
+thought I'd killed the convo
+\`\`\`
+Same meaning, but it gives {them} an easy way back in.
+
+### Flirt · Hand the ball back · thirst 1
+\`\`\`reply
+you've been busy huh
+come find me when you surface
+\`\`\`
+No interrogation, just an open door.
+
+Pick: Steady | get the energy back first, then see what {they} do{es}`;
+
+const READ_EN = `\`\`\`judge
+Verdict: {They}'re wrapping real care in a joke — respond to the care, not just the joke
+Note: don't flake on me | half-joking — {they} want{s} you to take it seriously
+Surface: {They} booked the table and told you not to bail
+Emotion: excited, a little unsure
+Need: to be taken seriously — a clear yes
+Stage: Talking stage ({they} made the plan — strong action signal)
+\`\`\`
+
+- Type: sharing good news + a light test — {they} set it up and want{s} to see how you respond
+- Risk: yes — a too-casual answer makes {them} feel like the only one who cares
+- Direction: open with a clear yes, then play with the joke, and skip the one-word "ok"`;
+
+const PRONOUNS: Record<string, Record<string, string>> = {
+  he: { they: "he", them: "him", their: "his", themself: "himself", They: "He" },
+  she: { they: "she", them: "her", their: "her", themself: "herself", They: "She" },
+  they: { they: "they", them: "them", their: "their", themself: "themself", They: "They" },
+};
+
+function fillEn(text: string, pronoun: string): string {
+  const p = PRONOUNS[pronoun] ?? PRONOUNS.they;
+  // they/They + verb agreement: the demo text is written to read fine with he/she/they,
+  // except contractions like "{They}'re" which become "He's"/"She's".
+  return text
+    .replace(/\{They\}'re/g, pronoun === "they" ? "They're" : `${p.They}'s`)
+    .replace(/\{they\}'re/g, pronoun === "they" ? "they're" : `${p.they}'s`)
+    .replace(/\{(They|they|them|their|themself)\}/g, (_, k: string) => p[k])
+    .replace(/\{s\}/g, pronoun === "they" ? "" : "s")
+    .replace(/\{es\}/g, pronoun === "they" ? "" : "es");
+}
+
+/** 示范回答：中文默认写成「她」（ta 是男生换成「他」，没写用「ta」）；英文按 he / she / they 填。 */
+export function demoAnswer(mode: Mode, text: string, pronoun = "她", lang: "zh" | "en" = "zh"): string {
+  if (lang === "en") {
+    const body = mode === "read" ? READ_EN : mode === "polish" ? POLISH_EN : mode === "odds" ? ODDS_EN : REPLY_EN[pickEn(text)];
+    return fillEn(body + TAIL_EN, ["he", "she", "they"].includes(pronoun) ? pronoun : "they");
+  }
   const body = mode === "read" ? READ : mode === "polish" ? POLISH : mode === "odds" ? ODDS : REPLY[pick(text)];
   return (body + TAIL).replaceAll("她", pronoun);
 }

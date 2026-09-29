@@ -4,8 +4,9 @@ import { Seal, Brush } from "./Seal";
 import { PlanCard } from "./Plan";
 import { Markdown } from "../lib/md";
 import { kvGet, parseAnswer, type Judge, type Parsed, type Plan, type Segment } from "../../src/shared/contract";
-import { oilCap, type Mode, type PersonDTO, type TurnDTO } from "../../src/shared/domain";
+import { oilCap, SEAL_EN, type Mode, type PersonDTO, type TurnDTO } from "../../src/shared/domain";
 import type { Live } from "../lib/store";
+import { T, uiLang } from "../lib/i18n";
 
 function Meter({ label, value, max = 10, tone = "ink" }: { label: string; value?: number; max?: number; tone?: string }) {
   if (value === undefined) return null;
@@ -20,10 +21,11 @@ function Meter({ label, value, max = 10, tone = "ink" }: { label: string; value?
 
 function PlayerGauge({ value }: { value?: number }) {
   if (value === undefined) return null;
-  const band = value <= 20 ? "很低" : value <= 40 ? "偏低" : value <= 60 ? "中等" : value <= 80 ? "偏高" : "很高";
+  const t = T();
+  const band = t.playerBands[value <= 20 ? 0 : value <= 40 ? 1 : value <= 60 ? 2 : value <= 80 ? 3 : 4];
   return (
     <div class="player" style={`--v:${value}`}>
-      <div class="player-top"><span>海王指数</span><b>{value}</b><em>{band}</em></div>
+      <div class="player-top"><span>{t.playerIndex}</span><b>{value}</b><em>{band}</em></div>
       <div class="player-bar"><i /></div>
     </div>
   );
@@ -32,6 +34,8 @@ function PlayerGauge({ value }: { value?: number }) {
 export function JudgeCard({ judge, mode, streaming }: { judge: Judge; mode: Mode; streaming: boolean }) {
   const rich = Boolean(judge.surface || judge.emotion || judge.need || judge.interest || judge.player !== undefined || judge.stage || judge.pursuit);
   const [open, setOpen] = useState(mode !== "reply");
+  const t = T();
+  const en = uiLang() === "en";
   return (
     <section class="judge">
       <div class="judge-head">
@@ -39,37 +43,37 @@ export function JudgeCard({ judge, mode, streaming }: { judge: Judge; mode: Mode
       </div>
       {rich && (
         <>
-          {!open && <button class="judge-more" onClick={() => setOpen(true)}>展开读局</button>}
+          {!open && <button class="judge-more" onClick={() => setOpen(true)}>{t.expandRead}</button>}
           {open && (
             <div class="judge-body">
               {(judge.surface || judge.emotion || judge.need) && (
                 <dl class="layers">
-                  {judge.surface && <div><dt>表面</dt><dd>{judge.surface}</dd></div>}
-                  {judge.emotion && <div><dt>情绪</dt><dd>{judge.emotion}</dd></div>}
-                  {judge.need && <div><dt>需要</dt><dd>{judge.need}</dd></div>}
+                  {judge.surface && <div><dt>{en ? "On the surface" : "表面"}</dt><dd>{judge.surface}</dd></div>}
+                  {judge.emotion && <div><dt>{en ? "Feeling" : "情绪"}</dt><dd>{judge.emotion}</dd></div>}
+                  {judge.need && <div><dt>{en ? "What they want" : "需要"}</dt><dd>{judge.need}</dd></div>}
                 </dl>
               )}
               {(judge.interest || judge.player !== undefined) && (
                 <div class="odds">
                   {judge.interest && (
                     <div class="interest">
-                      <div class="interest-big"><b>{judge.interest.overall ?? "–"}</b><span>/10 兴趣{judge.interest.confidence ? ` · 置信${judge.interest.confidence}` : ""}</span></div>
-                      <Meter label="甜度" value={judge.interest.sweet} />
-                      <Meter label="主动" value={judge.interest.initiative} />
-                      <Meter label="承诺" value={judge.interest.commitment} />
-                      <Meter label="行动" value={judge.interest.action} tone="zhu" />
+                      <div class="interest-big"><b>{judge.interest.overall ?? "–"}</b><span>/10 {t.interest}{judge.interest.confidence ? t.confidence(en ? ({ 高: "high", 中: "med", 低: "low" } as Record<string, string>)[judge.interest.confidence] ?? judge.interest.confidence : judge.interest.confidence) : ""}</span></div>
+                      <Meter label={t.meters.sweet} value={judge.interest.sweet} />
+                      <Meter label={t.meters.initiative} value={judge.interest.initiative} />
+                      <Meter label={t.meters.commitment} value={judge.interest.commitment} />
+                      <Meter label={t.meters.action} value={judge.interest.action} tone="zhu" />
                     </div>
                   )}
                   <PlayerGauge value={judge.player} />
                 </div>
               )}
               <div class="judge-chips">
-                {judge.stage && <span><i>阶段</i>{judge.stage}</span>}
-                {judge.pursuit && <span><i>追法</i>{judge.pursuit}</span>}
-                {judge.vibe && <span><i>气质</i>{judge.vibe}</span>}
+                {judge.stage && <span><i>{t.chips.stage}</i>{judge.stage}</span>}
+                {judge.pursuit && <span><i>{t.chips.pursuit}</i>{judge.pursuit}</span>}
+                {judge.vibe && <span><i>{t.chips.vibe}</i>{judge.vibe}</span>}
                 {judge.extra.map(([k, v]) => <span key={k}><i>{k}</i>{v}</span>)}
               </div>
-              {mode === "reply" && <button class="judge-more" onClick={() => setOpen(false)}>收起</button>}
+              {mode === "reply" && <button class="judge-more" onClick={() => setOpen(false)}>{t.collapse}</button>}
             </div>
           )}
         </>
@@ -78,11 +82,11 @@ export function JudgeCard({ judge, mode, streaming }: { judge: Judge; mode: Mode
   );
 }
 
-const KV_META: Record<string, { seal: string; title: string; tone: "zhu" | "ink" | "dai" | "jade" | "ochre" }> = {
-  strategy: { seal: "令", title: "军令", tone: "ink" },
-  aside: { seal: "注", title: "旁白 · 只给你看", tone: "dai" },
-  sticker: { seal: "图", title: "表情包建议", tone: "dai" },
-  stop: { seal: "醒", title: "清醒一下", tone: "zhu" },
+const KV_META: Record<string, { seal: string; title: () => string; tone: "zhu" | "ink" | "dai" | "jade" | "ochre" }> = {
+  strategy: { seal: "令", title: () => T().orders, tone: "ink" },
+  aside: { seal: "注", title: () => T().aside, tone: "dai" },
+  sticker: { seal: "图", title: () => T().gifIdea, tone: "dai" },
+  stop: { seal: "醒", title: () => T().realityCheck, tone: "zhu" },
 };
 
 function KVCard({ kind, rows }: { kind: string; rows: Array<[string, string]> }) {
@@ -91,7 +95,7 @@ function KVCard({ kind, rows }: { kind: string; rows: Array<[string, string]> })
   if (kind === "strategy") {
     return (
       <section class="order">
-        <header><Seal char="令" size={26} tone="ink" tilt={-4} /><b>军令</b></header>
+        <header><Seal char="令" size={26} tone="ink" tilt={-4} /><b>{meta.title()}</b></header>
         <div class="order-grid">
           {rows.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}
         </div>
@@ -100,29 +104,41 @@ function KVCard({ kind, rows }: { kind: string; rows: Array<[string, string]> })
   }
   return (
     <section class={`kv kv-${kind}`}>
-      <header><Seal char={meta.seal} size={24} tone={meta.tone} tilt={-3} /><b>{meta.title}</b></header>
+      <header><Seal char={meta.seal} size={24} tone={meta.tone} tilt={-3} /><b>{meta.title()}</b></header>
       <dl>{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
     </section>
   );
 }
 
-const VERDICT_SEAL: Record<string, [string, "jade" | "ochre" | "zhu"]> = { 可以说: ["可", "jade"], 需要调整: ["改", "ochre"], 不建议: ["否", "zhu"] };
+/** 结论 → 印。中英两种契约的说法都认。 */
+function verdictSeal(conclusion: string): [string, "jade" | "ochre" | "zhu" | "ink"] {
+  const c = conclusion.trim().toLowerCase();
+  if (/^(可以说|send it|good to go|send)/.test(c)) return ["可", "jade"];
+  if (/^(需要调整|tweak|adjust|fix)/.test(c)) return ["改", "ochre"];
+  if (/^(不建议|don'?t send|do not send|skip)/.test(c)) return ["否", "zhu"];
+  return ["评", "ink"];
+}
+
+const VERDICT_KEYS = ["结论", "call", "适配", "fit", "油腻", "thirst"];
 
 function VerdictCard({ rows, cap }: { rows: Array<[string, string]>; cap: number }) {
-  const conclusion = kvGet(rows, "结论") ?? "";
-  const [char, tone] = VERDICT_SEAL[conclusion] ?? ["评", "ink"];
-  const num = (k: string) => { const v = kvGet(rows, k); const m = v?.match(/\d+(\.\d+)?/); return m ? Number(m[0]) : undefined; };
+  const t = T();
+  const get = (...keys: string[]) => rows.find(([k]) => keys.includes(k.toLowerCase()))?.[1];
+  const conclusion = get("结论", "call") ?? "";
+  const [char, tone] = verdictSeal(conclusion);
+  const num = (...keys: string[]) => { const v = get(...keys); const m = v?.match(/\d+(\.\d+)?/); return m ? Number(m[0]) : undefined; };
+  const oil = num("油腻", "thirst");
   return (
     <section class={`verdict tone-${tone}`}>
-      <Seal char={char} size={64} tone={tone} tilt={-6} class="verdict-seal" />
+      <Seal char={char} size={64} tone={tone === "ink" ? "ink" : tone} tilt={-6} class="verdict-seal" />
       <div class="verdict-body">
-        <h3>{conclusion || "评估"}</h3>
+        <h3>{conclusion || (uiLang() === "en" ? "Verdict" : "评估")}</h3>
         <div class="verdict-meters">
-          <Meter label="适配" value={num("适配")} />
-          <Meter label="油腻" value={num("油腻")} max={5} tone={(num("油腻") ?? 0) > cap ? "zhu" : "ink"} />
+          <Meter label={t.fitLabel} value={num("适配", "fit")} />
+          <Meter label={t.oilLabel} value={oil} max={5} tone={(oil ?? 0) > cap ? "zhu" : "ink"} />
         </div>
         <dl>
-          {rows.filter(([k]) => !["结论", "适配", "油腻"].includes(k)).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+          {rows.filter(([k]) => !VERDICT_KEYS.includes(k.toLowerCase())).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
         </dl>
       </div>
     </section>
@@ -147,17 +163,18 @@ export function Thinking({ live }: { live: Live }) {
   const [, tick] = useState(0);
   useEffect(() => { const t = setInterval(() => tick((x) => x + 1), 500); return () => clearInterval(t); }, []);
   const sec = Math.floor((Date.now() - live.startedAt) / 1000);
-  const phase = live.status ?? (!live.context ? "在翻档案" : live.firstTokenAt ? "在写" : live.context.modules.includes("profile") ? "在看截图、想打法" : "在想打法");
+  const t = T();
+  const phase = live.status ?? (!live.context ? t.thinkingPhase.dossier : live.firstTokenAt ? t.thinkingPhase.writing : live.context.modules.includes("profile") ? t.thinkingPhase.shots : t.thinkingPhase.plan);
   return (
     <div class="thinking" aria-live="polite">
       <span class="ink-drop" />
-      <span>军师{phase}…</span>
+      <span>{live.status ? `${live.status.replace(/…+$/, "")}…` : t.thinkingLine(phase)}</span>
       <em>{sec}s</em>
       {live.context && !live.firstTokenAt && (
         <small>
-          {live.context.facts ? `带上 ${live.context.facts} 条档案` : "档案还是空的"}
-          {live.context.recalled.length ? ` · 找回 ${live.context.recalled.length} 条旧资料` : ""}
-          {live.context.festivals.length ? ` · 临近${live.context.festivals[0]}` : ""}
+          {t.ctxFacts(live.context.facts)}
+          {live.context.recalled.length ? t.ctxRecalled(live.context.recalled.length) : ""}
+          {live.context.festivals.length ? t.ctxNear(live.context.festivals[0]) : ""}
         </small>
       )}
     </div>
@@ -183,11 +200,11 @@ export function Answer({ turn, person, live }: { turn: TurnDTO; person: PersonDT
         </div>,
       );
     } else if (g.type === "pick") {
-      nodes.push(<p key={i} class="pick"><Seal char="荐" size={22} variant="line" tilt={-6} /><b>{g.seal}</b><span>{g.why}</span></p>);
+      nodes.push(<p key={i} class="pick"><Seal char="荐" size={22} variant="line" tilt={-6} title={T().recStamp} /><b>{uiLang() === "en" ? SEAL_EN[g.seal] ?? g.seal : g.seal}</b><span>{g.why}</span></p>);
     } else if (g.type === "avoid") {
-      nodes.push(<p key={i} class="avoid"><span class="avoid-mark">别这样回</span><s>{g.text}</s>{g.why && <span class="avoid-why">{g.why}</span>}</p>);
+      nodes.push(<p key={i} class="avoid"><span class="avoid-mark">{T().avoidMark}</span><s>{g.text}</s>{g.why && <span class="avoid-why">{g.why}</span>}</p>);
     } else if (g.type === "hold") {
-      nodes.push(<p key={i} class="avoid hold"><span class="avoid-mark">暂时别说</span><span>{g.text}</span>{g.why && <span class="avoid-why">{g.why}</span>}</p>);
+      nodes.push(<p key={i} class="avoid hold"><span class="avoid-mark">{T().holdMark}</span><span>{g.text}</span>{g.why && <span class="avoid-why">{g.why}</span>}</p>);
     } else if (g.type === "kv") {
       nodes.push(g.kind === "verdict" ? <VerdictCard key={i} rows={g.rows} cap={cap} /> : <KVCard key={i} kind={g.kind} rows={g.rows} />);
     } else if (g.type === "md") {
@@ -202,7 +219,7 @@ export function Answer({ turn, person, live }: { turn: TurnDTO; person: PersonDT
       {turn.status === "error" && !streaming && (
         <div class="answer-error">
           <Seal char="误" size={24} tone="zhu" />
-          <span>{turn.error ?? "这次没成功"}</span>
+          <span>{turn.error ?? T().failedTurn}</span>
         </div>
       )}
       {!streaming && parsed.segments.length > 0 && <Brush width={56} class="answer-end" />}

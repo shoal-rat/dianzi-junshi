@@ -153,6 +153,8 @@ const MIGRATIONS: string[] = [
   `,
   // v2 —— ta 的性别（可选）：'' 没写 / 'm' 男生 / 'f' 女生
   `ALTER TABLE people ADD COLUMN gender TEXT NOT NULL DEFAULT '';`,
+  // v3 —— 这段关系用哪种语言聊：'' 跟随 App / 'zh' / 'en'
+  `ALTER TABLE people ADD COLUMN lang TEXT NOT NULL DEFAULT '';`,
 ];
 
 let db: Database | null = null;
@@ -198,6 +200,6 @@ export function kvSet(key: string, value: unknown): void {
 }
 
 export function personDir(personId: string): string {
-  if (!/^[a-f0-9-]{36}$/.test(personId)) throw new Error("档案编号不对");
+  if (!/^[a-f0-9-]{36}$/.test(personId)) throw new Error("bad profile id");
   return ensureDir(join(HOME, "people", personId));
 }

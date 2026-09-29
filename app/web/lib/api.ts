@@ -2,6 +2,7 @@ import type {
   DossierDTO, FactDTO, ImageRef, JobDTO, LintResult, MemeMemoryDTO, Mode, OutcomeDTO, PersonDTO, ProviderKind,
   SettingsDTO, SignalKey, TurnContext, TurnDTO, Outcome,
 } from "../../src/shared/domain";
+import { uiLang } from "./i18n";
 
 export class ApiError extends Error {
   constructor(message: string, readonly hint?: string) {
@@ -16,18 +17,18 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError((data as any).error ?? `请求失败（${res.status}）`, (data as any).hint);
+  if (!res.ok) throw new ApiError((data as any).error ?? (uiLang() === "en" ? `Request failed (${res.status})` : `请求失败（${res.status}）`), (data as any).hint);
   return data as T;
 }
 
 export const api = {
   settings: () => call<SettingsDTO>("GET", "/api/settings"),
-  saveSettings: (patch: { provider?: ProviderKind; semantic?: "auto" | "off"; depth?: "fast" | "balanced" | "deep"; me?: string; providers?: Record<string, { model?: string; baseUrl?: string }>; key?: { kind: ProviderKind; value: string | null } }) =>
+  saveSettings: (patch: { provider?: ProviderKind; semantic?: "auto" | "off"; depth?: "fast" | "balanced" | "deep"; me?: string; language?: "auto" | "zh" | "en"; providers?: Record<string, { model?: string; baseUrl?: string }>; key?: { kind: ProviderKind; value: string | null } }) =>
     call<SettingsDTO>("POST", "/api/settings", patch),
   people: () => call<PersonDTO[]>("GET", "/api/people"),
-  createPerson: (p: { name: string; gender: string; stage: number; nerve: number; clearEyed: boolean; note?: string; history?: string }) =>
+  createPerson: (p: { name: string; gender: string; lang?: string; stage: number; nerve: number; clearEyed: boolean; note?: string; history?: string }) =>
     call<{ person: PersonDTO; job: JobDTO | null }>("POST", "/api/people", p),
-  updatePerson: (id: string, patch: Partial<{ name: string; gender: string; stage: number; nerve: number; clearEyed: boolean; note: string }>) =>
+  updatePerson: (id: string, patch: Partial<{ name: string; gender: string; lang: string; stage: number; nerve: number; clearEyed: boolean; note: string }>) =>
     call<PersonDTO>("PATCH", `/api/people/${id}`, patch),
   deletePerson: (id: string) => call<{ ok: true }>("DELETE", `/api/people/${id}`),
   turns: (id: string, before?: string) => call<TurnDTO[]>("GET", `/api/people/${id}/turns${before ? `?before=${encodeURIComponent(before)}` : ""}`),
@@ -52,11 +53,11 @@ export const api = {
 export async function uploadImage(personId: string, file: Blob & { name?: string }, origin: "turn" | "import" | "feedback"): Promise<ImageRef & { duplicate: boolean }> {
   const res = await fetch(`/api/people/${personId}/images?origin=${origin}`, {
     method: "POST",
-    headers: { "x-file-name": encodeURIComponent(file.name || "截图.png"), "content-type": "application/octet-stream" },
+    headers: { "x-file-name": encodeURIComponent(file.name || (uiLang() === "en" ? "screenshot.png" : "截图.png")), "content-type": "application/octet-stream" },
     body: file,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError((data as any).error ?? "上传失败");
+  if (!res.ok) throw new ApiError((data as any).error ?? (uiLang() === "en" ? "Upload failed" : "上传失败"));
   return data as ImageRef & { duplicate: boolean };
 }
 
@@ -79,7 +80,7 @@ export async function streamTurn(personId: string, body: { mode: Mode; text: str
   });
   if (!res.ok || !res.body) {
     const data = await res.json().catch(() => ({}));
-    throw new ApiError((data as any).error ?? "发送失败", (data as any).hint);
+    throw new ApiError((data as any).error ?? (uiLang() === "en" ? "Couldn't send" : "发送失败"), (data as any).hint);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

@@ -9,8 +9,10 @@
 
 import { database, now, uid } from "./db";
 import { similarity } from "./tokenize";
-import { FACT_SLOTS, type FactDTO, type FactSlot, type MemeMemoryDTO } from "../shared/domain";
+import { FACT_SLOTS, labels, type FactDTO, type FactSlot, type Lang, type MemeMemoryDTO } from "../shared/domain";
+import { appLang } from "./locale";
 import { nextAnnual, shortDate } from "../core/calendar";
+import { msg } from "./messages";
 
 export interface IncomingFact {
   slot: string;
@@ -53,12 +55,15 @@ export function effectiveStatus(row: Pick<FactRow, "slot" | "status" | "date" | 
   return Date.parse(row.created_at) + 21 * 86_400_000 < at ? "expired" : "active";
 }
 
-const SOURCE_LABEL: Record<string, string> = { screenshot: "截图", chat: "聊天", user: "你写的", paste: "旧聊天", feedback: "后续" };
+const SOURCE_LABEL: Record<Lang, Record<string, string>> = {
+  zh: { screenshot: "截图", chat: "聊天", user: "你写的", paste: "旧聊天", feedback: "后续" },
+  en: { screenshot: "screenshot", chat: "chat", user: "you wrote", paste: "old chat", feedback: "follow-up" },
+};
 
 function toDTO(r: FactRow): FactDTO {
   return {
     id: r.id, slot: r.slot, text: r.text, date: r.date ?? undefined, source: r.source,
-    sourceLabel: `${SOURCE_LABEL[r.source] ?? r.source} · ${shortDate(r.created_at)}`,
+    sourceLabel: `${SOURCE_LABEL[appLang()][r.source] ?? r.source} · ${shortDate(r.created_at)}`,
     confidence: r.confidence, status: effectiveStatus(r), pinned: Boolean(r.pinned), seen: r.seen, updatedAt: r.updated_at,
   };
 }
@@ -105,7 +110,7 @@ export function listFacts(personId: string, includeInactive = true): FactDTO[] {
 export function updateFact(personId: string, id: string, patch: { text?: string; slot?: string; pinned?: boolean; status?: "active" | "removed"; date?: string | null }): void {
   const conn = database();
   const row = conn.query("SELECT * FROM facts WHERE id=? AND person_id=?").get(id, personId) as FactRow | null;
-  if (!row) throw new Error("找不到这条");
+  if (!row) throw new Error(msg().factMissing);
   const slot = patch.slot ? normalizeSlot(patch.slot) ?? row.slot : row.slot;
   const text = patch.text !== undefined ? patch.text.trim().slice(0, 160) || row.text : row.text;
   const pinned = patch.pinned !== undefined ? (patch.pinned ? 1 : 0) : row.pinned;
@@ -146,9 +151,10 @@ export function deleteMeme(personId: string, term: string): void {
 // ---------------------------------------------------------------------------
 // 给军师看的版本
 
-const CONF = (c: number) => (c >= 0.85 ? "高" : c >= 0.6 ? "中" : "低");
+const CONF = (c: number, lang: Lang) => (lang === "en" ? (c >= 0.85 ? "high" : c >= 0.6 ? "med" : "low") : c >= 0.85 ? "高" : c >= 0.6 ? "中" : "低");
 
-export function dossierForPrompt(personId: string, at = new Date()): { text: string; count: number; dates: Array<{ label: string; date: Date }> } {
+export function dossierForPrompt(personId: string, at = new Date(), lang: Lang = "zh"): { text: string; count: number; dates: Array<{ label: string; date: Date }> } {
+  const en = lang === "en";
   const facts = listFacts(personId, false);
   const dates: Array<{ label: string; date: Date }> = [];
   if (!facts.length) return { text: "", count: 0, dates };
@@ -156,9 +162,9 @@ export function dossierForPrompt(personId: string, at = new Date()): { text: str
   for (const f of facts) {
     if (!bySlot.has(f.slot)) bySlot.set(f.slot, []);
     bySlot.get(f.slot)!.push(f);
-    if (f.slot === "basic" && /生日/.test(f.text)) {
+    if (f.slot === "basic" && /生日|birthday|bday|b-day/i.test(f.text)) {
       const d = nextAnnual(f.text, at);
-      if (d) dates.push({ label: "ta 的生日", date: d });
+      if (d) dates.push({ label: en ? "their birthday" : "ta 的生日", date: d });
     }
     if ((f.slot === "plan" || f.slot === "promise") && f.date) dates.push({ label: f.text.slice(0, 20), date: new Date(f.date) });
   }
@@ -167,20 +173,23 @@ export function dossierForPrompt(personId: string, at = new Date()): { text: str
   for (const slot of SLOTS) {
     const list = (bySlot.get(slot) ?? []).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.confidence * b.seen - a.confidence * a.seen).slice(0, 8);
     if (!list.length) continue;
-    lines.push(`【${FACT_SLOTS[slot]}】`);
+    lines.push(en ? `[${labels("en").slots[slot]}]` : `【${FACT_SLOTS[slot]}】`);
     for (const f of list) {
       count++;
-      const dateNote = f.date ? `（${f.date}）` : "";
-      lines.push(`- ${f.text}${dateNote} ·${f.sourceLabel} 置信${CONF(f.confidence)}${f.seen > 1 ? ` 见过${f.seen}次` : ""}${f.pinned ? " 用户确认" : ""}`);
+      const src = `${SOURCE_LABEL[lang][f.source] ?? f.source} · ${shortDate(f.updatedAt)}`;
+      lines.push(en
+        ? `- ${f.text}${f.date ? ` (${f.date})` : ""} · ${src} · confidence ${CONF(f.confidence, lang)}${f.seen > 1 ? ` · seen ${f.seen}x` : ""}${f.pinned ? " · confirmed by user" : ""}`
+        : `- ${f.text}${f.date ? `（${f.date}）` : ""} ·${src} 置信${CONF(f.confidence, lang)}${f.seen > 1 ? ` 见过${f.seen}次` : ""}${f.pinned ? " 用户确认" : ""}`);
     }
   }
   return { text: lines.join("\n"), count, dates };
 }
 
-export function memesForPrompt(personId: string): string {
+export function memesForPrompt(personId: string, lang: Lang = "zh"): string {
   const memes = listMemes(personId);
   if (!memes.length) return "";
-  const use = memes.filter((m) => !m.avoid).slice(0, 12).map((m) => `- ${m.term}${m.count > 1 ? ` ×${m.count}` : ""}（最近 ${shortDate(m.lastSeen)}）`);
+  const en = lang === "en";
+  const use = memes.filter((m) => !m.avoid).slice(0, 12).map((m) => `- ${m.term}${m.count > 1 ? ` ×${m.count}` : ""}${en ? ` (last seen ${shortDate(m.lastSeen)})` : `（最近 ${shortDate(m.lastSeen)}）`}`);
   const avoid = memes.filter((m) => m.avoid).map((m) => m.term);
-  return [...use, avoid.length ? `ta 反感、别用：${avoid.join("、")}` : ""].filter(Boolean).join("\n");
+  return [...use, avoid.length ? (en ? `They dislike these — don't use: ${avoid.join(", ")}` : `ta 反感、别用：${avoid.join("、")}`) : ""].filter(Boolean).join("\n");
 }

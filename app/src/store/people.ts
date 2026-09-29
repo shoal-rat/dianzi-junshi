@@ -1,12 +1,14 @@
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { database, HOME, now, uid } from "./db";
-import type { Gender, PersonDTO } from "../shared/domain";
+import { msg } from "./messages";
+import type { ChatLang, Gender, PersonDTO } from "../shared/domain";
 
 interface PersonRow {
   id: string;
   name: string;
   gender: string;
+  lang: string;
   stage: number;
   nerve: number;
   clear_eyed: number;
@@ -18,7 +20,7 @@ interface PersonRow {
 
 function toDTO(row: PersonRow, extra: { turns: number; lastLine?: string }): PersonDTO {
   return {
-    id: row.id, name: row.name, gender: normGender(row.gender), stage: row.stage, nerve: row.nerve, clearEyed: Boolean(row.clear_eyed),
+    id: row.id, name: row.name, gender: normGender(row.gender), lang: normLang(row.lang), stage: row.stage, nerve: row.nerve, clearEyed: Boolean(row.clear_eyed),
     note: row.note, createdAt: row.created_at, updatedAt: row.updated_at, lastTurnAt: row.last_turn_at ?? undefined,
     turns: extra.turns, lastLine: extra.lastLine,
   };
@@ -50,29 +52,34 @@ export function normGender(g: unknown): Gender {
   return g === "m" || g === "f" ? g : "";
 }
 
-export function createPerson(input: { name: string; gender?: string; stage?: number; nerve?: number; clearEyed?: boolean; note?: string }): PersonDTO {
+export function normLang(l: unknown): ChatLang {
+  return l === "zh" || l === "en" ? l : "";
+}
+
+export function createPerson(input: { name: string; gender?: string; lang?: string; stage?: number; nerve?: number; clearEyed?: boolean; note?: string }): PersonDTO {
   const name = input.name.trim().slice(0, 40);
-  if (!name) throw new Error("给 ta 起个称呼，代号也行");
+  if (!name) throw new Error(msg().nameRequired);
   const id = uid();
   const t = now();
-  database().query(`INSERT INTO people(id,name,gender,stage,nerve,clear_eyed,note,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)`)
-    .run(id, name, normGender(input.gender), clampInt(input.stage ?? 1, 0, 7), clampInt(input.nerve ?? 2, 0, 4), input.clearEyed ? 1 : 0, (input.note ?? "").slice(0, 2000), t, t);
+  database().query(`INSERT INTO people(id,name,gender,lang,stage,nerve,clear_eyed,note,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)`)
+    .run(id, name, normGender(input.gender), normLang(input.lang), clampInt(input.stage ?? 1, 0, 7), clampInt(input.nerve ?? 2, 0, 4), input.clearEyed ? 1 : 0, (input.note ?? "").slice(0, 2000), t, t);
   return getPerson(id)!;
 }
 
-export function updatePerson(id: string, patch: Partial<{ name: string; gender: string; stage: number; nerve: number; clearEyed: boolean; note: string }>): PersonDTO {
+export function updatePerson(id: string, patch: Partial<{ name: string; gender: string; lang: string; stage: number; nerve: number; clearEyed: boolean; note: string }>): PersonDTO {
   const cur = getPerson(id);
-  if (!cur) throw new Error("找不到这个档案");
+  if (!cur) throw new Error(msg().personMissing);
   const next = {
     name: patch.name !== undefined ? patch.name.trim().slice(0, 40) || cur.name : cur.name,
     gender: patch.gender !== undefined ? normGender(patch.gender) : cur.gender,
+    lang: patch.lang !== undefined ? normLang(patch.lang) : cur.lang,
     stage: patch.stage !== undefined ? clampInt(patch.stage, 0, 7) : cur.stage,
     nerve: patch.nerve !== undefined ? clampInt(patch.nerve, 0, 4) : cur.nerve,
     clearEyed: patch.clearEyed !== undefined ? Boolean(patch.clearEyed) : cur.clearEyed,
     note: patch.note !== undefined ? patch.note.slice(0, 2000) : cur.note,
   };
-  database().query("UPDATE people SET name=?, gender=?, stage=?, nerve=?, clear_eyed=?, note=?, updated_at=? WHERE id=?")
-    .run(next.name, next.gender, next.stage, next.nerve, next.clearEyed ? 1 : 0, next.note, now(), id);
+  database().query("UPDATE people SET name=?, gender=?, lang=?, stage=?, nerve=?, clear_eyed=?, note=?, updated_at=? WHERE id=?")
+    .run(next.name, next.gender, next.lang, next.stage, next.nerve, next.clearEyed ? 1 : 0, next.note, now(), id);
   return getPerson(id)!;
 }
 
