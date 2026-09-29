@@ -56,6 +56,39 @@ fn free_local_port() -> u16 {
         .unwrap_or(5177)
 }
 
+/// 系统是不是中文环境：macOS 看首选语言，其他平台看 LC_ALL / LC_MESSAGES / LANG。
+fn system_is_zh() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(out) = std::process::Command::new("defaults").args(["read", "-g", "AppleLanguages"]).output() {
+            let text = String::from_utf8_lossy(&out.stdout);
+            if let Some(first) = text.lines().map(|l| l.trim().trim_matches(|c| c == '"' || c == ',')).find(|l| l.len() >= 2 && l.chars().next().map_or(false, |c| c.is_ascii_alphabetic())) {
+                return first.to_ascii_lowercase().starts_with("zh");
+            }
+        }
+    }
+    for key in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+        if let Ok(v) = std::env::var(key) {
+            let v = v.to_ascii_lowercase();
+            if v.is_empty() || v == "c" || v.starts_with("c.") || v == "posix" { continue; }
+            return v.starts_with("zh");
+        }
+    }
+    false
+}
+
+/// 界面语言以后端为准（设置里可以手动改），问不到就按系统。
+fn backend_lang_is_zh(port: u16) -> Option<bool> {
+    use std::io::Write;
+    let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
+    let mut stream = TcpStream::connect_timeout(&address, Duration::from_millis(500)).ok()?;
+    stream.set_read_timeout(Some(Duration::from_secs(2))).ok()?;
+    stream.write_all(b"GET /api/settings HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n").ok()?;
+    let mut body = String::new();
+    stream.take(256 * 1024).read_to_string(&mut body).ok()?;
+    if body.contains("\"lang\":\"zh\"") { Some(true) } else if body.contains("\"lang\":\"en\"") { Some(false) } else { None }
+}
+
 fn wait_for_backend(port: u16, timeout: Duration) -> bool {
     let deadline = Instant::now() + timeout;
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
@@ -101,11 +134,17 @@ pub fn run() {
             app.manage(BackendProcess(Mutex::new(Some(child))));
 
             if !wait_for_backend(port, Duration::from_secs(10)) {
-                return Err("本地服务没有及时启动，请重新打开电子军师".into());
+                return Err(if system_is_zh() {
+                    "本地服务没有及时启动，请重新打开电子军师"
+                } else {
+                    "The local service didn't start in time — please reopen Junshi"
+                }
+                .into());
             }
+            let zh = backend_lang_is_zh(port).unwrap_or_else(system_is_zh);
             let url = format!("http://127.0.0.1:{port}/").parse()?;
             WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url))
-                .title("电子军师")
+                .title(if zh { "电子军师" } else { "Junshi · 电子军师" })
                 .inner_size(1280.0, 820.0)
                 .min_inner_size(900.0, 620.0)
                 .resizable(true)
@@ -114,7 +153,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("电子军师桌面应用启动失败");
+        .expect("Dianzi Junshi failed to start / 电子军师桌面应用启动失败");
 
     app.run(|handle, event| {
         if matches!(event, tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit) {

@@ -4,31 +4,33 @@ import { Composer } from "./Composer";
 import { Turn } from "./Turn";
 import { Seal, Brush } from "./Seal";
 import { setDraft, setState, useApp } from "../lib/store";
-import { FACT_SLOTS, type PersonDTO } from "../../src/shared/domain";
+import { T, uiLang } from "../lib/i18n";
+import { labels, type PersonDTO } from "../../src/shared/domain";
 
 function Blank({ person }: { person: PersonDTO }) {
   const s = useApp();
   const d = s.dossiers[person.id];
+  const t = T();
   const facts = d?.facts.filter((f) => f.status === "active") ?? [];
   const tries = [
-    { label: "贴 ta 的最后一句", act: () => setDraft(person.id, { mode: "reply", text: "" }) },
-    { label: "帮我看看我想发的", act: () => setDraft(person.id, { mode: "polish" }) },
-    { label: "ta 到底有没有戏", act: () => setDraft(person.id, { mode: "odds" }) },
+    { label: t.blankTries[0], act: () => setDraft(person.id, { mode: "reply", text: "" }) },
+    { label: t.blankTries[1], act: () => setDraft(person.id, { mode: "polish" }) },
+    { label: t.blankTries[2], act: () => setDraft(person.id, { mode: "odds" }) },
   ];
   return (
     <div class="blank">
       <Seal char={[...person.name][0]} size={72} tilt={-5} class="blank-seal" />
-      <h2>和 {person.name} 的军帐</h2>
+      <h2>{t.blankTitle(person.name)}</h2>
       <Brush width={80} />
-      <p>把 ta 发来的话贴在下面，或者直接丢聊天截图。军师先读懂，再给你三个锦囊。</p>
+      <p>{t.blankBody}</p>
       <div class="blank-tries">
-        {tries.map((t) => <button key={t.label} class="chip" onClick={() => { t.act(); (document.querySelector(".composer textarea") as HTMLTextAreaElement | null)?.focus(); }}>{t.label}</button>)}
+        {tries.map((x) => <button key={x.label} class="chip" onClick={() => { x.act(); (document.querySelector(".composer textarea") as HTMLTextAreaElement | null)?.focus(); }}>{x.label}</button>)}
       </div>
       <div class="blank-know">
         {facts.length ? (
-          <p>档案里已经记着 {facts.length} 条关于 ta 的事（{[...new Set(facts.map((f) => FACT_SLOTS[f.slot]))].slice(0, 4).join("、")}），每次都会带上。</p>
+          <p>{t.blankKnows(facts.length, [...new Set(facts.map((f) => labels(uiLang()).slots[f.slot]))].slice(0, 4).join(uiLang() === "en" ? ", " : "、"))}</p>
         ) : (
-          <p>档案还是空的。有以前的截图或聊天，<button class="link" onClick={() => setState({ dialog: { type: "import" } })}>导进来</button>，军师会记住 ta 的生日、喜好和说话习惯。</p>
+          <p>{t.blankEmpty1}<button class="link" onClick={() => setState({ dialog: { type: "import" } })}>{t.blankEmptyLink}</button>{t.blankEmpty2}</p>
         )}
       </div>
     </div>
@@ -64,7 +66,7 @@ export function Desk({ person }: { person: PersonDTO }) {
             <Turn key={t.id} turn={t} person={person} live={live && live.turnId === t.id ? live : null} />
           ))}
           {live && !live.turnId && (
-            <div class="turn pending"><div class="counsel"><div class="counsel-mark"><Seal char="军" size={30} tilt={-6} /></div><div class="thinking"><span class="ink-drop" />军师收到了…</div></div></div>
+            <div class="turn pending"><div class="counsel"><div class="counsel-mark"><Seal char="军" size={30} tilt={-6} /></div><div class="thinking"><span class="ink-drop" />{T().received}</div></div></div>
           )}
         </div>
       </div>

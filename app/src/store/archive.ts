@@ -8,6 +8,7 @@
 import { database, now, uid } from "./db";
 import { tokens } from "./tokenize";
 import { cosine, embed, loadVectors, saveVector, semanticStatus } from "./semantic";
+import { appLang } from "./locale";
 
 export type ArchiveKind = "screenshot" | "paste" | "turn" | "sent";
 
@@ -147,6 +148,7 @@ export async function recall(personId: string, query: string, opts: { limit?: nu
     return { i, s: s * prior * kindBoost };
   }).filter((x) => x.s > 0).sort((a, b) => b.s - a.s);
 
+  const en = appLang() === "en";
   const picked: Recalled[] = [];
   const seenText = new Set<string>();
   for (const { i, s } of fused) {
@@ -155,9 +157,9 @@ export async function recall(personId: string, query: string, opts: { limit?: nu
     if (seenText.has(key)) continue;
     seenText.add(key);
     const why = [
-      lexical[i].matched.length ? `提到了 ${lexical[i].matched.slice(0, 3).join("、")}` : "",
-      semantic.get(i) !== undefined && (semRank.get(i) ?? 99) <= 10 ? `意思相近 ${semantic.get(i)!.toFixed(2)}` : "",
-    ].filter(Boolean).join("；") || "相关";
+      lexical[i].matched.length ? (en ? `mentions ${lexical[i].matched.slice(0, 3).join(", ")}` : `提到了 ${lexical[i].matched.slice(0, 3).join("、")}`) : "",
+      semantic.get(i) !== undefined && (semRank.get(i) ?? 99) <= 10 ? (en ? `similar meaning ${semantic.get(i)!.toFixed(2)}` : `意思相近 ${semantic.get(i)!.toFixed(2)}`) : "",
+    ].filter(Boolean).join(en ? "; " : "；") || (en ? "related" : "相关");
     picked.push({ ...toDoc(r), score: s, why });
     if (picked.length >= limit) break;
   }

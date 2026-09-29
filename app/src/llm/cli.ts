@@ -7,6 +7,7 @@ import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cliEnv, locate } from "./locate";
 import { ProviderError, type JSONRequest, type LLMRequest, type ProviderConfig } from "./types";
+import { msg } from "../store/messages";
 
 async function* jsonLines(body: ReadableStream<Uint8Array>): AsyncGenerator<any> {
   const reader = body.getReader();
@@ -54,14 +55,14 @@ function codexPrompt(req: LLMRequest): string {
 }
 
 function explainCodex(detail: string): ProviderError {
-  if (/login|auth|credential|401/i.test(detail)) return new ProviderError("Codex 的登录过期了", "在终端运行 codex login 重新登录");
-  if (/usage limit|quota|credits|rate/i.test(detail)) return new ProviderError(`Codex 额度用完了：${detail.slice(0, 200)}`, "等额度恢复，或者在设置里换一个连接");
-  return new ProviderError(`Codex 没能完成这次请求${detail ? `：${detail.slice(0, 300)}` : ""}`);
+  if (/login|auth|credential|401/i.test(detail)) return new ProviderError(msg().codexExpired, msg().codexExpiredHint);
+  if (/usage limit|quota|credits|rate/i.test(detail)) return new ProviderError(msg().codexQuota(detail.slice(0, 200)), msg().codexQuotaHint);
+  return new ProviderError(msg().codexFailed(detail.slice(0, 300)));
 }
 
 async function* streamCodex(cfg: ProviderConfig, req: LLMRequest, schemaFile?: string): AsyncGenerator<string> {
   const exe = locate("codex");
-  if (!exe) throw new ProviderError("这台电脑上没找到 Codex", "装 ChatGPT 桌面版或 Codex CLI，然后运行 codex login");
+  if (!exe) throw new ProviderError(msg().codexMissing, msg().codexMissingHint);
   const args = [exe, "exec", "--json", "--ephemeral", "--sandbox", "read-only", "--skip-git-repo-check", "--ignore-rules", "-C", req.workdir,
     "-c", `model_reasoning_effort=${req.effort ?? "medium"}`];
   if (cfg.model?.trim()) args.push("--model", cfg.model.trim());
@@ -89,7 +90,7 @@ async function* streamCodex(cfg: ProviderConfig, req: LLMRequest, schemaFile?: s
     const code = await proc.exited;
     if (req.signal?.aborted) return;
     if (code !== 0) throw explainCodex(eventError || (await stderr).trim().split("\n").filter((l) => !/refresh available models/.test(l)).join("\n"));
-    if (!emitted) throw new ProviderError("Codex 结束了，但没有返回文字");
+    if (!emitted) throw new ProviderError(msg().codexSilent);
   } finally {
     req.signal?.removeEventListener("abort", abort);
   }
@@ -97,7 +98,7 @@ async function* streamCodex(cfg: ProviderConfig, req: LLMRequest, schemaFile?: s
 
 async function* streamClaudeCode(cfg: ProviderConfig, req: LLMRequest): AsyncGenerator<string> {
   const exe = locate("claude");
-  if (!exe) throw new ProviderError("这台电脑上没找到 Claude Code", "先安装 Claude Code 并登录");
+  if (!exe) throw new ProviderError(msg().claudeCodeMissing, msg().claudeCodeMissingHint);
   const promptFile = join(req.workdir, `.junshi-system-${crypto.randomUUID()}.md`);
   writeFileSync(promptFile, req.system.map((s) => s.text).join("\n\n---\n\n"), { mode: 0o600 });
   const args = [exe, "-p", "--output-format", "stream-json", "--verbose", "--include-partial-messages", "--no-session-persistence",
@@ -128,10 +129,10 @@ async function* streamClaudeCode(cfg: ProviderConfig, req: LLMRequest): AsyncGen
     if (code !== 0) {
       const detail = (await stderr).trim();
       throw /login|auth|credential/i.test(detail)
-        ? new ProviderError("Claude Code 没登录", "在终端运行 claude，然后输入 /login")
-        : new ProviderError(`Claude Code 没能完成这次请求${detail ? `：${detail.slice(0, 300)}` : ""}`);
+        ? new ProviderError(msg().claudeCodeSignedOut, msg().claudeCodeSignedOutHint)
+        : new ProviderError(msg().claudeCodeFailed(detail.slice(0, 300)));
     }
-    if (!emitted) throw new ProviderError("Claude Code 结束了，但没有返回文字");
+    if (!emitted) throw new ProviderError(msg().claudeCodeSilent);
   } finally {
     req.signal?.removeEventListener("abort", abort);
     try { rmSync(promptFile); } catch { /* 已删 */ }

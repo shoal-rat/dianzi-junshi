@@ -8,13 +8,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { readFileSync } from "node:fs";
 import { ProviderError, type JSONRequest, type LLMRequest, type ProviderConfig } from "./types";
+import { msg } from "../store/messages";
 
 export const CLAUDE_MODELS = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-1", "claude-haiku-4-5"];
 export const CLAUDE_DEFAULT = "claude-opus-5-5";
 const WITH_FALLBACK = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-1", "claude-opus-5", "claude-fable-5"]);
 
 function client(cfg: ProviderConfig): Anthropic {
-  if (!cfg.apiKey) throw new ProviderError("还没填 Claude 的 API Key", "在设置里填上 Key，或者换成本机的 Codex / Claude Code");
+  if (!cfg.apiKey) throw new ProviderError(msg().claudeNoKey, msg().claudeNoKeyHint);
   return new Anthropic({ apiKey: cfg.apiKey, baseURL: cfg.baseUrl || undefined, maxRetries: 2 });
 }
 
@@ -52,12 +53,12 @@ function baseParams(cfg: ProviderConfig, req: LLMRequest, maxTokens: number) {
 
 function explain(error: unknown): Error {
   if (error instanceof ProviderError) return error;
-  if (error instanceof Anthropic.AuthenticationError) return new ProviderError("Claude 的 API Key 不对或已失效", "在设置里重新填一下 Key");
-  if (error instanceof Anthropic.PermissionDeniedError) return new ProviderError("这个 Key 没有权限用这个模型", "在设置里换个模型试试");
-  if (error instanceof Anthropic.RateLimitError) return new ProviderError("Claude 这会儿太忙（限流了）", "等一分钟再试");
-  if (error instanceof Anthropic.BadRequestError) return new ProviderError(`Claude 拒收了这次请求：${error.message.slice(0, 200)}`);
-  if (error instanceof Anthropic.APIConnectionError) return new ProviderError("连不上 Claude", "检查一下网络或代理");
-  if (error instanceof Anthropic.APIError) return new ProviderError(`Claude 出错了（${error.status ?? "?"}）：${error.message.slice(0, 200)}`);
+  if (error instanceof Anthropic.AuthenticationError) return new ProviderError(msg().claudeKeyBad, msg().keyWrongHint);
+  if (error instanceof Anthropic.PermissionDeniedError) return new ProviderError(msg().claudeNoPermission, msg().claudeNoPermissionHint);
+  if (error instanceof Anthropic.RateLimitError) return new ProviderError(msg().claudeBusy, msg().claudeBusyHint);
+  if (error instanceof Anthropic.BadRequestError) return new ProviderError(msg().claudeRejected(error.message.slice(0, 200)));
+  if (error instanceof Anthropic.APIConnectionError) return new ProviderError(msg().claudeUnreachable, msg().claudeUnreachableHint);
+  if (error instanceof Anthropic.APIError) return new ProviderError(msg().claudeError(String(error.status ?? "?"), error.message.slice(0, 200)));
   return error instanceof Error ? error : new Error(String(error));
 }
 
@@ -68,8 +69,8 @@ export async function* streamClaude(cfg: ProviderConfig, req: LLMRequest): Async
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") yield event.delta.text;
     }
     const final = await stream.finalMessage();
-    if (final.stop_reason === "refusal") throw new ProviderError("Claude 这次没接这个话题", "换个说法再问，或者在设置里换个模型");
-    if (final.stop_reason === "max_tokens") yield "\n\n（写到长度上限了，后面被截断。）";
+    if (final.stop_reason === "refusal") throw new ProviderError(msg().claudeRefused, msg().claudeRefusedHint);
+    if (final.stop_reason === "max_tokens") yield msg().truncated;
   } catch (error) {
     if (req.signal?.aborted) return;
     throw explain(error);
@@ -82,7 +83,7 @@ export async function jsonClaude(cfg: ProviderConfig, req: JSONRequest): Promise
     params.output_config = { ...(params.output_config as object ?? {}), format: { type: "json_schema", schema: req.schema } };
     if (/haiku/.test(String(params.model))) params.output_config = { format: { type: "json_schema", schema: req.schema } };
     const res = await client(cfg).beta.messages.create(params as any, { signal: req.signal });
-    if ((res as any).stop_reason === "refusal") throw new ProviderError("Claude 没处理这张图");
+    if ((res as any).stop_reason === "refusal") throw new ProviderError(msg().claudeRefusedImage);
     return (res as any).content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
   } catch (error) {
     throw explain(error);

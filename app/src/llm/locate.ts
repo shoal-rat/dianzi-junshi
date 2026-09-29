@@ -9,6 +9,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
+import { msg } from "../store/messages";
 
 const HOME = homedir();
 const WIN = process.platform === "win32";
@@ -111,13 +112,13 @@ async function runQuiet(args: string[], env: Record<string, string>): Promise<{ 
 export async function cliStatus(name: "codex" | "claude"): Promise<CliStatus> {
   const path = locate(name);
   if (!path) {
-    return { path, installed: false, signedIn: false, detail: name === "codex" ? "没找到 Codex（装了 ChatGPT 桌面版或 Codex CLI 就有）" : "没找到 Claude Code" };
+    return { path, installed: false, signedIn: false, detail: name === "codex" ? msg().codexNotFound : msg().claudeNotFound };
   }
   const env = cliEnv(path);
   if (name === "codex") {
     const r = await runQuiet([path, "login", "status"], env);
     const signedIn = r.code === 0 && !/not logged in/i.test(r.out);
-    return { path, installed: true, signedIn, detail: signedIn ? "已登录，可以直接用" : "装了但没登录：在终端运行 codex login" };
+    return { path, installed: true, signedIn, detail: signedIn ? msg().cliReady : msg().codexNotSignedIn };
   }
   const r = await runQuiet([path, "auth", "status"], env);
   let signedIn = r.code === 0;
@@ -125,5 +126,5 @@ export async function cliStatus(name: "codex" | "claude"): Promise<CliStatus> {
     const json = JSON.parse(r.out.slice(r.out.indexOf("{"), r.out.lastIndexOf("}") + 1));
     signedIn = Boolean(json.loggedIn);
   } catch { /* 老版本只有退出码 */ }
-  return { path, installed: true, signedIn, detail: signedIn ? "已登录，可以直接用" : "装了但没登录：在终端运行 claude 然后 /login" };
+  return { path, installed: true, signedIn, detail: signedIn ? msg().cliReady : msg().claudeNotSignedIn };
 }

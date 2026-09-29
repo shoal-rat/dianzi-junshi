@@ -1,6 +1,10 @@
 {
   "productName": "Dianzi Junshi",
   "bundle": {
-    "resources": ["resources/backend/*"]
+    "resources": [
+      "resources/backend/*"
+    ],
+    "shortDescription": "A texting strategist: reads their messages, hands you three moves",
+    "longDescription": "Junshi (电子军师) is a local-first texting strategist for dating. Paste what they sent or drop a screenshot: it decodes the slang and the tone, reads interest from actions rather than sweet talk, and hands you three sendable replies (Steady, Flirt, Wildcard). It remembers each person over time and learns which moves work. English and Chinese, each with its own culture-specific playbook; the UI follows your system language. All data stays on your computer."
   }
 }

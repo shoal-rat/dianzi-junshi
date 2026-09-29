@@ -5,6 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { ProviderError, type JSONRequest, type LLMRequest, type ProviderConfig } from "./types";
+import { msg } from "../store/messages";
 
 export const OPENAI_PRESETS = {
   deepseek: { base: "https://api.deepseek.com", models: ["deepseek-chat", "deepseek-reasoner"], vision: () => false },
@@ -20,9 +21,9 @@ export function openaiVision(cfg: ProviderConfig): boolean {
 function endpoint(cfg: ProviderConfig): { url: string; model: string } {
   const preset = OPENAI_PRESETS[cfg.kind as keyof typeof OPENAI_PRESETS];
   const base = (cfg.baseUrl || preset?.base || "").replace(/\/+$/, "");
-  if (!base) throw new ProviderError("自定义连接还没填地址", "在设置里填 Base URL，比如 http://127.0.0.1:1234/v1");
+  if (!base) throw new ProviderError(msg().customNoBase, msg().customNoBaseHint);
   const model = cfg.model?.trim() || preset?.models[0] || "";
-  if (!model) throw new ProviderError("自定义连接还没填模型名");
+  if (!model) throw new ProviderError(msg().customNoModel);
   return { url: `${base}/chat/completions`, model };
 }
 
@@ -40,10 +41,10 @@ function messages(cfg: ProviderConfig, req: LLMRequest, extraSystem?: string) {
 async function fail(res: Response): Promise<never> {
   let detail = "";
   try { detail = (await res.text()).slice(0, 300); } catch { /* ignore */ }
-  if (res.status === 401 || res.status === 403) throw new ProviderError("API Key 不对或没有权限", "在设置里重新填一下 Key");
-  if (res.status === 429) throw new ProviderError("服务这会儿限流了", "等一会儿再试");
-  if (res.status === 402) throw new ProviderError("账户余额不足", "去服务商那边充值，或者换个连接");
-  throw new ProviderError(`服务返回 ${res.status}：${detail || res.statusText}`);
+  if (res.status === 401 || res.status === 403) throw new ProviderError(msg().keyWrong, msg().keyWrongHint);
+  if (res.status === 429) throw new ProviderError(msg().rateLimited, msg().waitRetry);
+  if (res.status === 402) throw new ProviderError(msg().noCredit, msg().noCreditHint);
+  throw new ProviderError(msg().httpError(res.status, detail || res.statusText));
 }
 
 export async function* streamOpenAI(cfg: ProviderConfig, req: LLMRequest): AsyncGenerator<string> {
@@ -58,7 +59,7 @@ export async function* streamOpenAI(cfg: ProviderConfig, req: LLMRequest): Async
     });
   } catch (e) {
     if (req.signal?.aborted) return;
-    throw new ProviderError("连不上这个服务", "检查网络、代理或 Base URL");
+    throw new ProviderError(msg().unreachable, msg().unreachableHint);
   }
   if (!res.ok || !res.body) await fail(res);
   const reader = res.body!.getReader();
@@ -100,6 +101,6 @@ export async function jsonOpenAI(cfg: ProviderConfig, req: JSONRequest): Promise
   if (!res.ok) await fail(res);
   const data = (await res.json()) as any;
   const text = data.choices?.[0]?.message?.content;
-  if (typeof text !== "string" || !text.trim()) throw new ProviderError("服务没有返回内容");
+  if (typeof text !== "string" || !text.trim()) throw new ProviderError(msg().emptyResponse);
   return text;
 }

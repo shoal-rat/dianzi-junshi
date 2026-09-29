@@ -66,11 +66,13 @@ export interface Parsed {
   pick?: { seal: Seal; why: string };
 }
 
-const KV_KINDS = new Set(["verdict", "strategy", "aside", "sticker", "stop"]);
+const KV_KINDS = new Set(["verdict", "strategy", "aside", "sticker", "stop", "gif"]);
 const DEFAULT_SEALS = ["稳", "撩", "奇"];
+/** 英文契约里的锦囊名 → 内部统一用的印字 */
+const SEAL_WORDS: Record<string, string> = { steady: "稳", flirt: "撩", wildcard: "奇", safe: "稳", bold: "奇" };
 
 function splitKV(line: string): [string, string] | null {
-  const m = line.match(/^\s*[-*•]?\s*([^：:｜|]{1,12})\s*[：:]\s*(.*)$/);
+  const m = line.match(/^\s*[-*•]?\s*([^：:｜|]{1,22}?)\s*[：:]\s*(.*)$/);
   if (!m) return null;
   return [m[1].trim(), m[2].trim()];
 }
@@ -89,18 +91,18 @@ function num(s: string | undefined): number | undefined {
 
 export function parseInterest(value: string): InterestReading | undefined {
   const pick = (label: string) => {
-    const m = value.match(new RegExp(`${label}\\s*[:：]?\\s*(\\d+(?:\\.\\d+)?)`));
+    const m = value.match(new RegExp(`(?:${label})\\s*[:：=]?\\s*(\\d+(?:\\.\\d+)?)`, "i"));
     return m ? Math.max(0, Math.min(10, Number(m[1]))) : undefined;
   };
   const reading: InterestReading = {
-    sweet: pick("甜度"),
-    initiative: pick("主动"),
-    commitment: pick("承诺"),
-    action: pick("行动"),
-    overall: pick("总体"),
+    sweet: pick("甜度|sweet(?:ness)?"),
+    initiative: pick("主动|initiative"),
+    commitment: pick("承诺|commitment"),
+    action: pick("行动|action|follow[- ]?through"),
+    overall: pick("总体|overall"),
   };
-  const conf = value.match(/置信\s*[:：]?\s*(高|中|低)/);
-  if (conf) reading.confidence = conf[1];
+  const conf = value.match(/置信\s*[:：]?\s*(高|中|低)/) ?? value.match(/confidence\s*[:：=]?\s*(high|medium|med|low)/i);
+  if (conf) reading.confidence = conf[1].toLowerCase() === "medium" ? "med" : conf[1];
   if (reading.overall === undefined) {
     const arrow = value.match(/(?:→|=|总)\s*(\d+(?:\.\d+)?)/);
     if (arrow) reading.overall = Math.min(10, Number(arrow[1]));
@@ -108,13 +110,20 @@ export function parseInterest(value: string): InterestReading | undefined {
   return Object.values(reading).some((v) => v !== undefined) ? reading : undefined;
 }
 
+/** 英文契约的键 → 中文契约的键（内部统一） */
+const JUDGE_KEYS: Record<string, string> = {
+  verdict: "判断", note: "批", "last line": "原话", surface: "表面", emotion: "情绪", need: "需要",
+  stage: "阶段", interest: "兴趣", player: "海王", pursuit: "追法", vibe: "气质",
+};
+
 export function parseJudge(body: string, open: boolean): Judge {
   const judge: Judge = { notes: [], extra: [], open };
   for (const raw of body.split("\n")) {
     const kv = splitKV(raw);
     if (!kv) continue;
-    const [key, value] = kv;
+    const [rawKey, value] = kv;
     if (!value) continue;
+    const key = JUDGE_KEYS[rawKey.toLowerCase()] ?? rawKey;
     switch (key) {
       case "判断": judge.verdict = value; break;
       case "批": {
@@ -145,16 +154,17 @@ export function parseJudge(body: string, open: boolean): Judge {
 const PLAN_HEAD = /^#{2,4}\s*(.+)$/;
 
 function parsePlanHead(text: string, fallbackSeal: string): { seal: string; title: string; oil?: number } {
-  let rest = text.trim().replace(/^方案\s*\d+\s*[·・.、:：]?\s*/, "");
+  let rest = text.trim().replace(/^(?:方案|move|option)\s*\d+\s*[·・.、:：]?\s*/i, "");
   let oil: number | undefined;
-  const oilMatch = rest.match(/[（(]?\s*油(?:腻度?)?\s*(\d+(?:\.\d+)?)\s*(?:\/\s*5)?\s*[）)]?/);
+  const oilMatch = rest.match(/[（(]?\s*(?:油(?:腻度?)?|thirst)\s*[:：]?\s*(\d+(?:\.\d+)?)\s*(?:\/\s*5)?\s*[）)]?/i);
   if (oilMatch) {
     oil = Math.max(0, Math.min(5, Number(oilMatch[1])));
     rest = rest.replace(oilMatch[0], "");
   }
   const parts = rest.split(/\s*[·・|｜]\s*/).map((p) => p.trim()).filter(Boolean);
   let seal = fallbackSeal;
-  if (parts.length && /^[一-鿿]$/.test(parts[0])) seal = parts.shift()!;
+  if (parts.length && SEAL_WORDS[parts[0].toLowerCase()]) seal = SEAL_WORDS[parts.shift()!.toLowerCase()];
+  else if (parts.length && /^[一-鿿]$/.test(parts[0])) seal = parts.shift()!;
   else if (parts.length) {
     const spaced = parts[0].match(/^([一-鿿])\s+(.+)$/);
     if (spaced) { seal = spaced[1]; parts[0] = spaced[2]; }
@@ -171,12 +181,13 @@ function isPlanHeading(line: string): boolean {
   const m = line.match(PLAN_HEAD);
   if (!m) return false;
   const t = m[1].trim();
-  return /^方案\s*\d/.test(t) || /^[稳撩奇]\s*[·・|｜\s]/.test(t) || /油\s*\d/.test(t) || /^[一-鿿]\s*[·・]/.test(t);
+  return /^方案\s*\d/.test(t) || /^[稳撩奇]\s*[·・|｜\s]/.test(t) || /油\s*\d/.test(t) || /^[一-鿿]\s*[·・]/.test(t)
+    || /^(steady|flirt|wildcard)\b/i.test(t) || /thirst\s*[:：]?\s*\d/i.test(t);
 }
 
 /** 有的模型会把围栏接在一句话后面（「…定下来。```judge」），把它们拆到新行。 */
 export function normalizeAnswer(text: string): string {
-  return text.replace(/\r\n/g, "\n").replace(/([^\n`])[ \t]*(```(?:judge|reply|verdict|strategy|aside|sticker|stop)\b)/g, "$1\n$2");
+  return text.replace(/\r\n/g, "\n").replace(/([^\n`])[ \t]*(```(?:judge|reply|verdict|strategy|aside|sticker|stop|gif)\b)/g, "$1\n$2");
 }
 
 /** 解析一段（可能还没写完的）军师回答。 */
@@ -195,8 +206,8 @@ export function parseAnswer(text: string): Parsed {
       // 锦囊之后、下一个标题之前的文字 = 这个锦囊的「为什么」，但推荐/避坑行要单独拎出来
       const rest: string[] = [];
       for (const l of joined.split("\n")) {
-        if (/^\s*(?:\*\*)?(推荐|别这样回|暂时别说)/.test(l)) rest.push(l);
-        else if (!rest.length) currentPlan.why = [currentPlan.why, l.replace(/^\s*(?:为什么|理由)\s*[：:]\s*/, "").trim()].filter(Boolean).join(" ");
+        if (/^\s*(?:\*\*)?(推荐|别这样回|暂时别说|pick\b|don'?t send|hold off)/i.test(l)) rest.push(l);
+        else if (!rest.length) currentPlan.why = [currentPlan.why, l.replace(/^\s*(?:为什么|理由|why)\s*[：:]\s*/i, "").trim()].filter(Boolean).join(" ");
         else rest.push(l);
       }
       if (rest.length) pushMd(rest.join("\n"));
@@ -217,9 +228,14 @@ export function parseAnswer(text: string): Parsed {
       // 推荐：奇｜理由 / 推荐：方案2｜理由 / 推荐方案2：理由
       const pick = clean.match(/^推荐\s*[：:]?\s*(?:方案\s*)?([\u4e00-\u9fff]|\d)\s*(?:[：:｜|·，,—-]+\s*(.*))?$/)
         ?? clean.match(/^推荐\s*[：:]\s*([^\s｜|·，,：:])[^｜|]*(?:[｜|]\s*(.*))?$/);
-      const avoid = clean.match(/^别这样回\s*[：:]\s*(.*)$/);
-      const hold = clean.match(/^暂时别说\s*[：:]\s*(.*)$/);
-      if (pick) {
+      const avoid = clean.match(/^(?:别这样回|don'?t send|avoid)\s*[：:]\s*(.*)$/i);
+      const hold = clean.match(/^(?:暂时别说|hold off)\s*[：:]\s*(.*)$/i);
+      const pickEn = clean.match(/^pick\s*[：:]?\s*(steady|flirt|wildcard|\d)\b\s*(?:[：:｜|·,—-]+\s*(.*))?$/i);
+      if (pickEn) {
+        flushKeep();
+        const w = pickEn[1].toLowerCase();
+        segments.push({ type: "pick", seal: /^\d$/.test(w) ? DEFAULT_SEALS[Number(w) - 1] ?? "稳" : SEAL_WORDS[w], why: (pickEn[2] ?? "").trim() });
+      } else if (pick) {
         flushKeep();
         let seal = pick[1];
         if (/^\d$/.test(seal)) seal = DEFAULT_SEALS[Number(seal) - 1] ?? seal;
@@ -275,7 +291,7 @@ export function parseAnswer(text: string): Parsed {
         flushMd();
         currentPlan = null;
         const rows = body.map(splitKV).filter((r): r is [string, string] => Boolean(r && r[1]));
-        segments.push({ type: "kv", kind: lang as any, rows, open });
+        segments.push({ type: "kv", kind: (lang === "gif" ? "sticker" : lang) as any, rows, open });
       } else {
         md.push(line, ...body);
         if (closed) md.push(lines[j]);

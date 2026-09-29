@@ -5,6 +5,7 @@
 
 import { database } from "./db";
 import { readSettings } from "./settings";
+import { msg } from "./messages";
 
 const OLLAMA = process.env.DJ_OLLAMA_URL || "http://127.0.0.1:11434";
 const PREFERRED = ["bge-m3", "nomic-embed-text", "mxbai-embed-large", "snowflake-arctic-embed", "all-minilm"];
@@ -18,8 +19,8 @@ export interface SemanticStatus {
 let cached: { at: number; status: SemanticStatus } | null = null;
 
 export async function semanticStatus(force = false): Promise<SemanticStatus> {
-  if (process.env.DJ_DISABLE_SEMANTIC === "1") return { available: false, detail: "已关闭" };
-  if (readSettings().semantic === "off") return { available: false, detail: "已在设置里关闭" };
+  if (process.env.DJ_DISABLE_SEMANTIC === "1") return { available: false, detail: msg().semOff };
+  if (readSettings().semantic === "off") return { available: false, detail: msg().semOffSetting };
   if (!force && cached && Date.now() - cached.at < 5 * 60_000) return cached.status;
   let status: SemanticStatus;
   try {
@@ -29,10 +30,10 @@ export async function semanticStatus(force = false): Promise<SemanticStatus> {
     const model = PREFERRED.map((p) => names.find((n) => n.startsWith(p))).find(Boolean)
       ?? names.find((n) => /embed|bge|e5|gte/i.test(n));
     status = model
-      ? { available: true, model, detail: `本机 Ollama · ${model}` }
-      : { available: false, detail: "检测到 Ollama，但没有嵌入模型（可以 ollama pull bge-m3）" };
+      ? { available: true, model, detail: msg().semReady(model) }
+      : { available: false, detail: msg().semNoModel };
   } catch {
-    status = { available: false, detail: "没检测到本机 Ollama，用关键词检索" };
+    status = { available: false, detail: msg().semNone };
   }
   cached = { at: Date.now(), status };
   return status;

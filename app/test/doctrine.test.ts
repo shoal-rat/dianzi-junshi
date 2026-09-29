@@ -53,16 +53,16 @@ describe("人话门禁", () => {
 
 describe("装配", () => {
   test("车道分诊", () => {
-    expect(routeLane("周六那家店我们订到位子啦，别放我鸽子", 0)).toBe("邀约");
-    expect(routeLane("她已读不回好几天了", 0)).toBe("拉扯");
-    expect(routeLane("今天加班好累", 0)).toBe("情绪");
-    expect(routeLane("那咋了", 1)).toBe("玩梗");
+    expect(routeLane("周六那家店我们订到位子啦，别放我鸽子", 0)).toBe("invite");
+    expect(routeLane("她已读不回好几天了", 0)).toBe("pushpull");
+    expect(routeLane("今天加班好累", 0)).toBe("emotion");
+    expect(routeLane("那咋了", 1)).toBe("meme");
   });
 
   test("问答策略：核心 + 语感 + 梗 + 读局 + 打法常驻，约会和读人按需加", () => {
-    const base = doctrineFor({ mode: "reply", lane: "日常", hasImages: false, nearFestival: false }).map((d) => d.name);
+    const base = doctrineFor({ mode: "reply", lane: "daily", hasImages: false, nearFestival: false }).map((d) => d.name);
     expect(base).toEqual(["core", "voice", "memes", "reading", "strategy"]);
-    const more = doctrineFor({ mode: "reply", lane: "邀约", hasImages: true, nearFestival: false }).map((d) => d.name);
+    const more = doctrineFor({ mode: "reply", lane: "invite", hasImages: true, nearFestival: false }).map((d) => d.name);
     expect(more).toEqual([...base, "dating", "profile"]);
   });
 

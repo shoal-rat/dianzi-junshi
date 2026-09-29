@@ -13,7 +13,9 @@ import { similarity } from "./tokenize";
 import { bubblesOf } from "../core/voice";
 import { shortDate } from "../core/calendar";
 import type { InterestReading } from "../shared/contract";
-import type { Outcome, OutcomeDTO, ReadingPoint, SignalKey, StyleProfile, TacticStat } from "../shared/domain";
+import { SEAL_EN, type Lang, type Outcome, type OutcomeDTO, type ReadingPoint, type SignalKey, type StyleProfile, type TacticStat } from "../shared/domain";
+import { appLang } from "./locale";
+import { msg } from "./messages";
 
 export interface OutcomeInput {
   turnId?: string;
@@ -30,8 +32,8 @@ export interface OutcomeInput {
 const RESULTS: Outcome[] = ["good", "meh", "cold", "ghosted"];
 
 export function recordOutcome(personId: string, input: OutcomeInput): OutcomeDTO {
-  if (!input.sent?.trim()) throw new Error("写一下你最后实际发的是什么");
-  if (!RESULTS.includes(input.result)) throw new Error("选一下 ta 后来的反应");
+  if (!input.sent?.trim()) throw new Error(msg().sentRequired);
+  if (!RESULTS.includes(input.result)) throw new Error(msg().resultRequired);
   const conn = database();
   if (input.turnId) {
     // 同一轮只保留最新一次记录，改主意可以覆盖
@@ -121,31 +123,42 @@ export function readings(personId: string, limit = 30): ReadingPoint[] {
 // ---------------------------------------------------------------------------
 // 用户风格：从用户实际发出去的话里统计，不靠自述
 
-export function styleProfile(personId: string): StyleProfile {
+export function styleProfile(personId: string, lang: Lang = appLang()): StyleProfile {
+  const en = lang === "en";
   const outcomes = allOutcomes(personId);
   const samples = outcomes.map((o) => o.sent).filter(Boolean);
   if (samples.length < 2) return { samples: samples.length, habits: [] };
-  const bubbleLists = samples.map(bubblesOf);
-  const bubbles = bubbleLists.flat();
-  const avgLen = Math.round(bubbles.reduce((s, b) => s + [...b].length, 0) / Math.max(1, bubbles.length));
+  const bubbles = samples.flatMap(bubblesOf);
+  // 中文按字数，英文按词数
+  const size = (b: string) => (/[\u4e00-\u9fff]/.test(b) ? [...b].length : b.split(/\s+/).filter(Boolean).length);
+  const avgLen = Math.round(bubbles.reduce((s, b) => s + size(b), 0) / Math.max(1, bubbles.length));
   const perMsg = Math.round((bubbles.length / samples.length) * 10) / 10;
   const punctCount = bubbles.filter((b) => /[，。！？,.!?]/.test(b)).length / bubbles.length;
   const punctuation: StyleProfile["punctuation"] = punctCount < 0.2 ? "none" : punctCount < 0.6 ? "light" : "full";
   const habits: string[] = [];
-  if (punctuation === "none") habits.push("基本不打标点");
+  if (punctuation === "none") habits.push(en ? "barely uses punctuation" : "基本不打标点");
+  const latin = bubbles.filter((b) => /[A-Za-z]/.test(b));
+  if (latin.length >= 3 && latin.filter((b) => !/[A-Z]/.test(b)).length / latin.length >= 0.8) habits.push(en ? "texts in all lowercase" : "英文全用小写");
   const joined = samples.join("\n");
-  const laugh = joined.match(/哈{3,}/g);
-  if (laugh && laugh.length >= 2) habits.push(`笑用「${laugh.sort((a, b) => b.length - a.length)[0].slice(0, 6)}」`);
-  for (const word of ["好滴", "好哒", "嗯嗯", "okok", "哈哈", "救命", "笑死", "捏", "叭", "～"]) {
-    if (samples.filter((s) => s.includes(word)).length >= 2) habits.push(`常用「${word}」`);
+  const laughZh = joined.match(/哈{3,}/g);
+  if (laughZh && laughZh.length >= 2) habits.push(en ? `laughs with "${laughZh.sort((a, b) => b.length - a.length)[0].slice(0, 6)}"` : `笑用「${laughZh.sort((a, b) => b.length - a.length)[0].slice(0, 6)}」`);
+  const laughEn = joined.match(/\b(?:ha){2,}h?\b|\blmao\b|\blol\b|💀|😭/gi);
+  if (laughEn && laughEn.length >= 2) {
+    const top = [...laughEn.reduce((m, x) => m.set(x.toLowerCase(), (m.get(x.toLowerCase()) ?? 0) + 1), new Map<string, number>())].sort((a, b) => b[1] - a[1])[0][0];
+    habits.push(en ? `laughs with "${top}"` : `笑用「${top}」`);
+  }
+  const vocab = ["好滴", "好哒", "嗯嗯", "okok", "救命", "笑死", "捏", "叭", "～", "omg", "lowkey", "literally", "tbh", "ngl", "haha", "!"];
+  for (const word of vocab) {
+    const re = /^[a-z]+$/.test(word) ? new RegExp(`\\b${word}\\b`, "i") : null;
+    if (samples.filter((s) => (re ? re.test(s) : s.includes(word))).length >= 2) habits.push(en ? `often uses "${word}"` : `常用「${word}」`);
   }
   const paired = outcomes.filter((o) => o.suggested && o.sent && o.suggested !== o.sent);
   if (paired.length >= 2) {
     const ratio = paired.reduce((s, o) => s + [...o.sent].length / Math.max(1, [...o.suggested!].length), 0) / paired.length;
-    if (ratio < 0.8) habits.push("会把建议改得更短");
-    if (ratio > 1.3) habits.push("会把建议写得更长");
+    if (ratio < 0.8) habits.push(en ? "trims suggestions shorter" : "会把建议改得更短");
+    if (ratio > 1.3) habits.push(en ? "writes longer than suggested" : "会把建议写得更长");
     const droppedBang = paired.filter((o) => /[！!]/.test(o.suggested!) && !/[！!]/.test(o.sent)).length;
-    if (droppedBang >= 2) habits.push("会删掉感叹号");
+    if (droppedBang >= 2) habits.push(en ? "deletes exclamation marks" : "会删掉感叹号");
   }
   return { samples: samples.length, avgLen, bubbles: perMsg, punctuation, habits: habits.slice(0, 6) };
 }
@@ -153,29 +166,45 @@ export function styleProfile(personId: string): StyleProfile {
 // ---------------------------------------------------------------------------
 // 给军师看的版本
 
-const RESULT_LABEL: Record<Outcome, string> = { good: "接住了", meh: "一般", cold: "聊冷了", ghosted: "没回" };
+const RESULT_LABEL: Record<Lang, Record<Outcome, string>> = {
+  zh: { good: "接住了", meh: "一般", cold: "聊冷了", ghosted: "没回" },
+  en: { good: "landed", meh: "meh", cold: "went cold", ghosted: "no reply" },
+};
 
-export function learningForPrompt(personId: string): { tactics: string; style: string; trend: string; count: number } {
+export function learningForPrompt(personId: string, lang: Lang = "zh"): { tactics: string; style: string; trend: string; count: number } {
+  const en = lang === "en";
   const stats = tacticStats(personId);
   const { worked, flopped } = workedAndFlopped(personId);
   const lines: string[] = [];
+  const seal = (x?: string) => (en && x ? SEAL_EN[x] ?? x : x);
   if (stats.length) {
-    lines.push("各锦囊战绩：" + stats.map((s) => `${s.seal} ${s.tries} 次（接住 ${s.good}、一般 ${s.meh}、冷 ${s.cold}、没回 ${s.ghosted}）`).join("；"));
+    lines.push(en
+      ? "Record by move: " + stats.map((s) => `${seal(s.seal)} ${s.tries}x (landed ${s.good}, meh ${s.meh}, cold ${s.cold}, no reply ${s.ghosted})`).join("; ")
+      : "各锦囊战绩：" + stats.map((s) => `${s.seal} ${s.tries} 次（接住 ${s.good}、一般 ${s.meh}、冷 ${s.cold}、没回 ${s.ghosted}）`).join("；"));
   }
   if (worked.length) {
-    lines.push("接住了的说法（同场景优先这个路子）：");
-    for (const w of worked.slice(0, 6)) lines.push(`- 「${w.text.replace(/\n/g, " / ")}」${w.seal ? `〔${w.seal}〕` : ""}${w.count > 1 ? ` ×${w.count}，已经是稳定打法` : ""}`);
+    lines.push(en ? "Lines that landed (lean this way in similar moments):" : "接住了的说法（同场景优先这个路子）：");
+    for (const w of worked.slice(0, 6)) lines.push(en
+      ? `- "${w.text.replace(/\n/g, " / ")}"${w.seal ? ` [${seal(w.seal)}]` : ""}${w.count > 1 ? ` ×${w.count} — a proven move` : ""}`
+      : `- 「${w.text.replace(/\n/g, " / ")}」${w.seal ? `〔${w.seal}〕` : ""}${w.count > 1 ? ` ×${w.count}，已经是稳定打法` : ""}`);
   }
   if (flopped.length) {
-    lines.push("聊冷了 / 没回的原句（同场景别再给相近的）：");
-    for (const f of flopped.slice(0, 6)) lines.push(`- 「${f.text.replace(/\n/g, " / ")}」→ ${RESULT_LABEL[f.result]}（${shortDate(f.at)}）`);
+    lines.push(en ? "Lines that went cold / got no reply (don't offer anything close in similar moments):" : "聊冷了 / 没回的原句（同场景别再给相近的）：");
+    for (const f of flopped.slice(0, 6)) lines.push(en
+      ? `- "${f.text.replace(/\n/g, " / ")}" → ${RESULT_LABEL.en[f.result]} (${shortDate(f.at)})`
+      : `- 「${f.text.replace(/\n/g, " / ")}」→ ${RESULT_LABEL.zh[f.result]}（${shortDate(f.at)}）`);
   }
-  const style = styleProfile(personId);
-  const styleText = style.samples >= 2
+  const style = styleProfile(personId, lang);
+  const styleText = style.samples >= 2 && en
+    ? `From the user's ${style.samples} real sent messages: about ${style.avgLen} words per text, ${style.bubbles} texts at a time; ${style.habits.join(", ") || "no strong habits"}.`
+    : style.samples >= 2
     ? `用户实际发出去的 ${style.samples} 条：平均每条气泡 ${style.avgLen} 字，每次 ${style.bubbles} 条；${style.habits.join("，") || "没有特别明显的习惯"}。`
     : "";
   const pts = readings(personId, 8).filter((p) => p.overall !== undefined);
-  const trend = pts.length >= 2
+  const lastPlayer = pts.filter((p) => p.player !== undefined).slice(-1)[0]?.player;
+  const trend = pts.length >= 2 && en
+    ? `Last ${pts.length} interest readings (overall): ${pts.map((p) => p.overall).join(" → ")}${lastPlayer !== undefined ? `; latest player score ${lastPlayer}` : ""}`
+    : pts.length >= 2
     ? `最近 ${pts.length} 次兴趣读数（总体）：${pts.map((p) => p.overall).join(" → ")}${pts.some((p) => p.player !== undefined) ? `；海王指数最近 ${pts.filter((p) => p.player !== undefined).slice(-1)[0]?.player}` : ""}`
     : "";
   return { tactics: lines.join("\n"), style: styleText, trend, count: stats.reduce((s, x) => s + x.tries, 0) };

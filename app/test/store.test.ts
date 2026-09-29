@@ -7,7 +7,7 @@ import { addFacts, dossierForPrompt, effectiveStatus, listFacts, listMemes, reco
 import { addArchive, chunkText, recall } from "../src/store/archive";
 import { learningForPrompt, readings, recordOutcome, recordReading, styleProfile, tacticStats, workedAndFlopped } from "../src/store/learning";
 import { saveImage, sniffImage } from "../src/store/images";
-import { createTurn, finishTurn, listTurns, markCopied, recentForPrompt } from "../src/store/turns";
+import { createTurn, failInterruptedTurns, finishTurn, listTurns, markCopied, recentForPrompt } from "../src/store/turns";
 import { migrateLegacy } from "../src/store/legacy";
 import { readSettings, resetSettingsMemo, writeSettings } from "../src/store/settings";
 import { composeTurn } from "../src/core/compose";
@@ -43,7 +43,7 @@ describe("人和对话", () => {
   test("最近几轮摘要带上用户复制了哪条、后来怎样", () => {
     const p = createPerson({ name: "摘要" });
     const t = createTurn({ personId: p.id, mode: "reply", text: "周六见吗", imageIds: [], memes: [], provider: "demo" });
-    finishTurn(t.id, { output: "```judge\n判断：她在约你\n```\n### 稳 · 答应 · 油0\n```reply\n好啊\n```\n### 撩 · 逗 · 油1\n```reply\n见你还用问\n```\n推荐：撩｜可以", checks: [], context: { lane: "邀约", modules: [], facts: 0, recalled: [], tactics: 0, festivals: [] }, status: "done" });
+    finishTurn(t.id, { output: "```judge\n判断：她在约你\n```\n### 稳 · 答应 · 油0\n```reply\n好啊\n```\n### 撩 · 逗 · 油1\n```reply\n见你还用问\n```\n推荐：撩｜可以", checks: [], context: { lane: "invite", modules: [], facts: 0, recalled: [], tactics: 0, festivals: [] }, status: "done" });
     markCopied(t.id, 1);
     recordOutcome(p.id, { turnId: t.id, planIndex: 1, seal: "撩", sent: "见你还用问", result: "good", reply: "哈哈哈哈 那说定了" });
     const next = createTurn({ personId: p.id, mode: "reply", text: "新的一句", imageIds: [], memes: [], provider: "demo" });
@@ -182,7 +182,7 @@ describe("装配一轮", () => {
     expect(dyn).toContain("不吃香菜");
     expect(dyn).toContain("早点休息");
     expect(dyn).toContain("周六想去吃火锅");
-    expect(c.lane).toBe("邀约");
+    expect(c.lane).toBe("invite");
     expect(c.context.modules).toContain("dating");
     expect(c.request.user).toContain("【怎么回】");
   });
@@ -225,5 +225,19 @@ describe("设置与搬家", () => {
     expect(turns[0].images.length).toBe(1);
     expect(kvGet("legacy:xiaomei")).toBeTruthy();
     expect((await recall(p.id, "她是什么星座来着 天蝎座吗")).length).toBeGreaterThan(0);
+  });
+});
+
+describe("interrupted turns", () => {
+  test("a turn left streaming by a crash becomes an error on startup", () => {
+    const p = createPerson({ name: "断电" });
+    const t = createTurn({ personId: p.id, mode: "reply", text: "在吗", imageIds: [], memes: [], provider: "demo" });
+    const done = createTurn({ personId: p.id, mode: "reply", text: "下班了", imageIds: [], memes: [], provider: "demo" });
+    finishTurn(done.id, { output: "ok", checks: [], context: { lane: "daily", modules: [], facts: 0, recalled: [], tactics: 0, festivals: [] }, status: "done" });
+    expect(failInterruptedTurns("interrupted")).toBeGreaterThanOrEqual(1);
+    const turns = listTurns(p.id);
+    expect(turns.find((x) => x.id === t.id)?.status).toBe("error");
+    expect(turns.find((x) => x.id === t.id)?.error).toBe("interrupted");
+    expect(turns.find((x) => x.id === done.id)?.status).toBe("done");
   });
 });

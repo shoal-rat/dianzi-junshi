@@ -6,6 +6,8 @@ import { jsonCli, streamCli } from "./cli";
 import { jsonOpenAI, OPENAI_PRESETS, openaiVision, streamOpenAI } from "./openai";
 import { ProviderError, type JSONRequest, type LLMRequest, type ProviderConfig } from "./types";
 import type { ProviderKind, ProviderStatusDTO } from "../shared/domain";
+import { appLang } from "../store/locale";
+import { msg } from "../store/messages";
 
 export { ProviderError } from "./types";
 export type { LLMRequest, JSONRequest, ProviderConfig } from "./types";
@@ -21,6 +23,9 @@ const LABEL: Record<ProviderKind, string> = {
 };
 
 export function providerLabel(kind: ProviderKind): string {
+  if (kind === "custom") return msg().labelCustom;
+  if (kind === "demo") return msg().labelDemo;
+  if (kind === "glm" && appLang() === "en") return "GLM (Zhipu)";
   return LABEL[kind];
 }
 
@@ -57,7 +62,7 @@ export function streamText(cfg: ProviderConfig, req: LLMRequest): AsyncGenerator
     case "custom":
       return streamOpenAI(cfg, req);
     default:
-      throw new ProviderError("演示模式不连 AI");
+      throw new ProviderError(msg().demoNoAI);
   }
 }
 
@@ -66,7 +71,7 @@ export function extractJSON(text: string): unknown {
   const clean = text.replace(/```(?:json)?/gi, "").trim();
   const start = clean.indexOf("{");
   const end = clean.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new ProviderError("AI 没有按格式返回");
+  if (start < 0 || end <= start) throw new ProviderError(msg().aiBadFormat);
   return JSON.parse(clean.slice(start, end + 1));
 }
 
@@ -76,17 +81,17 @@ export async function completeJSON<T>(cfg: ProviderConfig, req: JSONRequest, val
     try {
       const raw = cfg.kind === "claude" ? await jsonClaude(cfg, req)
         : cfg.kind === "codex" || cfg.kind === "claude-code" ? await jsonCli(cfg, req)
-          : cfg.kind === "demo" ? (() => { throw new ProviderError("演示模式不连 AI"); })()
+          : cfg.kind === "demo" ? (() => { throw new ProviderError(msg().demoNoAI); })()
             : await jsonOpenAI(cfg, req);
       const value = validate(extractJSON(raw));
       if (value) return value;
-      lastError = new ProviderError("AI 返回的内容格式不对");
+      lastError = new ProviderError(msg().aiWrongShape);
     } catch (e) {
       lastError = e;
-      if (e instanceof ProviderError && !/格式/.test(e.message)) break;
+      if (e instanceof ProviderError && e.message !== msg().aiWrongShape && e.message !== msg().aiBadFormat) break;
     }
   }
-  throw lastError instanceof Error ? lastError : new ProviderError("AI 没有返回可用的结果");
+  throw lastError instanceof Error ? lastError : new ProviderError(msg().aiNothing);
 }
 
 export async function providerStatuses(): Promise<ProviderStatusDTO[]> {
@@ -94,19 +99,19 @@ export async function providerStatuses(): Promise<ProviderStatusDTO[]> {
   const [codex, claudeCode] = await Promise.all([cliStatus("codex"), cliStatus("claude")]);
   const out: ProviderStatusDTO[] = [];
   const saved = (k: ProviderKind) => settings.providers[k] ?? {};
-  out.push({ kind: "codex", label: LABEL.codex, ready: codex.signedIn, detail: codex.detail, vision: true, needsKey: false, hasKey: false, model: saved("codex").model, models: [], local: true });
-  out.push({ kind: "claude-code", label: LABEL["claude-code"], ready: claudeCode.signedIn, detail: claudeCode.detail, vision: true, needsKey: false, hasKey: false, model: saved("claude-code").model, models: ["", "opus", "sonnet", "haiku"], local: true });
+  out.push({ kind: "codex", label: providerLabel("codex"), ready: codex.signedIn, detail: codex.detail, vision: true, needsKey: false, hasKey: false, model: saved("codex").model, models: [], local: true });
+  out.push({ kind: "claude-code", label: providerLabel("claude-code"), ready: claudeCode.signedIn, detail: claudeCode.detail, vision: true, needsKey: false, hasKey: false, model: saved("claude-code").model, models: ["", "opus", "sonnet", "haiku"], local: true });
   for (const kind of ["claude", "deepseek", "glm", "custom"] as const) {
     const cfg = configFor(kind);
     const hasKey = Boolean(cfg.apiKey);
     const models = kind === "claude" ? CLAUDE_MODELS : [...OPENAI_PRESETS[kind].models];
     const needsBase = kind === "custom" && !cfg.baseUrl;
     out.push({
-      kind, label: LABEL[kind], ready: hasKey && !needsBase,
-      detail: needsBase ? "填上接口地址、模型名和 Key" : hasKey ? `已保存 Key · ${modelName(cfg) ?? "未选模型"}` : "需要 API Key",
+      kind, label: providerLabel(kind), ready: hasKey && !needsBase,
+      detail: needsBase ? msg().needBase : hasKey ? msg().keySaved(modelName(cfg) ?? msg().noModel) : msg().needKey,
       vision: supportsVision(cfg), needsKey: true, hasKey, model: cfg.model, models, baseUrl: cfg.baseUrl, local: false,
     });
   }
-  out.push({ kind: "demo", label: LABEL.demo, ready: true, detail: "不联网，用写好的示例熟悉界面", vision: false, needsKey: false, hasKey: false, models: [], local: true });
+  out.push({ kind: "demo", label: providerLabel("demo"), ready: true, detail: msg().demoDetail, vision: false, needsKey: false, hasKey: false, models: [], local: true });
   return out;
 }

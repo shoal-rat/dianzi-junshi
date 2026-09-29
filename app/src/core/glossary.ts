@@ -9,7 +9,8 @@
  */
 
 import glossaryMd from "../../../references/glossary.md" with { type: "text" };
-import type { MemeHit } from "../shared/domain";
+import glossaryEnMd from "../../../references/en/glossary.md" with { type: "text" };
+import type { Lang, MemeHit } from "../shared/domain";
 
 export interface GlossaryEntry {
   term: string;
@@ -128,14 +129,97 @@ export function parseGlossary(md: string): Glossary {
 
 export const GLOSSARY: Glossary = parseGlossary(glossaryMd as unknown as string);
 
+// ---------------------------------------------------------------------------
+// English glossary. Much English slang is also an ordinary word ("cooked",
+// "bet", "mid", "fire"), so those stay out of literal matching — the model reads
+// them in context — and out of the lint blacklist.
+
+const AMBIGUOUS_EN = new Set([
+  "cooked", "bet", "mid", "real", "so real", "fire", "lore", "opp", "tuff", "unc", "aura", "yearning", "crush",
+  "vibe", "valid", "iconic", "obsessed", "slaps", "cringe", "stan", "mother", "mothering", "lit", "savage", "shook",
+  "swag", "hella", "lol", "w", "l", "ate", "slay", "yap", "yapping", "tweaking", "glazing", "locked in", "girlies",
+  "the tea", "af", "crash out", "it's the", "the way i", "no because", "real",
+]);
+
+function enMatchers(term: string): string[] {
+  const out: string[] = [];
+  for (const variant of term.split(/\s*\/\s*/)) {
+    const cleaned = variant.replace(/[(（][^)）]*[)）]/g, "").trim();
+    if (!cleaned || cleaned.includes("___") || cleaned.length < 2) continue;
+    if (AMBIGUOUS_EN.has(cleaned.toLowerCase())) continue;
+    out.push(cleaned);
+  }
+  return [...new Set(out)];
+}
+
+export function parseGlossaryEn(md: string): Glossary {
+  const entries: GlossaryEntry[] = [];
+  const banned = new Set<string>();
+  const shaky = new Set<string>();
+  let section = "";
+  for (const line of md.split("\n")) {
+    const head = line.match(/^##\s+([A-F])[.]/);
+    if (head) { section = head[1]; continue; }
+    if (line.startsWith("## ")) { section = ""; continue; }
+    if (!section) continue;
+    if (line.startsWith("|") && ["A", "C", "D", "E"].includes(section)) {
+      const cells = tableCells(line);
+      if (cells.length < 2 || isSeparator(cells) || ["slang", "term"].includes(cells[0].toLowerCase())) continue;
+      const term = cells[0];
+      const matchers = enMatchers(term);
+      if (section === "A") {
+        const status = (cells[3] ?? "in use").toLowerCase();
+        entries.push({ term, matchers, meaning: cells[1] ?? "", tone: cells[2] ?? "", status, section });
+        if (status.includes("careful")) matchers.forEach((m) => shaky.add(m));
+      } else if (section === "C") {
+        entries.push({ term, matchers, meaning: cells[1] ?? "", tone: "", status: "aging", section });
+        matchers.forEach((m) => shaky.add(m));
+      } else if (section === "D") {
+        entries.push({ term, matchers, meaning: cells[1] ?? "", tone: "", status: "dead", section });
+        matchers.forEach((m) => banned.add(m));
+      } else {
+        const note = cells[1] ?? "";
+        const status = /^never/i.test(note) ? "never" : /^careful/i.test(note) ? "careful" : "special";
+        const usable = /^[a-z0-9]/i.test(term) || /\p{Extended_Pictographic}/u.test(term) ? matchers : [];
+        entries.push({ term, matchers: usable, meaning: note.replace(/^(never|careful|special)\s*:\s*/i, ""), tone: "", status, section });
+        if (status === "never") usable.forEach((m) => banned.add(m));
+        if (status === "careful") usable.forEach((m) => shaky.add(m));
+      }
+      continue;
+    }
+    if (section === "B" && !line.startsWith("#") && line.includes(",")) {
+      for (const raw of line.split(",")) {
+        const t = raw.trim();
+        const ms = enMatchers(t);
+        if (ms.length) entries.push({ term: t, matchers: ms, meaning: "everyday word, not really slang", tone: "", status: "everyday", section });
+      }
+    }
+  }
+  for (const b of banned) shaky.delete(b);
+  return { entries, banned: [...banned], shaky: [...shaky] };
+}
+
+export const GLOSSARY_EN: Glossary = parseGlossaryEn(glossaryEnMd as unknown as string);
+
+export function glossaryFor(lang: Lang): Glossary {
+  return lang === "en" ? GLOSSARY_EN : GLOSSARY;
+}
+
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** ASCII 词整词匹配（忽略大小写），中文子串匹配。返回命中的原文片段。 */
+const HAS_CJK = /[\u4e00-\u9fff]/;
+
+/**
+ * 中文子串匹配；拉丁文字按整词、忽略大小写匹配（"no cap" 不会命中 "no capital"）；emoji 直接找。
+ * 返回命中的原文片段。
+ */
 export function findTerm(text: string, term: string): { index: number; matched: string } | null {
-  if (/^[A-Za-z0-9]+$/.test(term)) {
-    const m = new RegExp(`(?<![A-Za-z0-9])${escapeRe(term)}(?![A-Za-z0-9])`, "i").exec(text);
+  if (!HAS_CJK.test(term) && /[A-Za-z0-9]/.test(term)) {
+    const lead = /^[A-Za-z0-9]/.test(term) ? "(?<![A-Za-z0-9])" : "";
+    const tail = /[A-Za-z0-9]$/.test(term) ? "(?![A-Za-z0-9])" : "";
+    const m = new RegExp(`${lead}${escapeRe(term).replace(/'/g, "['’]")}${tail}`, "i").exec(text);
     return m ? { index: m.index, matched: m[0] } : null;
   }
   const idx = text.indexOf(term);
@@ -143,7 +227,8 @@ export function findTerm(text: string, term: string): { index: number; matched: 
 }
 
 /** 服务端确定性扫梗：长词优先、位置不重叠，最多 8 条。 */
-export function scanMemes(text: string, glossary: Glossary = GLOSSARY): MemeHit[] {
+export function scanMemes(text: string, glossaryOrLang: Glossary | Lang = GLOSSARY): MemeHit[] {
+  const glossary = typeof glossaryOrLang === "string" ? glossaryFor(glossaryOrLang) : glossaryOrLang;
   if (!text?.trim()) return [];
   const hits: Array<MemeHit & { index: number }> = [];
   const claimed = new Array<boolean>(text.length).fill(false);

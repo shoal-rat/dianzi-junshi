@@ -143,11 +143,11 @@ code { font-family: var(--font-mono); font-size: 0.9em; background: var(--paper-
   padding: 14px 26px 12px; border-bottom: 1px solid var(--rule);
   background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(6px);
 }
-.desk-title { display: flex; align-items: baseline; gap: 14px; min-width: 0; flex: 1; }
+.desk-title { display: flex; align-items: baseline; gap: 14px; min-width: min(300px, 100%); flex: 1; }
 .desk-name { font-family: var(--font-display); font-weight: 900; font-size: 26px; letter-spacing: 0.06em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .desk-name:hover { color: var(--zhu); }
 .stage-pick { position: relative; }
-.stage-btn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; color: var(--ink-2); background: var(--sheet); }
+.stage-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 3px 10px; border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; color: var(--ink-2); background: var(--sheet); }
 .stage-btn small { color: var(--ink-3); font-size: 11.5px; }
 .stage-btn:hover { border-color: var(--ink-3); color: var(--ink); }
 .stage-menu {
@@ -334,8 +334,8 @@ mark.pi sup { font-family: var(--font-brush); color: var(--zhu); font-size: 12px
 .order-grid span { display: block; font-size: 11.5px; color: var(--ink-3); letter-spacing: 0.15em; }
 .order-grid b { font-family: var(--font-display); font-weight: 800; font-size: 16px; }
 .kv { padding: 12px 14px; border: 1px solid var(--rule); border-radius: var(--r-2); background: var(--sheet); }
-.kv dl { margin: 0; display: flex; flex-direction: column; gap: 5px; }
-.kv dl div { display: grid; grid-template-columns: 64px 1fr; gap: 10px; font-size: 14px; }
+.kv dl { margin: 0; display: grid; grid-template-columns: minmax(56px, max-content) minmax(0, 1fr); gap: 5px 12px; font-size: 14px; }
+.kv dl div { display: contents; }
 .kv dt { color: var(--ink-3); font-size: 12.5px; padding-top: 1px; }
 .kv dd { margin: 0; }
 .kv-aside { border-left: 3px solid var(--dai); }
@@ -347,8 +347,8 @@ mark.pi sup { font-family: var(--font-brush); color: var(--zhu); font-size: 12px
 .verdict.tone-ochre h3 { color: var(--ochre); }
 .verdict.tone-zhu h3 { color: var(--zhu); }
 .verdict-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
-.verdict dl { margin: 0; display: flex; flex-direction: column; gap: 4px; }
-.verdict dl div { display: grid; grid-template-columns: 56px 1fr; gap: 10px; font-size: 14px; }
+.verdict dl { margin: 0; display: grid; grid-template-columns: minmax(48px, max-content) minmax(0, 1fr); gap: 4px 12px; font-size: 14px; }
+.verdict dl div { display: contents; }
 .verdict dt { color: var(--ink-3); font-size: 12.5px; }
 .verdict dd { margin: 0; }
 
@@ -599,6 +599,68 @@ mark.pi sup { font-family: var(--font-brush); color: var(--zhu); font-size: 12px
 @keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } }
 
 /* ———— 窄屏 ———— */
+/* ---------------------------------------------------------------------------
+ * English: same rice paper, ink and cinnabar, set in an old-style serif.
+ * Seals keep their Chinese characters (the glyphs fall back to Song); every
+ * seal gets an English caption next to it. Wide CJK letter-spacing becomes
+ * small caps-style tracking, brush annotations become italic serif.
+ */
+html[lang="en"] {
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Inter", Roboto, "Helvetica Neue", "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "Source Serif Pro", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --font-brush: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Kaiti SC", "STKaiti", serif;
+}
+html[lang="en"] .brand-name { letter-spacing: 0.01em; font-size: 22px; }
+html[lang="en"] .brand-sub { letter-spacing: 0; }
+html[lang="en"] .roster-label,
+html[lang="en"] .kicker,
+html[lang="en"] .dz-kicker,
+html[lang="en"] .dlg-kicker,
+html[lang="en"] .layers dt,
+html[lang="en"] .order-grid span,
+html[lang="en"] .judge-chips i,
+html[lang="en"] .nerve-label,
+html[lang="en"] .avoid-mark,
+html[lang="en"] .after-label { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10.5px; font-weight: 600; }
+html[lang="en"] .after-label { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 400; }
+html[lang="en"] .slip-who { letter-spacing: 0.02em; }
+html[lang="en"] .order header b,
+html[lang="en"] .kv header b { letter-spacing: 0.02em; font-size: 15px; }
+html[lang="en"] .desk-name,
+html[lang="en"] .blank h2,
+html[lang="en"] .dz-head h2,
+html[lang="en"] .dlg-head h2,
+html[lang="en"] .welcome h1,
+html[lang="en"] .judge-verdict,
+html[lang="en"] .plan-title b { letter-spacing: 0; }
+html[lang="en"] .judge-verdict { font-weight: 700; line-height: 1.35; }
+html[lang="en"] .dz-scroll h3 { letter-spacing: 0.01em; font-weight: 700; }
+html[lang="en"] .welcome h1 { font-weight: 700; line-height: 1.2; }
+html[lang="en"] .plan-why,
+html[lang="en"] .pi-notes li,
+html[lang="en"] .thinking,
+html[lang="en"] .nerve-name { font-style: italic; }
+html[lang="en"] .thinking small { font-style: normal; }
+html[lang="en"] .nerve-name { min-width: 6.2em; font-weight: 600; font-size: 16px; }
+html[lang="en"] .slip-text { line-height: 1.6; }
+html[lang="en"] .meter { grid-template-columns: 92px 1fr 22px; }
+html[lang="en"] .stage-menu button { grid-template-columns: 118px 1fr auto; }
+html[lang="en"] .fact-group { grid-template-columns: 92px 1fr; }
+html[lang="en"] .pi-q::after,
+html[lang="en"] .avoid-why::before { content: "—"; }
+html[lang="en"] .fact-slot { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+html[lang="en"] .layers dd,
+html[lang="en"] .kv dd,
+html[lang="en"] .verdict dd { line-height: 1.5; }
+
+/* Seal captions: the English name under/next to a Chinese seal. */
+.seal-caption { font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); line-height: 1; }
+.plan.seal-撩 .seal-caption { color: var(--zhu); }
+.plan.seal-奇 .seal-caption { color: var(--dai); }
+.rec-caption { position: absolute; top: 30px; right: 4px; transform: rotate(12deg); font-family: var(--font-display); font-style: italic; font-size: 11px; color: var(--zhu); pointer-events: none; white-space: nowrap; animation: stamp 0.45s var(--ease) both; }
+.lang-badge { font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; padding: 0 4px; border: 1px solid var(--rule); border-radius: 2px; color: var(--dai); line-height: 1.5; }
+.welcome-foot { margin: 22px 0 0; max-width: 440px; font-family: var(--font-display); font-style: italic; font-size: 13px; color: var(--ink-3); line-height: 1.5; }
+
 @media (max-width: 1180px) {
   .app.has-dossier, .app { grid-template-columns: 268px minmax(0, 1fr); }
   .app .dossier, .app:not(.has-dossier) .dossier {

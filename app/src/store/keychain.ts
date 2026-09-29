@@ -6,6 +6,7 @@
 
 import { readSettings, writeSettings } from "./settings";
 import type { ProviderKind } from "../shared/domain";
+import { msg } from "./messages";
 
 const SERVICE = "com.shoalrat.dianzi-junshi";
 export const KEYED: ProviderKind[] = ["claude", "deepseek", "glm", "custom"];
@@ -81,9 +82,9 @@ export function keyFor(kind: ProviderKind): string | undefined {
 }
 
 export async function saveKey(kind: ProviderKind, secret: string): Promise<void> {
-  if (!KEYED.includes(kind)) throw new Error("这个连接不需要 API Key");
+  if (!KEYED.includes(kind)) throw new Error(msg().noKeyNeeded);
   const clean = secret.trim();
-  if (!clean) throw new Error("API Key 是空的");
+  if (!clean) throw new Error(msg().keyEmpty);
   if (keychainBackend() !== "memory") await helper("set", kind, clean);
   secrets.set(kind, clean);
   writeSettings({ providers: { [kind]: { hasKey: keychainBackend() !== "memory" } } });

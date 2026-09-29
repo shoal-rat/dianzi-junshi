@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { database, ensureDir, now, personDir, uid } from "./db";
 import type { ImageRef } from "../shared/domain";
+import { msg } from "./messages";
 
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
@@ -40,9 +41,9 @@ function rowToImage(r: any): StoredImage {
 }
 
 export function saveImage(personId: string, bytes: Uint8Array, name: string, origin: "turn" | "import" | "feedback"): StoredImage {
-  if (bytes.length > MAX_IMAGE_BYTES) throw new Error(`「${name}」超过 20 MB，压一下再传`);
+  if (bytes.length > MAX_IMAGE_BYTES) throw new Error(msg().imageTooBig(name));
   const mediaType = sniffImage(bytes);
-  if (!mediaType) throw new Error(`「${name}」不是能识别的图片（支持 PNG、JPG、WebP、GIF）`);
+  if (!mediaType) throw new Error(msg().imageUnknown(name));
   const hash = sha256(bytes);
   const existing = database().query("SELECT * FROM images WHERE person_id=? AND sha256=? LIMIT 1").get(personId, hash);
   if (existing) return { ...rowToImage(existing), duplicate: true };

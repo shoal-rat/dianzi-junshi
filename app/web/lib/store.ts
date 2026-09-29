@@ -1,5 +1,6 @@
 import { useEffect, useReducer } from "preact/hooks";
 import { api, ApiError, streamTurn, type TurnStreamEvent } from "./api";
+import { setUiLang, T, uiLang } from "./i18n";
 import type { DossierDTO, ImageRef, JobDTO, Mode, PersonDTO, SettingsDTO, TurnContext, TurnDTO } from "../../src/shared/domain";
 
 export type Dialog =
@@ -92,7 +93,7 @@ export function toast(text: string, tone: "ink" | "zhu" | "jade" = "ink"): void 
 
 export function reportError(e: unknown): void {
   const err = e as ApiError;
-  toast(err?.hint ? `${err.message}——${err.hint}` : String(err?.message ?? e), "zhu");
+  toast(err?.hint ? `${err.message}${uiLang() === "en" ? " — " : "——"}${err.hint}` : String(err?.message ?? e), "zhu");
 }
 
 // ---------------------------------------------------------------------------
@@ -116,6 +117,7 @@ export function setDraft(personId: string, patch: Partial<Draft> | ((d: Draft) =
 export async function boot(): Promise<void> {
   try {
     const [settings, people] = await Promise.all([api.settings(), api.people()]);
+    setUiLang(settings.lang);
     // #p=<档案编号> 直达某个人
     const wanted = new URLSearchParams(location.hash.slice(1)).get("p");
     const currentId = wanted && people.some((p) => p.id === wanted) ? wanted
@@ -129,7 +131,9 @@ export async function boot(): Promise<void> {
 }
 
 export async function refreshSettings(): Promise<void> {
-  setState({ settings: await api.settings() });
+  const settings = await api.settings();
+  setUiLang(settings.lang);
+  setState({ settings });
 }
 
 export async function refreshPeople(): Promise<void> {
@@ -164,7 +168,7 @@ export function watchJob(personId: string, jobId: string): void {
       if (job.status === "running" || job.status === "queued") { setTimeout(tick, 1500); return; }
       watching.delete(jobId);
       await refreshDossier(personId);
-      if (job.status === "done") toast(job.message ?? "整理好了", "jade");
+      if (job.status === "done") toast(job.message ?? T().created, "jade");
     } catch {
       watching.delete(jobId);
     }
@@ -187,9 +191,9 @@ function flushLive(): void {
 export async function send(personId: string): Promise<void> {
   const draft = draftOf(personId);
   if (state.live) return;
-  if (draft.images.some((i) => i.uploading)) { toast("截图还在上传，稍等一下"); return; }
+  if (draft.images.some((i) => i.uploading)) { toast(T().uploadingWait); return; }
   const text = draft.text.trim();
-  if (!text && !draft.images.length) { toast("先贴点内容，文字或截图都行"); return; }
+  if (!text && !draft.images.length) { toast(T().pasteFirst); return; }
   abort = new AbortController();
   pendingOutput = "";
   setState({ live: { personId, mode: draft.mode, output: "", startedAt: Date.now() } });
