@@ -1,10 +1,10 @@
-<p align="center"><img src="assets/v6-icon.png" width="96" alt="电子军师"></p>
+<p align="center"><img src="assets/v6-icon.png" width="96" alt="Junshi"></p>
 
-<h1 align="center">电子军师</h1>
+<h1 align="center">Junshi · 电子军师</h1>
 
-<p align="center">ta 发来一句话，我给你三个锦囊。<br>扫梗、读语气、看行动，替你想好怎么回——明显没戏时，像朋友一样拦住你。</p>
+<p align="center">They text you. You get three moves.<br>Junshi reads the slang, the tone and what they actually do, then hands you replies you can send. When someone is just stringing you along, it tells you, the way a good friend would.</p>
 
-<p align="center"><b>中文</b> · <a href="README_EN.md">English</a></p>
+<p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 
 <p align="center">
 <a href="docs/releases/v6.1.0.md"><img src="https://img.shields.io/badge/release-v6.1.0-c8372d" alt="Release v6.1.0"></a>
@@ -13,135 +13,120 @@
 <a href="app/test"><img src="https://img.shields.io/badge/tests-77%20passing-2f4c5c" alt="Tests"></a>
 </p>
 
-![电子军师主界面：原话上的朱笔批注、带「荐」印的三个锦囊、军令和旁白，右边是档案卡](assets/v6-home.jpg)
+![Junshi in English: her message with red-ink notes on the slang, a one-line read, three stamped moves (Steady, Flirt, Wildcard) with the pick marked 荐, and the dossier on the right](assets/en-home.jpg)
 
-电子军师是一个装在你电脑上的恋爱聊天军师。把 ta 的话贴进来，或者直接丢聊天截图，它会：
+Junshi (电子军师, "the electronic strategist") is a desktop app for the part of dating that happens over text. Paste what they sent, or drop in a screenshot, and it will:
 
-1. **先扫梗**——「那咋了」是撒娇嘴硬，不是生气。看得懂字面不等于懂梗。
-2. **再读局**——表面说了什么、情绪是什么、真正要什么；甜度、主动、承诺、行动四项分开打分，海王指数照实给。
-3. **出三个锦囊**——稳、撩、奇三条不同的路，每条都是能直接复制发出去的话，还会盖一个「荐」告诉你选哪条。
-4. **记住 ta**——生日、忌口、口头禅、ta 用过的梗，以及你在 ta 身上试过的哪招管用、哪句聊冷了，下次都会用上。
+1. **Decode the slang first.** "lowkey I'm cooked 💀" is a bit, not a crisis. Getting the words isn't the same as getting the joke.
+2. **Read the room.** What they said, what they feel, what they want from you. Interest is scored on four things separately (sweetness, initiative, commitment, follow-through), and the player score is honest.
+3. **Hand you three moves.** Steady, Flirt and Wildcard: three different routes, each written as texts you can copy and send as-is. The one it would pick gets stamped 荐.
+4. **Remember them.** Birthday, likes, the slang they use, and which of your moves landed or fell flat.
 
-聊天、截图和档案都只存在你的电脑上。
+Everything stays on your computer.
 
-## 三步开始
+## Getting started
 
-1. 新建一个档案，给 ta 起个代号就行；以前的聊天和截图可以一起丢进来，后台一张张整理。
-2. 把 ta 的话贴进输入框，或者直接粘贴截图，按 Enter。
-3. 挑一个锦囊复制发出去。发完回来点一下「后来怎样」，军师会越来越懂 ta。
+1. Start a profile. A nickname is enough; drop in old screenshots too if you have them.
+2. Paste their message or a screenshot and press Enter.
+3. Copy a move and send it. Come back and tap **How did it go?** so Junshi learns what works on them.
 
-<img src="assets/v6-welcome.jpg" alt="第一次打开：竖排「把聊天交给我」和四字印" width="720">
+<img src="assets/en-welcome.jpg" alt="First launch: 锦囊妙计 set vertically beside the 电子军师 seal, 'They text you. You get three moves.'" width="720">
 
-## 四种问法
+## Four ways to ask
 
-| 模式 | 什么时候用 | 你会得到 |
+| Mode | When | What you get |
 | --- | --- | --- |
-| **怎么回** | ta 发来一句话，不知道怎么接 | 读局 + 稳 / 撩 / 奇三个锦囊 + 推荐 + 「别这样回」 |
-| **读懂 ta** | 只想知道 ta 什么意思 | 梗和语气的朱批、三层解读、风险、回复方向 |
-| **帮我改** | 你已经想好一句，拿不准能不能发 | 可以说 / 需要调整 / 不建议，外加改好的版本和时机 |
-| **有没有戏** | 聊了一阵，想知道值不值得继续 | 四维兴趣、海王指数、下一步测试、军令，必要时拦住你 |
+| **Reply** | They texted and you're not sure how to answer | The read, three moves, the pick, and a "Don't send" |
+| **Decode** | You just want to know what they meant | Red-ink notes on slang and tone, the three layers, risks, a direction |
+| **Check my text** | You've written something and aren't sure about it | Send it / Tweak it / Don't send, a fixed version, and timing |
+| **Any chance?** | You've been talking a while and want the truth | Interest on four axes, player score, a next test, orders, and a Reality check if it's needed |
 
-## 稳、撩、奇，还有胆量
+## Steady, Flirt, Wildcard, and nerve
 
-每个锦囊都盖一方印：
+Each move gets a seal:
 
-- **稳**：稳妥，能进能退。
-- **撩**：会撩，但不超过这段关系现在的「油腻上限」（从初识期的 0 到热恋期的 3.5）。
-- **奇**：第三条路——展示自己、真诚、整活、降温或者直接推进，看场面。
+- **稳 Steady**: safe and solid, easy to walk back.
+- **撩 Flirt**: flirty, but never over this stage's thirst cap (0 when you've just met, 1.5 in the talking stage, 3.5 in the honeymoon phase).
+- **奇 Wildcard**: the third route the moment calls for. Show who you are, be sincere, be funny, cool it down, or push forward.
 
-每个档案有自己的**胆量**，五档：很稳 / 偏稳 / 平衡 / 偏敢 / 放胆冲。胆量改变的是你愿意冒多大的险：油腻上限随之上下浮动，「奇」会从展示自己一路变成直接约、打直球。军师对局面的判断不跟着变——兴趣分和海王指数永远照实给。
+Every profile has its own **nerve**: Play it safe, Careful, Balanced, Bold, All in. Nerve changes how much risk you take. The thirst cap moves with it, and the Wildcard goes from "show yourself" all the way to "ask them out, today". The read doesn't change. Interest and the player score are always reported straight.
 
-## 反海王：男海王、海后都拦得住
+## Reality check, for players of any gender
 
-打开**清醒提醒**后，军师会按行动证据判断这段关系值不值得继续投入：只撩不约、深夜才热、你降温 ta 回温、只在要帮忙时出现、邀约连续被挡还不给替代时间……命中硬阈值时，它会直接盖一个「醒」，告诉你别再加码，并给出一句体面的收尾话。
+Turn on **Reality check** and Junshi judges by actions: sweet texts that never become plans, warmth only after midnight, showing up only when they need a favor, heating back up the moment you go quiet. When the evidence crosses a hard threshold it stamps 醒, tells you to stop investing, and gives you a line to leave with some dignity.
 
-同一套标准对男生、女生都一样。下面两张都是真实模型的实际输出。
+The rules are the same for everyone. Both examples below are real model output.
 
-**女生遇到男海王**：深夜「宝宝睡了吗」、两次「下次一定」、一冷他就回温。
+**A woman asking about a guy**: "goodnight beautiful" every night, "we should totally get dinner sometime", always "slammed this week", and a 1am "wyd".
 
-![女生问男海王：朱批「宝宝睡了吗」「下次一定」「是不是不要我了」，兴趣 3、海王 75，军令暂停主动，「清醒一下」建议停止邀约和深夜陪聊](assets/v6-anti-player-male.jpg)
+<img src="assets/en-anti-player-male.jpg" alt="Interest 3/10 with commitment and follow-through at 1, player score 65, notes on 'slammed this week' and 'wyd', a single Steady move that hands him the planning, and a Reality check: stop proposing dates and let him make the next concrete move" width="620">
 
-**男生遇到海后**：只在搬家、抢票时热情，三次约饭都「那几天有事」，不找她时就来点赞。
+**A man asking about a girl**: she only texts first when she needs a ride or help moving, three dinners deflected with "soon!!", and a "hey stranger 😊" whenever he goes quiet.
 
-![男生问海后：兴趣 2、海王 75、判为普通朋友档，点破「你现在很像她的免费劳动力」，「清醒一下」建议停止邀约和帮忙，锦囊给一句体面的拒绝](assets/v6-anti-player-female.jpg)
+<img src="assets/en-anti-player-female.jpg" alt="Interest 2/10, player score 75, 'favor-only contact and attention when you withdraw… this is breadcrumbing', orders to step back, and a Reality check: stop chasing and over-giving, don't text her now" width="620">
 
-海王指数怎么算、布线 / 保线 / 留鱼三个阶段各有什么表现、有哪些测试动作，见 [问答策略](docs/问答策略.md) 和 [`references/reading.md`](references/reading.md)。
+Early on, seeing other people or being on the apps is normal, and Junshi doesn't count it against anyone by itself. It looks at patterns.
 
-## 朱批：先扫梗，再过人话门禁
+## Written for how people text in English
 
-- **扫梗**：对方的话先对一遍梗词典（[`references/glossary.md`](references/glossary.md)，每条带校验日期），命中的梗会用朱笔在原话上划线、写旁批。
-- **人话门禁**：每条可复制回复都要像 2026 年的年轻人随手打的。句尾句号、「多喝热水」、「你应该」、过气梗、36 字的小作文，都会被打回。句尾句号这类能确定的直接修掉，改不了的交给军师再改一稿。
+The English version has its own playbook in [`references/en/`](references/en), written for how people text and date in English. It isn't translated from the Chinese one. Chats happen on iMessage, Instagram and Hinge rather than WeChat; "dating" isn't exclusive until you've had the talk; a period at the end of a text reads cold; 😂 reads a little millennial; asking someone out is usually one clean ask, then the ball is in their court. [The English playbook](docs/english-playbook.md) lays out the differences side by side.
 
-| 长辈版 | 年轻人版 |
+Every copyable text goes through a vibe check before you see it. Periods on one-liners, "u up", dead slang, email voice, lecturing and 30-word paragraphs get bounced and rewritten.
+
+| Stiff | Natural |
 | --- | --- |
-| 天冷了，多喝热水，注意保暖。 | 冷死了吧今天 / 给你点杯热的？ |
-| 哈哈。是吗？ | 哈哈哈哈哈真的假的 |
-| 你是不是不想理我了？ | 你消失得有点彻底 我还以为把天聊死了 |
+| That sounds nice. | wait that sounds so fun |
+| Would you like to go out sometime? | let me take you for a drink this week / thursday? |
+| Are you mad at me? | you went quiet on me, did I say something dumb lol |
+| Good morning beautiful! Have a great day! ☀️ | good luck today, go crush it |
 
-梗词典同时是扫梗表和黑名单，改一个文件就行。
+The slang glossary ([`references/en/glossary.md`](references/en/glossary.md)) works as the scanner and the blacklist at once. Every row carries the month it was last checked: delulu and rizz are in, "it's giving" is on its way out, "on fleek" and "very demure" are gone.
 
-## 它记得 ta 的事
+## It remembers them
 
-- **档案卡**：生日、喜欢的、不喜欢的、忌口、作息、口头禅、想做没做的事、约好的安排……每条都注明来源。整份档案每次都带给军师，所以生日不会因为「没检索到」被忘掉。你可以直接改、钉住或删掉。有日期的安排过期后会自动失效；你亲手写的事实，不会被截图里抽出来的说法覆盖。
-- **ta 的梗**：ta 自己用过的梗会记下来——镜像回去最安全也最加分。
-- **素材库**：旧聊天、截图的原文全部保留，按当前的问题找回（关键词 + 可选的本机语义向量）。
-- **此刻**：军师知道今天几号、星期几、离国庆 / 七夕 / 情人节 / ta 的生日还有几天，会提前提醒你订位、备礼。
+- **Dossier**: birthday, likes, dislikes, routine, sayings, plans. Each fact notes where it came from, and the whole dossier goes into every request, so nothing gets "forgotten" by a search miss. Edit, pin or delete anything. Plans expire on their own, and a fact you typed yourself is never overwritten by one pulled from a screenshot.
+- **Their slang**: words they use themselves. Mirroring them back is the safest move there is.
+- **Archive**: old chats and screenshots are kept in full and recalled when they're relevant.
+- **Right now**: Junshi knows the date and what's coming up (Valentine's, cuffing season, their birthday) and reminds you to book ahead.
 
-## 从真实结果里学
+## It learns from what actually happened
 
-复制一个锦囊、发出去，回来点「后来怎样」：接住了 / 一般 / 聊冷了 / 没回。也可以贴 ta 的回复截图，让军师帮你选好。
+Copy a move, send it, then tap **How did it go?**: Landed, Meh, Went cold, or No reply. Or paste their reply screenshot and let Junshi fill it in.
 
-- **打法战绩**：稳、撩、奇在这个人身上各试了几次、接住几次。
-- **聊冷的原句**：聊冷过一次的说法，同样的场面不会再给。
-- **你的风格**：你实际发出去的话平均多长、爱不爱打标点、常用哪些语气词，锦囊会照着写。
+- **Track record**: how often Steady, Flirt and Wildcard have landed with this person.
+- **What fell flat**: lines that went cold once aren't suggested again in the same spot.
+- **Your texting style**: how long your texts run, whether you use punctuation, lowercase, how you laugh. Moves are written to match.
 
-这些都是真实记录的统计，你可以在档案卡里逐条看到和修改。
+## Language
 
-## 男生女生都能用
+- **App language** follows your system: Chinese on a Chinese system, English everywhere else. On Linux it reads `LC_ALL`, `LC_MESSAGES`, `LANG` and `LANGUAGE`; on macOS, your preferred languages. You can override it in Settings.
+- **Chat language** is per profile. If you use the app in Chinese but text someone in English, set that profile to English. The moves come out in natural English, built on the English playbook, and the commentary stays in Chinese. Only one playbook is ever loaded at a time.
 
-档案里可以写「ta 是男生 / 女生」，设置里可以写「你是男生 / 女生」，都不写也行。写了，军师就会用对「他 / 她」，打法去对应的「追女生 / 追男生」那张表里找；不写就按聊天自己判断，界面统一写「ta」。
+## Connect an AI
 
-## 英文版
-
-v6.1 起有英文版。界面语言跟随系统：中文系统显示中文，其他系统显示英文，设置里可以手动改。
-
-英文版不是把中文策略翻译过去，而是按英语圈的聊天和约会习惯另写了一套（[`references/en/`](references/en)）：聊天在 iMessage、Instagram、Hinge 上；「在约会」不等于确定关系，要专门聊一次才算；一句话末尾加句号显得冷，一个「!」反而显得热情；😂 有点显老；约人讲究约一次、说清楚，然后把球交给对方。梗词典、人话检查、节日（情人节、Galentine's、cuffing season、感恩节）也都是英文那一套。两套策略不会同时塞进上下文：每个档案可以单独设「你们用什么语言聊」，聊英文就只装英文那套；如果界面是中文，解说仍然用中文写，只有锦囊是英文。
-
-印章保留汉字（稳 / 撩 / 奇 / 荐 / 醒），英文界面在旁边配上 Steady / Flirt / Wildcard / Pick / Reality check。
-
-![英文版主界面](assets/en-home.jpg)
-
-两套策略的差别见 [The English playbook](docs/english-playbook.md)（英文）。
-
-## 连接 AI
-
-| 连接 | 说明 |
+| Connection | Notes |
 | --- | --- |
-| **Codex** | 复用电脑上已登录的 Codex（ChatGPT 桌面版自带的也能自动找到），不用填 Key |
-| **Claude Code** | 复用已登录的 Claude Code |
-| **Claude API** | 官方 SDK，默认 Claude Opus 5.5；问答策略那一大段会被缓存，连着问更省；遇到误拦会自动换模型接着答 |
-| **DeepSeek / GLM / 自定义** | OpenAI 兼容接口 |
-| **演示模式** | 不联网，用示范回答熟悉界面 |
+| **Codex** | Uses the Codex you're already signed into (including the one bundled with the ChatGPT desktop app). No key needed |
+| **Claude Code** | Uses your Claude Code sign-in |
+| **Claude API** | Official SDK, Claude Opus 5.5 by default, with prompt caching |
+| **DeepSeek / GLM / custom** | Any OpenAI-compatible endpoint |
+| **Demo** | Offline, canned answers to learn the ropes |
 
-API Key 只存在系统钥匙串（macOS 钥匙串 / Windows 凭据管理器 / Linux Secret Service）里。
+API keys live only in your OS keychain.
 
-设置里的**想多深**有三档：快 / 标准 / 细。Codex 和 Claude Code 要等整段写完才显示，默认「快」，一般 20–45 秒出结果；遇到吵架、挑明这种关键时刻，可以切到「细」。
+## Design: red ink on rice paper
 
-## 设计语言：朱批
+The look comes from 朱批, the red-ink notes a teacher writes in the margins. Rice-paper background, ink text, and the strategist's vermilion brush: notes drawn on their words, seals on each move, 荐 on the pick, 醒 when it's time to stop. The seals keep their Chinese characters, and in English each one has a small caption beside it. The dark theme is called Ink night.
 
-宣纸打底，墨色写字，朱砂是军师的笔。原话上划朱线、写旁批；锦囊盖印；推荐的那条加盖「荐」；军令用公文的双线框；该拦你的时候盖「醒」。暗色主题叫「墨夜」。详见 [设计语言](docs/设计语言.md)。
+![Ink night (dark theme)](assets/en-home-dark.jpg)
 
-![墨夜主题](assets/v6-home-dark.jpg)
+## Download
 
-## 下载安装
+Get it from [Releases](https://github.com/shoal-rat/dianzi-junshi/releases): `.dmg` for macOS (Apple silicon and Intel are separate), `setup.exe` or `.msi` for Windows, `.AppImage` or `.deb` for Linux. The backend is bundled, so you don't need Node, Bun, Rust or Python.
 
-去 [Releases](https://github.com/shoal-rat/dianzi-junshi/releases) 下载：macOS 选 `.dmg`（Apple 芯片 / Intel 分开），Windows 选 `setup.exe` 或 `.msi`，Linux 选 `.AppImage` 或 `.deb`。安装包里已经包含后端，不需要装 Node、Bun、Rust 或 Python。详见 [安装说明](INSTALL.md)。
+## Develop
 
-从 v5 升级：第一次启动时，旧的档案、对话、截图和已经整理好的截图记忆会自动搬进新版本，原文件保持不动；原来存在钥匙串里的 API Key 可以直接用。
-
-## 开发
-
-需要 Bun 1.3+：
+With Bun 1.3+:
 
 ```bash
 git clone https://github.com/shoal-rat/dianzi-junshi.git
@@ -154,37 +139,10 @@ bun run start
 bun run verify
 ```
 
-`verify` 会依次做类型检查、跑 77 个测试（男女样本、中英文都有，数据目录每次都是临时的），最后编译出单文件后端。改了 `app/web/` 刷新页面就能看到；改了后端要重启。
+`verify` typechecks, runs 77 tests (men and women in the samples, English and Chinese, a fresh temp data folder every run), and compiles the single-file backend. Set `DJ_LANG=en` to force English while developing. The Tauri 2 shell lives in [`desktop/`](desktop).
 
-桌面版（Tauri 2）：
+## Docs
 
-```bash
-cd desktop
-bun install
-bun run dev
-```
-
-## 目录
-
-```text
-references/        问答策略（核心 / 语感 / 梗 / 读局 / 打法 / 约会 / 读人 / 梗词典），构建时内嵌进后端
-references/en/     英文版问答策略（按英语圈文化另写，不是翻译）
-app/server.ts      本机服务（只监听 127.0.0.1）
-app/src/core/      扫梗、人话门禁、车道分诊、日历、提示词装配、一轮的流程
-app/src/llm/       Codex / Claude Code / Claude API / OpenAI 兼容 / 演示
-app/src/store/     SQLite：档案、对话、档案卡、素材库、结果与学习、后台导入、v5 搬家
-app/src/shared/    前后端共用：输出契约解析、领域常量
-app/web/           Preact 前端（朱批设计语言，中英双语）
-app/test/          测试
-desktop/           Tauri 桌面壳与打包
-```
-
-## 文档
-
-- [问答策略](docs/问答策略.md)——军师怎么想、怎么答，以及 v6 为什么推倒重来
-- [设计语言：朱批](docs/设计语言.md)
-- [数据与隐私](docs/数据与隐私.md)
-- [安装说明](INSTALL.md) · [桌面构建](desktop/README.md) · [发布签名](docs/release-signing.md)
-- [The English playbook](docs/english-playbook.md)——英文版的策略和中文版有什么不同
-- [v6.1.0 发行说明](docs/releases/v6.1.0.md) · [更新记录](CHANGELOG.md)
-
+- [The English playbook](docs/english-playbook.md): how the English strategy differs from the Chinese one
+- [Data and privacy (Chinese)](docs/数据与隐私.md) · [Design language (Chinese)](docs/设计语言.md)
+- [v6.1.0 release notes](docs/releases/v6.1.0.md) · [Changelog](CHANGELOG.md)
